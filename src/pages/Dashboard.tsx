@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { Home, LayoutDashboard, FileText, BarChart3, Settings, LogOut } from 'lucide-react';
+import { Home, LayoutDashboard, FileText, BarChart3, Settings, LogOut, Upload, Link as LinkIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navigation = [
   { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
   { name: 'My Listing', href: '/dashboard/listing', icon: FileText },
   { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+  { name: 'GMB Integration', href: '/dashboard/gmb', icon: LinkIcon },
+  { name: 'Bulk Import', href: '/dashboard/bulk-import', icon: Upload },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 

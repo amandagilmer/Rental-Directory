@@ -10,6 +10,8 @@ import Dashboard from "./pages/Dashboard";
 import Overview from "./pages/dashboard/Overview";
 import MyListing from "./pages/dashboard/MyListing";
 import Analytics from "./pages/dashboard/Analytics";
+import GmbSettings from "./pages/dashboard/GmbSettings";
+import BulkImport from "./pages/dashboard/BulkImport";
 import Settings from "./pages/dashboard/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -25,12 +27,14 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={<Dashboard />}>
-              <Route index element={<Overview />} />
-              <Route path="listing" element={<MyListing />} />
-              <Route path="analytics" element={<Analytics />} />
-              <Route path="settings" element={<Settings />} />
-            </Route>
+          <Route path="/dashboard" element={<Dashboard />}>
+            <Route index element={<Overview />} />
+            <Route path="listing" element={<MyListing />} />
+            <Route path="analytics" element={<Analytics />} />
+            <Route path="gmb" element={<GmbSettings />} />
+            <Route path="bulk-import" element={<BulkImport />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
