@@ -70,6 +70,81 @@ export type Database = {
           },
         ]
       }
+      gmb_connections: {
+        Row: {
+          account_email: string
+          connected_at: string
+          created_at: string
+          id: string
+          is_active: boolean
+          last_sync_at: string | null
+          sync_frequency: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_email: string
+          connected_at?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          sync_frequency?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_email?: string
+          connected_at?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          sync_frequency?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      import_history: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_log: Json | null
+          failed_rows: number
+          file_name: string
+          id: string
+          status: string
+          successful_rows: number
+          total_rows: number
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_log?: Json | null
+          failed_rows?: number
+          file_name: string
+          id?: string
+          status?: string
+          successful_rows?: number
+          total_rows?: number
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_log?: Json | null
+          failed_rows?: number
+          file_name?: string
+          id?: string
+          status?: string
+          successful_rows?: number
+          total_rows?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       listing_analytics: {
         Row: {
           created_at: string | null
