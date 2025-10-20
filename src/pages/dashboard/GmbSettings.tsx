@@ -26,7 +26,48 @@ export default function GmbSettings() {
 
   useEffect(() => {
     fetchConnection();
+    handleOAuthCallback();
   }, [user]);
+
+  const handleOAuthCallback = async () => {
+    if (!user) return;
+
+    // Check if we're returning from OAuth
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get('access_token');
+    
+    if (accessToken) {
+      try {
+        // Store the GMB connection
+        const { error } = await supabase
+          .from('gmb_connections')
+          .insert({
+            user_id: user.id,
+            account_email: user.email || '',
+            sync_frequency: 'daily',
+            is_active: true,
+          });
+
+        if (error) throw error;
+
+        toast({
+          title: 'Connected!',
+          description: 'Your Google My Business account has been connected successfully.',
+        });
+
+        // Clear the hash from URL
+        window.history.replaceState(null, '', window.location.pathname);
+        fetchConnection();
+      } catch (error: any) {
+        console.error('Error storing GMB connection:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to connect Google My Business account',
+          variant: 'destructive',
+        });
+      }
+    }
+  };
 
   const fetchConnection = async () => {
     if (!user) return;
@@ -58,36 +99,29 @@ export default function GmbSettings() {
     setConnecting(true);
 
     try {
-      // Mock connection - simulate OAuth flow
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      const mockEmail = user.email || 'business@example.com';
-      
-      const { error } = await supabase
-        .from('gmb_connections')
-        .insert({
-          user_id: user.id,
-          account_email: mockEmail,
-          sync_frequency: 'daily',
-          is_active: true,
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: 'Connected!',
-        description: 'Your Google My Business account has been connected successfully.',
+      // Initiate Google OAuth flow with GMB API scope
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          scopes: 'https://www.googleapis.com/auth/business.manage',
+          redirectTo: `${window.location.origin}/dashboard/gmb`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
       });
 
-      fetchConnection();
+      if (error) throw error;
+      
+      // The OAuth flow will redirect away, so this won't execute until return
     } catch (error: any) {
       console.error('Error connecting GMB:', error);
       toast({
         title: 'Error',
-        description: 'Failed to connect Google My Business account',
+        description: 'Failed to initiate Google OAuth flow',
         variant: 'destructive',
       });
-    } finally {
       setConnecting(false);
     }
   };
@@ -247,7 +281,7 @@ export default function GmbSettings() {
               {connecting ? 'Connecting...' : 'Connect Google My Business'}
             </Button>
             <p className="text-sm text-muted-foreground mt-4">
-              Note: This is a demonstration version. In production, you'll be redirected to Google's OAuth flow.
+              You'll be redirected to Google to authorize access to your Google My Business account.
             </p>
           </CardContent>
         </Card>
