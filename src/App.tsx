@@ -13,6 +13,7 @@ import Analytics from "./pages/dashboard/Analytics";
 import GmbSettings from "./pages/dashboard/GmbSettings";
 import BulkImport from "./pages/dashboard/BulkImport";
 import Settings from "./pages/dashboard/Settings";
+import BusinessDetail from "./pages/BusinessDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/business/:slug" element={<BusinessDetail />} />
             <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />}>
             <Route index element={<Overview />} />
