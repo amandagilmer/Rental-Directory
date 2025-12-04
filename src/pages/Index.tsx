@@ -6,6 +6,7 @@ import { Hero } from "@/components/Hero";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { BusinessCard } from "@/components/BusinessCard";
 import { BusinessMap } from "@/components/BusinessMap";
+import { Footer } from "@/components/Footer";
 import { businesses } from "@/data/businesses";
 import { calculateDistance } from "@/hooks/useGeolocation";
 
@@ -121,11 +122,7 @@ const Index = () => {
         )}
       </main>
       
-      <footer className="bg-card border-t border-border py-8 mt-20">
-        <div className="container mx-auto px-4 text-center text-muted-foreground">
-          <p>© 2025 Local Rental Directory. Find the best rental businesses in your area.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
