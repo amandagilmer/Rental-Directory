@@ -1,13 +1,26 @@
-import { Search } from "lucide-react";
+import { Search, Map, List } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { LocationSearch } from "@/components/LocationSearch";
 import heroImage from "@/assets/hero-rental.jpg";
 
 interface HeroProps {
   onSearch: (query: string) => void;
+  onLocationChange: (location: { lat: number; lng: number; address: string } | null) => void;
+  onRadiusChange: (radius: number) => void;
+  radius: number;
+  isMapView: boolean;
+  onToggleMapView: () => void;
 }
 
-export const Hero = ({ onSearch }: HeroProps) => {
+export const Hero = ({ 
+  onSearch, 
+  onLocationChange, 
+  onRadiusChange, 
+  radius,
+  isMapView,
+  onToggleMapView
+}: HeroProps) => {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -32,20 +45,50 @@ export const Hero = ({ onSearch }: HeroProps) => {
           Discover car rentals, equipment, event supplies, and more in your area
         </p>
         
-        <form onSubmit={handleSubmit} className="flex gap-2 max-w-2xl mx-auto">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
-            <Input
-              type="text"
-              name="search"
-              placeholder="Search for rental businesses..."
-              className="pl-12 h-14 text-lg bg-white border-0 shadow-xl"
-            />
+        <div className="space-y-4 max-w-3xl mx-auto">
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
+              <Input
+                type="text"
+                name="search"
+                placeholder="Search for rental businesses..."
+                className="pl-12 h-14 text-lg bg-white border-0 shadow-xl"
+              />
+            </div>
+            <Button type="submit" size="lg" className="h-14 px-8 bg-accent hover:bg-accent/90 text-white">
+              Search
+            </Button>
+          </form>
+          
+          <div className="flex flex-col sm:flex-row gap-3 items-center">
+            <div className="flex-1 w-full">
+              <LocationSearch
+                onLocationChange={onLocationChange}
+                onRadiusChange={onRadiusChange}
+                radius={radius}
+              />
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onToggleMapView}
+              className="h-12 px-6 bg-white/90 hover:bg-white border-0 text-foreground gap-2 whitespace-nowrap"
+            >
+              {isMapView ? (
+                <>
+                  <List className="h-4 w-4" />
+                  List View
+                </>
+              ) : (
+                <>
+                  <Map className="h-4 w-4" />
+                  Map View
+                </>
+              )}
+            </Button>
           </div>
-          <Button type="submit" size="lg" className="h-14 px-8 bg-accent hover:bg-accent/90 text-white">
-            Search
-          </Button>
-        </form>
+        </div>
       </div>
     </section>
   );

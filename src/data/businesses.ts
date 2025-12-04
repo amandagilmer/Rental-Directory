@@ -55,6 +55,8 @@ export interface Business {
   serviceArea?: string[];
   socialLinks?: SocialLinks;
   reviews?: Review[];
+  latitude?: number;
+  longitude?: number;
 }
 
 export const businesses: Business[] = [
@@ -101,6 +103,8 @@ export const businesses: Business[] = [
       { id: "r2", reviewerName: "Sarah M.", rating: 5, date: "2024-01-10", text: "Best rental experience I've ever had. Will definitely use again!" },
       { id: "r3", reviewerName: "Mike R.", rating: 4, date: "2024-01-05", text: "Great selection of vehicles and fair prices. Quick pickup process." },
     ],
+    latitude: 40.7128,
+    longitude: -74.0060,
   },
   {
     id: "2",
@@ -144,6 +148,8 @@ export const businesses: Business[] = [
       { id: "r2", reviewerName: "Lisa K.", rating: 5, date: "2024-01-12", text: "Fantastic service and fair prices. My go-to for all construction equipment." },
       { id: "r3", reviewerName: "James W.", rating: 4, date: "2024-01-08", text: "Great selection. Staff really knows their equipment." },
     ],
+    latitude: 40.7831,
+    longitude: -73.9712,
   },
   {
     id: "3",
@@ -188,6 +194,8 @@ export const businesses: Business[] = [
       { id: "r2", reviewerName: "David L.", rating: 4, date: "2024-01-14", text: "Great selection and professional service. Very responsive." },
       { id: "r3", reviewerName: "Amanda T.", rating: 5, date: "2024-01-09", text: "The team went above and beyond for our corporate event." },
     ],
+    latitude: 40.7549,
+    longitude: -73.9840,
   },
   {
     id: "4",
@@ -229,6 +237,8 @@ export const businesses: Business[] = [
       { id: "r1", reviewerName: "Chris P.", rating: 5, date: "2024-01-16", text: "Clean facility and great security. Peace of mind for my belongings." },
       { id: "r2", reviewerName: "Nicole H.", rating: 4, date: "2024-01-11", text: "Convenient access and friendly staff. Good value." },
     ],
+    latitude: 40.7614,
+    longitude: -73.9776,
   },
   {
     id: "5",
@@ -273,6 +283,8 @@ export const businesses: Business[] = [
       { id: "r2", reviewerName: "Jenny S.", rating: 4, date: "2024-01-13", text: "Fun experience. The e-bikes are a blast!" },
       { id: "r3", reviewerName: "Mark T.", rating: 5, date: "2024-01-07", text: "Affordable and convenient. Perfect for tourists." },
     ],
+    latitude: 40.7829,
+    longitude: -73.9654,
   },
   {
     id: "6",
@@ -317,6 +329,8 @@ export const businesses: Business[] = [
       { id: "r2", reviewerName: "Robert J.", rating: 5, date: "2024-01-15", text: "Best party rental company in town. Always reliable!" },
       { id: "r3", reviewerName: "Laura M.", rating: 5, date: "2024-01-10", text: "Photo booth was a huge hit at our wedding. Thank you!" },
     ],
+    latitude: 40.8448,
+    longitude: -73.8648,
   },
   {
     id: "7",
@@ -357,6 +371,8 @@ export const businesses: Business[] = [
       { id: "r1", reviewerName: "Steve H.", rating: 4, date: "2024-01-17", text: "Convenient for quick trips around the city. App works great." },
       { id: "r2", reviewerName: "Diana C.", rating: 5, date: "2024-01-12", text: "Love the flexibility. No hassle pickup!" },
     ],
+    latitude: 40.7300,
+    longitude: -73.9950,
   },
   {
     id: "8",
@@ -399,6 +415,8 @@ export const businesses: Business[] = [
       { id: "r2", reviewerName: "Karen B.", rating: 5, date: "2024-01-16", text: "Saved me hundreds vs buying. Tools were clean and worked perfectly." },
       { id: "r3", reviewerName: "Tim S.", rating: 4, date: "2024-01-11", text: "Fair prices and helpful tips on how to use the equipment." },
     ],
+    latitude: 40.6892,
+    longitude: -74.0445,
   },
   {
     id: "9",
@@ -443,6 +461,8 @@ export const businesses: Business[] = [
       { id: "r2", reviewerName: "Jonathan P.", rating: 5, date: "2024-01-18", text: "The attention to detail is unmatched. True professionals." },
       { id: "r3", reviewerName: "Elizabeth M.", rating: 5, date: "2024-01-13", text: "Made our daughter's wedding a fairy tale. Forever grateful!" },
     ],
+    latitude: 40.7736,
+    longitude: -73.9566,
   },
 ];
 
