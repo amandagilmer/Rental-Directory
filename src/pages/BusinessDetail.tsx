@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { PhotoGallery } from "@/components/PhotoGallery";
 import { LeadCaptureModal } from "@/components/LeadCaptureModal";
+import { Footer } from "@/components/Footer";
 import { useState } from "react";
 import {
   Star,
@@ -338,6 +339,8 @@ const BusinessDetail = () => {
           </div>
         </div>
       </div>
+
+      <Footer />
 
       <LeadCaptureModal
         open={leadModalOpen}
