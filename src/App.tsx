@@ -15,6 +15,7 @@ import BulkImport from "./pages/dashboard/BulkImport";
 import Settings from "./pages/dashboard/Settings";
 import LeadInbox from "./pages/dashboard/LeadInbox";
 import BusinessDetail from "./pages/BusinessDetail";
+import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/business/:slug" element={<BusinessDetail />} />
+            <Route path="/pricing" element={<Pricing />} />
             <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />}>
             <Route index element={<Overview />} />
