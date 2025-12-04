@@ -343,6 +343,7 @@ const BusinessDetail = () => {
         open={leadModalOpen}
         onOpenChange={setLeadModalOpen}
         businessName={business.name}
+        businessId={business.slug}
         services={business.services}
       />
     </div>

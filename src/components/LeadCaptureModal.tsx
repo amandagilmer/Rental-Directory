@@ -8,11 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle2 } from "lucide-react";
 import { Service } from "@/data/businesses";
+import { supabase } from "@/integrations/supabase/client";
 
 interface LeadCaptureModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   businessName: string;
+  businessId: string;
   services?: Service[];
 }
 
@@ -32,9 +34,10 @@ interface FormErrors {
   phone?: string;
 }
 
-export const LeadCaptureModal = ({ open, onOpenChange, businessName, services }: LeadCaptureModalProps) => {
+export const LeadCaptureModal = ({ open, onOpenChange, businessName, businessId, services }: LeadCaptureModalProps) => {
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
@@ -69,19 +72,43 @@ export const LeadCaptureModal = ({ open, onOpenChange, businessName, services }:
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) return;
-    
-    // In a real app, this would send the data to an API
-    console.log("Lead submitted:", { businessName, ...formData });
-    
-    setSubmitted(true);
-    toast({
-      title: "Request Submitted!",
-      description: `${businessName} will contact you soon.`,
-    });
+
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.from('leads').insert({
+        business_id: businessId,
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        service_type: formData.serviceType || null,
+        date_needed: formData.dateNeeded ? new Date(formData.dateNeeded).toISOString() : null,
+        location: formData.location.trim() || null,
+        message: formData.message.trim() || null,
+        status: 'new',
+      });
+
+      if (error) throw error;
+
+      setSubmitted(true);
+      toast({
+        title: "Request Submitted!",
+        description: `${businessName} will contact you soon.`,
+      });
+    } catch (error) {
+      console.error("Error submitting lead:", error);
+      toast({
+        title: "Error",
+        description: "Failed to submit your request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleClose = () => {
@@ -221,8 +248,8 @@ export const LeadCaptureModal = ({ open, onOpenChange, businessName, services }:
             />
           </div>
 
-          <Button type="submit" className="w-full">
-            Submit Request
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Submitting..." : "Submit Request"}
           </Button>
         </form>
       </DialogContent>

@@ -13,6 +13,7 @@ import Analytics from "./pages/dashboard/Analytics";
 import GmbSettings from "./pages/dashboard/GmbSettings";
 import BulkImport from "./pages/dashboard/BulkImport";
 import Settings from "./pages/dashboard/Settings";
+import LeadInbox from "./pages/dashboard/LeadInbox";
 import BusinessDetail from "./pages/BusinessDetail";
 import NotFound from "./pages/NotFound";
 
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />}>
             <Route index element={<Overview />} />
             <Route path="listing" element={<MyListing />} />
+            <Route path="leads" element={<LeadInbox />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="gmb" element={<GmbSettings />} />
             <Route path="bulk-import" element={<BulkImport />} />

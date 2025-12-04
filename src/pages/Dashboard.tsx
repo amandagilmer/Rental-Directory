@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { Home, LayoutDashboard, FileText, BarChart3, Settings, LogOut, Upload, Link as LinkIcon } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Home, LayoutDashboard, FileText, BarChart3, Settings, LogOut, Upload, Link as LinkIcon, Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navigation = [
   { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
   { name: 'My Listing', href: '/dashboard/listing', icon: FileText },
+  { name: 'Leads', href: '/dashboard/leads', icon: Inbox },
   { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
   { name: 'GMB Integration', href: '/dashboard/gmb', icon: LinkIcon },
   { name: 'Bulk Import', href: '/dashboard/bulk-import', icon: Upload },
@@ -19,12 +21,54 @@ export default function Dashboard() {
   const location = useLocation();
   const navigate = useNavigate();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [newLeadsCount, setNewLeadsCount] = useState(0);
 
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchNewLeadsCount = async () => {
+      try {
+        const { count, error } = await supabase
+          .from('leads')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'new');
+
+        if (!error && count !== null) {
+          setNewLeadsCount(count);
+        }
+      } catch (error) {
+        console.error('Error fetching leads count:', error);
+      }
+    };
+
+    fetchNewLeadsCount();
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel('leads-count')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'leads',
+        },
+        () => {
+          fetchNewLeadsCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   const handleSignOut = async () => {
     setLoggingOut(true);
@@ -52,19 +96,33 @@ export default function Dashboard() {
           <nav className="px-3 space-y-1">
             {navigation.map((item) => {
               const isActive = location.pathname === item.href;
+              const showBadge = item.name === 'Leads' && newLeadsCount > 0;
+              
               return (
                 <Link
                   key={item.name}
                   to={item.href}
                   className={cn(
-                    'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                    'flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium transition-colors',
                     isActive
                       ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                   )}
                 >
-                  <item.icon className="h-5 w-5" />
-                  {item.name}
+                  <span className="flex items-center gap-3">
+                    <item.icon className="h-5 w-5" />
+                    {item.name}
+                  </span>
+                  {showBadge && (
+                    <span className={cn(
+                      'px-2 py-0.5 text-xs font-semibold rounded-full',
+                      isActive 
+                        ? 'bg-primary-foreground text-primary' 
+                        : 'bg-primary text-primary-foreground'
+                    )}>
+                      {newLeadsCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}
