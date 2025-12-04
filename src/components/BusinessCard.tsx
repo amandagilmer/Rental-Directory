@@ -1,9 +1,11 @@
+import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, Phone, Star } from "lucide-react";
 
 interface BusinessCardProps {
+  slug: string;
   name: string;
   category: string;
   description: string;
@@ -14,6 +16,7 @@ interface BusinessCardProps {
 }
 
 export const BusinessCard = ({
+  slug,
   name,
   category,
   description,
@@ -24,20 +27,24 @@ export const BusinessCard = ({
 }: BusinessCardProps) => {
   return (
     <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 bg-gradient-to-b from-card to-card/95">
-      <div className="aspect-video overflow-hidden">
-        <img
-          src={image}
-          alt={name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-      </div>
+      <Link to={`/business/${slug}`}>
+        <div className="aspect-video overflow-hidden">
+          <img
+            src={image}
+            alt={name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        </div>
+      </Link>
       
       <div className="p-6">
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h3 className="text-xl font-bold text-foreground mb-1 group-hover:text-primary transition-colors">
-              {name}
-            </h3>
+            <Link to={`/business/${slug}`}>
+              <h3 className="text-xl font-bold text-foreground mb-1 group-hover:text-primary transition-colors cursor-pointer">
+                {name}
+              </h3>
+            </Link>
             <Badge variant="secondary" className="text-xs">
               {category}
             </Badge>
@@ -63,9 +70,11 @@ export const BusinessCard = ({
           </div>
         </div>
         
-        <Button className="w-full bg-primary hover:bg-primary/90">
-          View Details
-        </Button>
+        <Link to={`/business/${slug}`}>
+          <Button className="w-full bg-primary hover:bg-primary/90">
+            View Details
+          </Button>
+        </Link>
       </div>
     </Card>
   );
