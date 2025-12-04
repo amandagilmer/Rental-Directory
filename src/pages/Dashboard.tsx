@@ -3,7 +3,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Home, LayoutDashboard, FileText, BarChart3, Settings, LogOut, Upload, Link as LinkIcon, Inbox } from 'lucide-react';
+import { Home, LayoutDashboard, FileText, BarChart3, Settings, LogOut, Upload, Link as LinkIcon, Inbox, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navigation = [
@@ -126,6 +126,18 @@ export default function Dashboard() {
                 </Link>
               );
             })}
+            
+            <div className="pt-4 pb-2">
+              <Link to="/pricing">
+                <Button
+                  variant="outline"
+                  className="w-full gap-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Upgrade Plan
+                </Button>
+              </Link>
+            </div>
             
             <Link
               to="/"

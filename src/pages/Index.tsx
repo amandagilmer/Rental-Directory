@@ -42,7 +42,12 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="absolute top-4 right-4 z-20">
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-3">
+        <Link to="/pricing">
+          <Button variant="ghost" className="bg-background/80 backdrop-blur-sm">
+            Pricing
+          </Button>
+        </Link>
         <Link to="/auth">
           <Button variant="outline" className="gap-2 bg-background/80 backdrop-blur-sm">
             <LogIn className="h-4 w-4" />
