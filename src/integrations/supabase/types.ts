@@ -145,6 +145,51 @@ export type Database = {
         }
         Relationships: []
       }
+      leads: {
+        Row: {
+          business_id: string
+          created_at: string
+          date_needed: string | null
+          email: string
+          id: string
+          location: string | null
+          message: string | null
+          name: string
+          phone: string
+          service_type: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          date_needed?: string | null
+          email: string
+          id?: string
+          location?: string | null
+          message?: string | null
+          name: string
+          phone: string
+          service_type?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          date_needed?: string | null
+          email?: string
+          id?: string
+          location?: string | null
+          message?: string | null
+          name?: string
+          phone?: string
+          service_type?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       listing_analytics: {
         Row: {
           created_at: string | null
