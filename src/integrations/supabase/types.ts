@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_hours: {
+        Row: {
+          close_time: string | null
+          created_at: string
+          day_of_week: number
+          id: string
+          is_closed: boolean | null
+          listing_id: string
+          open_time: string | null
+          updated_at: string
+        }
+        Insert: {
+          close_time?: string | null
+          created_at?: string
+          day_of_week: number
+          id?: string
+          is_closed?: boolean | null
+          listing_id: string
+          open_time?: string | null
+          updated_at?: string
+        }
+        Update: {
+          close_time?: string | null
+          created_at?: string
+          day_of_week?: number
+          id?: string
+          is_closed?: boolean | null
+          listing_id?: string
+          open_time?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_hours_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "business_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_listings: {
         Row: {
           address: string | null
@@ -22,13 +63,18 @@ export type Database = {
           created_at: string | null
           description: string | null
           email: string | null
+          facebook_url: string | null
           id: string
           image_url: string | null
+          instagram_url: string | null
           is_published: boolean | null
+          linkedin_url: string | null
           phone: string | null
+          twitter_url: string | null
           updated_at: string | null
           user_id: string
           website: string | null
+          youtube_url: string | null
         }
         Insert: {
           address?: string | null
@@ -37,13 +83,18 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           email?: string | null
+          facebook_url?: string | null
           id?: string
           image_url?: string | null
+          instagram_url?: string | null
           is_published?: boolean | null
+          linkedin_url?: string | null
           phone?: string | null
+          twitter_url?: string | null
           updated_at?: string | null
           user_id: string
           website?: string | null
+          youtube_url?: string | null
         }
         Update: {
           address?: string | null
@@ -52,13 +103,18 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           email?: string | null
+          facebook_url?: string | null
           id?: string
           image_url?: string | null
+          instagram_url?: string | null
           is_published?: boolean | null
+          linkedin_url?: string | null
           phone?: string | null
+          twitter_url?: string | null
           updated_at?: string | null
           user_id?: string
           website?: string | null
+          youtube_url?: string | null
         }
         Relationships: [
           {
@@ -104,6 +160,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "business_photos_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "business_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_services: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number | null
+          id: string
+          is_available: boolean | null
+          listing_id: string
+          price: number | null
+          price_unit: string | null
+          service_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_available?: boolean | null
+          listing_id: string
+          price?: number | null
+          price_unit?: string | null
+          service_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_available?: boolean | null
+          listing_id?: string
+          price?: number | null
+          price_unit?: string | null
+          service_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_services_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "business_listings"
@@ -292,6 +395,44 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      service_areas: {
+        Row: {
+          area_type: string
+          created_at: string
+          id: string
+          listing_id: string
+          radius_miles: number | null
+          updated_at: string
+          zip_codes: string[] | null
+        }
+        Insert: {
+          area_type: string
+          created_at?: string
+          id?: string
+          listing_id: string
+          radius_miles?: number | null
+          updated_at?: string
+          zip_codes?: string[] | null
+        }
+        Update: {
+          area_type?: string
+          created_at?: string
+          id?: string
+          listing_id?: string
+          radius_miles?: number | null
+          updated_at?: string
+          zip_codes?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_areas_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "business_listings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

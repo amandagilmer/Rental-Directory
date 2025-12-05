@@ -14,6 +14,10 @@ import { z } from 'zod';
 import { ExternalLink, Star, Eye, Search, MessageSquare, TrendingUp, Edit, MapPin, Phone, Mail, Globe } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import PhotoUpload from '@/components/dashboard/PhotoUpload';
+import BusinessHoursEditor from '@/components/dashboard/BusinessHoursEditor';
+import ServicesEditor from '@/components/dashboard/ServicesEditor';
+import ServiceAreaEditor from '@/components/dashboard/ServiceAreaEditor';
+import SocialLinksEditor from '@/components/dashboard/SocialLinksEditor';
 
 const categories = [
   'Car Rental',
@@ -579,6 +583,39 @@ export default function MyListing() {
           listingId={listing.id}
           photos={photos}
           onPhotosChange={() => fetchPhotos(listing.id)}
+        />
+      )}
+
+      {/* Business Hours Section */}
+      {listing && activeTab === 'edit' && (
+        <BusinessHoursEditor listingId={listing.id} />
+      )}
+
+      {/* Services & Pricing Section */}
+      {listing && activeTab === 'edit' && (
+        <ServicesEditor listingId={listing.id} />
+      )}
+
+      {/* Service Area Section */}
+      {listing && activeTab === 'edit' && (
+        <ServiceAreaEditor listingId={listing.id} />
+      )}
+
+      {/* Social Links Section */}
+      {listing && activeTab === 'edit' && (
+        <SocialLinksEditor
+          listingId={listing.id}
+          initialData={{
+            facebook_url: listing.facebook_url,
+            instagram_url: listing.instagram_url,
+            twitter_url: listing.twitter_url,
+            linkedin_url: listing.linkedin_url,
+            youtube_url: listing.youtube_url
+          }}
+          onSave={() => {
+            // Refresh listing data
+            window.location.reload();
+          }}
         />
       )}
 
