@@ -70,6 +70,47 @@ export type Database = {
           },
         ]
       }
+      business_photos: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          file_name: string
+          file_size: number | null
+          id: string
+          is_primary: boolean | null
+          listing_id: string
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          file_name: string
+          file_size?: number | null
+          id?: string
+          is_primary?: boolean | null
+          listing_id: string
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          file_name?: string
+          file_size?: number | null
+          id?: string
+          is_primary?: boolean | null
+          listing_id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_photos_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "business_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gmb_connections: {
         Row: {
           account_email: string
