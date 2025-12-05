@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Home, LayoutDashboard, FileText, BarChart3, Settings, LogOut, Upload, Link as LinkIcon, Inbox, Sparkles } from 'lucide-react';
+import NotificationBell from '@/components/dashboard/NotificationBell';
 import { cn } from '@/lib/utils';
 
 const navigation = [
@@ -89,7 +90,10 @@ export default function Dashboard() {
         {/* Sidebar */}
         <aside className="w-64 min-h-screen bg-card border-r border-border">
           <div className="p-6">
-            <h2 className="text-2xl font-bold text-foreground">Dashboard</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-foreground">Dashboard</h2>
+              <NotificationBell />
+            </div>
             <p className="text-sm text-muted-foreground mt-1">{user.email}</p>
           </div>
           
