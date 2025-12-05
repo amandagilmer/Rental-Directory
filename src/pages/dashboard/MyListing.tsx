@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { ExternalLink, Star, Eye, Search, MessageSquare, TrendingUp, Edit, MapPin, Phone, Mail, Globe } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import PhotoUpload from '@/components/dashboard/PhotoUpload';
 
 const categories = [
   'Car Rental',
@@ -49,6 +50,14 @@ interface Analytics {
   searchImpressions: number;
 }
 
+interface Photo {
+  id: string;
+  storage_path: string;
+  file_name: string;
+  is_primary: boolean;
+  display_order: number;
+}
+
 export default function MyListing() {
   const { user } = useAuth();
   const [listing, setListing] = useState<any>(null);
@@ -58,6 +67,7 @@ export default function MyListing() {
   const [gmbStats, setGmbStats] = useState<GmbStats | null>(null);
   const [analytics, setAnalytics] = useState<Analytics>({ views: 0, searchImpressions: 0 });
   const [hasGmbConnection, setHasGmbConnection] = useState(false);
+  const [photos, setPhotos] = useState<Photo[]>([]);
   
   const [formData, setFormData] = useState({
     business_name: '',
@@ -69,6 +79,18 @@ export default function MyListing() {
     website: '',
     is_published: false
   });
+
+  const fetchPhotos = useCallback(async (listingId: string) => {
+    const { data } = await supabase
+      .from('business_photos')
+      .select('*')
+      .eq('listing_id', listingId)
+      .order('display_order', { ascending: true });
+    
+    if (data) {
+      setPhotos(data as Photo[]);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -107,6 +129,9 @@ export default function MyListing() {
           const totalImpressions = analyticsData.reduce((sum, a) => sum + (a.search_impressions || 0), 0);
           setAnalytics({ views: totalViews, searchImpressions: totalImpressions });
         }
+
+        // Fetch photos for this listing
+        fetchPhotos(listingData.id);
       }
 
       // Check GMB connection and fetch stats
@@ -137,7 +162,7 @@ export default function MyListing() {
     };
 
     fetchData();
-  }, [user]);
+  }, [user, fetchPhotos]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -410,6 +435,30 @@ export default function MyListing() {
               )}
             </div>
 
+            {/* Photo Gallery Preview */}
+            {photos.length > 0 && (
+              <div>
+                <h3 className="font-semibold mb-3">Photos</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {photos.slice(0, 4).map((photo) => {
+                    const { data } = supabase.storage.from('business-photos').getPublicUrl(photo.storage_path);
+                    return (
+                      <div key={photo.id} className="aspect-square rounded-lg overflow-hidden bg-muted">
+                        <img
+                          src={data.publicUrl}
+                          alt={photo.file_name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                {photos.length > 4 && (
+                  <p className="text-sm text-muted-foreground mt-2">+{photos.length - 4} more photos</p>
+                )}
+              </div>
+            )}
+
             <div className="pt-4 border-t border-border">
               <p className="text-sm text-muted-foreground">
                 This is how your listing appears to customers. Click "Edit Listing" to make changes.
@@ -524,6 +573,15 @@ export default function MyListing() {
         </Card>
       )}
 
+      {/* Photo Upload Section */}
+      {listing && activeTab === 'edit' && (
+        <PhotoUpload
+          listingId={listing.id}
+          photos={photos}
+          onPhotosChange={() => fetchPhotos(listing.id)}
+        />
+      )}
+
       {/* Tips Card */}
       {listing && (
         <Card>
@@ -553,6 +611,12 @@ export default function MyListing() {
                   Add your website to drive more traffic
                 </li>
               )}
+              {photos.length === 0 && (
+                <li className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-yellow-500" />
+                  Add photos to showcase your inventory and attract more customers
+                </li>
+              )}
               {!hasGmbConnection && (
                 <li className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-blue-500" />
@@ -568,7 +632,7 @@ export default function MyListing() {
                   Your listing is not published. Toggle "Publish listing" to make it visible
                 </li>
               )}
-              {formData.description && formData.phone && formData.website && hasGmbConnection && formData.is_published && (
+              {formData.description && formData.phone && formData.website && hasGmbConnection && formData.is_published && photos.length > 0 && (
                 <li className="flex items-center gap-2 text-green-600">
                   <span className="h-2 w-2 rounded-full bg-green-500" />
                   Great job! Your listing is fully optimized
