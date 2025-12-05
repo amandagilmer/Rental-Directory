@@ -6,7 +6,8 @@ import { Card } from "@/components/ui/card";
 import { PhotoGallery } from "@/components/PhotoGallery";
 import { LeadCaptureModal } from "@/components/LeadCaptureModal";
 import { Footer } from "@/components/Footer";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Star,
   MapPin,
@@ -23,12 +24,117 @@ import {
   Youtube,
 } from "lucide-react";
 
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+interface DbListing {
+  id: string;
+  business_name: string;
+  description: string | null;
+  category: string;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  image_url: string | null;
+  facebook_url: string | null;
+  instagram_url: string | null;
+  twitter_url: string | null;
+  linkedin_url: string | null;
+  youtube_url: string | null;
+}
+
+interface DbHours {
+  day_of_week: number;
+  is_closed: boolean;
+  open_time: string | null;
+  close_time: string | null;
+}
+
+interface DbService {
+  id: string;
+  service_name: string;
+  description: string | null;
+  price: number | null;
+  price_unit: string;
+  is_available: boolean;
+}
+
+interface DbServiceArea {
+  area_type: string;
+  zip_codes: string[] | null;
+  radius_miles: number | null;
+}
+
+interface DbPhoto {
+  id: string;
+  storage_path: string;
+  file_name: string;
+  is_primary: boolean;
+}
+
 const BusinessDetail = () => {
   const { slug } = useParams<{ slug: string }>();
-  const business = getBusinessBySlug(slug || "");
   const [leadModalOpen, setLeadModalOpen] = useState(false);
+  const [dbListing, setDbListing] = useState<DbListing | null>(null);
+  const [dbHours, setDbHours] = useState<DbHours[]>([]);
+  const [dbServices, setDbServices] = useState<DbService[]>([]);
+  const [dbServiceArea, setDbServiceArea] = useState<DbServiceArea | null>(null);
+  const [dbPhotos, setDbPhotos] = useState<DbPhoto[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  if (!business) {
+  // Try to get mock business first
+  const mockBusiness = getBusinessBySlug(slug || "");
+
+  useEffect(() => {
+    const fetchDbListing = async () => {
+      if (!slug) return;
+
+      // Try to find by slug (lowercase business name with hyphens)
+      const { data: listings } = await supabase
+        .from('business_listings')
+        .select('*')
+        .eq('is_published', true);
+
+      const listing = listings?.find(l => 
+        l.business_name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') === slug
+      );
+
+      if (listing) {
+        setDbListing(listing as DbListing);
+
+        // Fetch related data in parallel
+        const [hoursRes, servicesRes, areaRes, photosRes] = await Promise.all([
+          supabase.from('business_hours').select('*').eq('listing_id', listing.id).order('day_of_week'),
+          supabase.from('business_services').select('*').eq('listing_id', listing.id).order('display_order'),
+          supabase.from('service_areas').select('*').eq('listing_id', listing.id).maybeSingle(),
+          supabase.from('business_photos').select('*').eq('listing_id', listing.id).order('display_order')
+        ]);
+
+        if (hoursRes.data) setDbHours(hoursRes.data as DbHours[]);
+        if (servicesRes.data) setDbServices(servicesRes.data as DbService[]);
+        if (areaRes.data) setDbServiceArea(areaRes.data as DbServiceArea);
+        if (photosRes.data) setDbPhotos(photosRes.data as DbPhoto[]);
+      }
+
+      setLoading(false);
+    };
+
+    fetchDbListing();
+  }, [slug]);
+
+  // Use DB data if available, otherwise use mock data
+  const isDbListing = !!dbListing;
+  const business = mockBusiness;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!business && !dbListing) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -43,6 +149,74 @@ const BusinessDetail = () => {
       </div>
     );
   }
+
+  // Merge data: prefer DB data when available
+  const displayData = {
+    name: dbListing?.business_name || business?.name || '',
+    description: dbListing?.description || business?.fullDescription || business?.description || '',
+    category: dbListing?.category || business?.category || '',
+    address: dbListing?.address || business?.address || '',
+    phone: dbListing?.phone || business?.phone || '',
+    email: dbListing?.email || business?.email || '',
+    website: dbListing?.website || business?.website || '',
+    image: dbListing?.image_url || business?.image || '/placeholder.svg',
+    verified: business?.verified || false,
+    rating: business?.rating || 0,
+    socialLinks: {
+      facebook: dbListing?.facebook_url || business?.socialLinks?.facebook,
+      instagram: dbListing?.instagram_url || business?.socialLinks?.instagram,
+      twitter: dbListing?.twitter_url || business?.socialLinks?.twitter,
+      linkedin: dbListing?.linkedin_url || business?.socialLinks?.linkedin,
+      youtube: dbListing?.youtube_url || business?.socialLinks?.youtube,
+    }
+  };
+
+  // Format hours for display
+  const formatTime = (time: string | null) => {
+    if (!time) return '';
+    const [hours, minutes] = time.split(':');
+    const h = parseInt(hours);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const hour12 = h % 12 || 12;
+    return `${hour12}:${minutes} ${ampm}`;
+  };
+
+  const displayHours = dbHours.length > 0
+    ? dbHours.map(h => ({
+        day: DAYS[h.day_of_week],
+        open: h.open_time ? formatTime(h.open_time) : '',
+        close: h.close_time ? formatTime(h.close_time) : '',
+        closed: h.is_closed
+      }))
+    : business?.hours || [];
+
+  // Format services for display
+  const displayServices = dbServices.length > 0
+    ? dbServices.filter(s => s.is_available).map(s => ({
+        name: s.service_name,
+        description: s.description || undefined,
+        price: s.price_unit === 'contact for pricing' || s.price === null
+          ? 'Contact for pricing'
+          : `$${s.price.toFixed(2)} ${s.price_unit}`
+      }))
+    : business?.services || [];
+
+  // Format service areas
+  const displayServiceAreas = dbServiceArea
+    ? dbServiceArea.area_type === 'zip_code' && dbServiceArea.zip_codes
+      ? dbServiceArea.zip_codes
+      : [`Within ${dbServiceArea.radius_miles} miles`]
+    : business?.serviceArea || [];
+
+  // Get photo URLs
+  const getPhotoUrl = (photo: DbPhoto) => {
+    const { data } = supabase.storage.from('business-photos').getPublicUrl(photo.storage_path);
+    return data.publicUrl;
+  };
+
+  const displayPhotos = dbPhotos.length > 0
+    ? dbPhotos.map(p => getPhotoUrl(p))
+    : business?.photos || [];
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }).map((_, i) => (
@@ -70,8 +244,8 @@ const BusinessDetail = () => {
       {/* Cover Photo Banner */}
       <div className="relative h-64 md:h-80 overflow-hidden">
         <img
-          src={business.image}
-          alt={business.name}
+          src={displayData.image}
+          alt={displayData.name}
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent" />
@@ -82,28 +256,30 @@ const BusinessDetail = () => {
         <div className="flex flex-col md:flex-row md:items-end gap-4 mb-8">
           <div className="w-24 h-24 md:w-32 md:h-32 rounded-xl overflow-hidden border-4 border-background shadow-lg bg-card">
             <img
-              src={business.image}
-              alt={business.name}
+              src={displayData.image}
+              alt={displayData.name}
               className="w-full h-full object-cover"
             />
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
               <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-                {business.name}
+                {displayData.name}
               </h1>
-              {business.verified && (
+              {displayData.verified && (
                 <CheckCircle2 className="h-6 w-6 text-primary" />
               )}
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-1">
-                {renderStars(business.rating)}
-                <span className="ml-1 text-foreground font-semibold">
-                  {business.rating}
-                </span>
-              </div>
-              <Badge variant="secondary">{business.category}</Badge>
+              {displayData.rating > 0 && (
+                <div className="flex items-center gap-1">
+                  {renderStars(displayData.rating)}
+                  <span className="ml-1 text-foreground font-semibold">
+                    {displayData.rating}
+                  </span>
+                </div>
+              )}
+              <Badge variant="secondary">{displayData.category}</Badge>
             </div>
           </div>
           <Link to="/" className="hidden md:block">
@@ -119,30 +295,32 @@ const BusinessDetail = () => {
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-8">
             {/* Description */}
-            <Card className="p-6 bg-card">
-              <h2 className="text-xl font-bold text-foreground mb-4">About</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                {business.fullDescription || business.description}
-              </p>
-            </Card>
+            {displayData.description && (
+              <Card className="p-6 bg-card">
+                <h2 className="text-xl font-bold text-foreground mb-4">About</h2>
+                <p className="text-muted-foreground leading-relaxed">
+                  {displayData.description}
+                </p>
+              </Card>
+            )}
 
             {/* Photo Gallery */}
-            {business.photos && business.photos.length > 0 && (
+            {displayPhotos.length > 0 && (
               <Card className="p-6 bg-card">
                 <h2 className="text-xl font-bold text-foreground mb-4">Photos</h2>
-                <PhotoGallery photos={business.photos} businessName={business.name} />
+                <PhotoGallery photos={displayPhotos} businessName={displayData.name} />
               </Card>
             )}
 
             {/* Hours of Operation */}
-            {business.hours && (
+            {displayHours.length > 0 && (
               <Card className="p-6 bg-card">
                 <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
                   <Clock className="h-5 w-5 text-primary" />
                   Hours of Operation
                 </h2>
                 <div className="space-y-2">
-                  {business.hours.map((hour, index) => (
+                  {displayHours.map((hour, index) => (
                     <div
                       key={index}
                       className="flex justify-between py-2 border-b border-border last:border-0"
@@ -158,14 +336,14 @@ const BusinessDetail = () => {
             )}
 
             {/* Service Area */}
-            {business.serviceArea && business.serviceArea.length > 0 && (
+            {displayServiceAreas.length > 0 && (
               <Card className="p-6 bg-card">
                 <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
                   <MapPin className="h-5 w-5 text-primary" />
                   Service Areas
                 </h2>
                 <div className="flex flex-wrap gap-2">
-                  {business.serviceArea.map((area, index) => (
+                  {displayServiceAreas.map((area, index) => (
                     <Badge key={index} variant="outline">
                       {area}
                     </Badge>
@@ -175,13 +353,13 @@ const BusinessDetail = () => {
             )}
 
             {/* Services */}
-            {business.services && business.services.length > 0 && (
+            {displayServices.length > 0 && (
               <Card className="p-6 bg-card">
                 <h2 className="text-xl font-bold text-foreground mb-4">
                   Services & Pricing
                 </h2>
                 <div className="space-y-4">
-                  {business.services.map((service, index) => (
+                  {displayServices.map((service, index) => (
                     <div
                       key={index}
                       className="flex justify-between items-start py-3 border-b border-border last:border-0"
@@ -208,7 +386,7 @@ const BusinessDetail = () => {
             )}
 
             {/* Reviews */}
-            {business.reviews && business.reviews.length > 0 && (
+            {business?.reviews && business.reviews.length > 0 && (
               <Card className="p-6 bg-card">
                 <h2 className="text-xl font-bold text-foreground mb-4">
                   Customer Reviews
@@ -256,27 +434,29 @@ const BusinessDetail = () => {
                   Contact Information
                 </h2>
                 <div className="space-y-4">
-                  <a
-                    href={`tel:${business.phone}`}
-                    className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    <Phone className="h-5 w-5 text-primary" />
-                    <span>{business.phone}</span>
-                  </a>
-
-                  {business.email && (
+                  {displayData.phone && (
                     <a
-                      href={`mailto:${business.email}`}
+                      href={`tel:${displayData.phone}`}
                       className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors"
                     >
-                      <Mail className="h-5 w-5 text-primary" />
-                      <span className="truncate">{business.email}</span>
+                      <Phone className="h-5 w-5 text-primary" />
+                      <span>{displayData.phone}</span>
                     </a>
                   )}
 
-                  {business.website && (
+                  {displayData.email && (
                     <a
-                      href={business.website}
+                      href={`mailto:${displayData.email}`}
+                      className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      <Mail className="h-5 w-5 text-primary" />
+                      <span className="truncate">{displayData.email}</span>
+                    </a>
+                  )}
+
+                  {displayData.website && (
+                    <a
+                      href={displayData.website}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors"
@@ -286,20 +466,22 @@ const BusinessDetail = () => {
                     </a>
                   )}
 
-                  <div className="flex items-start gap-3 text-muted-foreground">
-                    <MapPin className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                    <span>{business.address}</span>
-                  </div>
+                  {displayData.address && (
+                    <div className="flex items-start gap-3 text-muted-foreground">
+                      <MapPin className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <span>{displayData.address}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Social Links */}
-                {business.socialLinks && Object.keys(business.socialLinks).length > 0 && (
+                {Object.values(displayData.socialLinks).some(Boolean) && (
                   <div className="mt-6 pt-4 border-t border-border">
                     <h3 className="text-sm font-semibold text-foreground mb-3">
                       Follow Us
                     </h3>
                     <div className="flex gap-2">
-                      {Object.entries(business.socialLinks).map(([platform, url]) => {
+                      {Object.entries(displayData.socialLinks).map(([platform, url]) => {
                         const Icon = socialIcons[platform as keyof typeof socialIcons];
                         if (!Icon || !url) return null;
                         return (
@@ -345,9 +527,9 @@ const BusinessDetail = () => {
       <LeadCaptureModal
         open={leadModalOpen}
         onOpenChange={setLeadModalOpen}
-        businessName={business.name}
-        businessId={business.slug}
-        services={business.services}
+        businessName={displayData.name}
+        businessId={dbListing?.id || business?.slug || ''}
+        services={displayServices}
       />
     </div>
   );
