@@ -17,6 +17,13 @@ import LeadInbox from "./pages/dashboard/LeadInbox";
 import BusinessDetail from "./pages/BusinessDetail";
 import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminOverview from "./pages/admin/AdminOverview";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminListings from "./pages/admin/AdminListings";
+import AdminLeads from "./pages/admin/AdminLeads";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import AdminSupport from "./pages/admin/AdminSupport";
 
 const queryClient = new QueryClient();
 
@@ -32,15 +39,23 @@ const App = () => (
             <Route path="/business/:slug" element={<BusinessDetail />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/auth" element={<Auth />} />
-          <Route path="/dashboard" element={<Dashboard />}>
-            <Route index element={<Overview />} />
-            <Route path="listing" element={<MyListing />} />
-            <Route path="leads" element={<LeadInbox />} />
-            <Route path="analytics" element={<Analytics />} />
-            <Route path="gmb" element={<GmbSettings />} />
-            <Route path="bulk-import" element={<BulkImport />} />
-            <Route path="settings" element={<Settings />} />
-          </Route>
+            <Route path="/dashboard" element={<Dashboard />}>
+              <Route index element={<Overview />} />
+              <Route path="listing" element={<MyListing />} />
+              <Route path="leads" element={<LeadInbox />} />
+              <Route path="analytics" element={<Analytics />} />
+              <Route path="gmb" element={<GmbSettings />} />
+              <Route path="bulk-import" element={<BulkImport />} />
+              <Route path="settings" element={<Settings />} />
+            </Route>
+            <Route path="/admin" element={<AdminDashboard />}>
+              <Route index element={<AdminOverview />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="listings" element={<AdminListings />} />
+              <Route path="leads" element={<AdminLeads />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
+              <Route path="support" element={<AdminSupport />} />
+            </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
