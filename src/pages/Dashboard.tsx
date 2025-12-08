@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAdminCheck } from '@/hooks/useAdminCheck';
 import { supabase } from '@/integrations/supabase/client';
-import { Home, LayoutDashboard, FileText, BarChart3, Settings, LogOut, Upload, Link as LinkIcon, Inbox, Sparkles } from 'lucide-react';
+import { Home, LayoutDashboard, FileText, BarChart3, Settings, LogOut, Upload, Link as LinkIcon, Inbox, Sparkles, Shield } from 'lucide-react';
 import NotificationBell from '@/components/dashboard/NotificationBell';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +20,7 @@ const navigation = [
 
 export default function Dashboard() {
   const { user, signOut, loading } = useAuth();
+  const { isAdmin } = useAdminCheck();
   const location = useLocation();
   const navigate = useNavigate();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -142,6 +144,16 @@ export default function Dashboard() {
                 </Button>
               </Link>
             </div>
+            
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+              >
+                <Shield className="h-5 w-5" />
+                Admin Dashboard
+              </Link>
+            )}
             
             <Link
               to="/"
