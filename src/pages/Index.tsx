@@ -64,6 +64,8 @@ const Index = () => {
         radius={radius}
         isMapView={isMapView}
         onToggleMapView={() => setIsMapView(!isMapView)}
+        activeCategory={activeCategory}
+        onCategoryChange={setActiveCategory}
       />
       <CategoryFilter 
         activeCategory={activeCategory} 
