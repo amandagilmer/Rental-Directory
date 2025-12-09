@@ -31,7 +31,13 @@ export const LocationSearch = ({ onLocationChange, onRadiusChange, radius }: Loc
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Sample location suggestions (in a real app, this would use a geocoding API)
+  // TODO: Replace with Google Places Autocomplete API for production
+  // To integrate Google Places API:
+  // 1. Add VITE_GOOGLE_PLACES_API_KEY to your .env file
+  // 2. Load the Google Maps JavaScript API with places library
+  // 3. Replace sampleLocations with google.maps.places.AutocompleteService
+  // 4. Use PlacesService.getDetails() to get lat/lng from place_id
+  // Documentation: https://developers.google.com/maps/documentation/javascript/places-autocomplete
   const sampleLocations = [
     "Downtown, 40.7128, -74.0060",
     "Midtown, 40.7549, -73.9840",

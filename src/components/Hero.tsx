@@ -2,6 +2,14 @@ import { Search, Map, List } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { LocationSearch } from "@/components/LocationSearch";
+import { categories } from "@/components/CategoryFilter";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import heroImage from "@/assets/hero-rental.jpg";
 
 interface HeroProps {
@@ -11,6 +19,8 @@ interface HeroProps {
   radius: number;
   isMapView: boolean;
   onToggleMapView: () => void;
+  activeCategory: string;
+  onCategoryChange: (category: string) => void;
 }
 
 export const Hero = ({ 
@@ -19,7 +29,9 @@ export const Hero = ({
   onRadiusChange, 
   radius,
   isMapView,
-  onToggleMapView
+  onToggleMapView,
+  activeCategory,
+  onCategoryChange
 }: HeroProps) => {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -46,7 +58,7 @@ export const Hero = ({
         </p>
         
         <div className="space-y-4 max-w-3xl mx-auto">
-          <form onSubmit={handleSubmit} className="flex gap-2">
+          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
               <Input
@@ -56,6 +68,18 @@ export const Hero = ({
                 className="pl-12 h-14 text-lg bg-white border-0 shadow-xl"
               />
             </div>
+            <Select value={activeCategory} onValueChange={onCategoryChange}>
+              <SelectTrigger className="w-full sm:w-[180px] h-14 bg-white border-0 shadow-xl">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border">
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button type="submit" size="lg" className="h-14 px-8 bg-accent hover:bg-accent/90 text-white">
               Search
             </Button>
