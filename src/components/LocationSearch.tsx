@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { MapPin, Locate, ChevronDown } from "lucide-react";
+import { MapPin, Locate } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,11 +9,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
 
 interface LocationSearchProps {
   onLocationChange: (location: { lat: number; lng: number; address: string } | null) => void;
   onRadiusChange: (radius: number) => void;
   radius: number;
+}
+
+interface PlacePrediction {
+  place_id: string;
+  description: string;
 }
 
 const radiusOptions = [
@@ -27,51 +33,83 @@ const radiusOptions = [
 export const LocationSearch = ({ onLocationChange, onRadiusChange, radius }: LocationSearchProps) => {
   const [locationInput, setLocationInput] = useState("");
   const [isLocating, setIsLocating] = useState(false);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<PlacePrediction[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<NodeJS.Timeout>();
 
-  // TODO: Replace with Google Places Autocomplete API for production
-  // To integrate Google Places API:
-  // 1. Add VITE_GOOGLE_PLACES_API_KEY to your .env file
-  // 2. Load the Google Maps JavaScript API with places library
-  // 3. Replace sampleLocations with google.maps.places.AutocompleteService
-  // 4. Use PlacesService.getDetails() to get lat/lng from place_id
-  // Documentation: https://developers.google.com/maps/documentation/javascript/places-autocomplete
-  const sampleLocations = [
-    "Downtown, 40.7128, -74.0060",
-    "Midtown, 40.7549, -73.9840",
-    "West Side, 40.7831, -73.9712",
-    "East District, 40.7614, -73.9776",
-    "Central Park Area, 40.7829, -73.9654",
-    "Northside, 40.8448, -73.8648",
-    "Airport Area, 40.6413, -73.7781",
-  ];
-
-  const handleInputChange = (value: string) => {
-    setLocationInput(value);
-    if (value.length > 0) {
-      const filtered = sampleLocations.filter(loc =>
-        loc.toLowerCase().includes(value.toLowerCase())
-      );
-      setSuggestions(filtered);
-      setShowSuggestions(true);
-    } else {
+  const fetchSuggestions = async (input: string) => {
+    if (input.length < 2) {
       setSuggestions([]);
-      setShowSuggestions(false);
-      onLocationChange(null);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('places-autocomplete', {
+        body: { input }
+      });
+
+      if (error) {
+        console.error('Error fetching suggestions:', error);
+        setSuggestions([]);
+        return;
+      }
+
+      setSuggestions(data.predictions || []);
+    } catch (error) {
+      console.error('Error fetching suggestions:', error);
+      setSuggestions([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
-    const parts = suggestion.split(", ");
-    const address = parts[0];
-    const lat = parseFloat(parts[1]);
-    const lng = parseFloat(parts[2]);
-    
-    setLocationInput(address);
+  const handleInputChange = (value: string) => {
+    setLocationInput(value);
+    setShowSuggestions(true);
+
+    // Clear previous debounce
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    if (value.length === 0) {
+      setSuggestions([]);
+      onLocationChange(null);
+      return;
+    }
+
+    // Debounce API calls
+    debounceRef.current = setTimeout(() => {
+      fetchSuggestions(value);
+    }, 300);
+  };
+
+  const handleSuggestionClick = async (suggestion: PlacePrediction) => {
+    setLocationInput(suggestion.description);
     setShowSuggestions(false);
-    onLocationChange({ lat, lng, address });
+    setSuggestions([]);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('places-geocode', {
+        body: { placeId: suggestion.place_id }
+      });
+
+      if (error) {
+        console.error('Error geocoding place:', error);
+        return;
+      }
+
+      onLocationChange({
+        lat: data.lat,
+        lng: data.lng,
+        address: data.address || suggestion.description
+      });
+    } catch (error) {
+      console.error('Error geocoding place:', error);
+    }
   };
 
   const handleUseMyLocation = () => {
@@ -104,7 +142,12 @@ export const LocationSearch = ({ onLocationChange, onRadiusChange, radius }: Loc
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
   }, []);
 
   return (
@@ -130,19 +173,25 @@ export const LocationSearch = ({ onLocationChange, onRadiusChange, radius }: Loc
           <Locate className={`h-4 w-4 ${isLocating ? 'animate-pulse' : ''}`} />
         </Button>
         
-        {showSuggestions && suggestions.length > 0 && (
+        {showSuggestions && (suggestions.length > 0 || isLoading) && (
           <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-50 max-h-60 overflow-auto">
-            {suggestions.map((suggestion, index) => (
-              <button
-                key={index}
-                type="button"
-                onClick={() => handleSuggestionClick(suggestion)}
-                className="w-full px-4 py-3 text-left hover:bg-accent transition-colors text-sm flex items-center gap-2"
-              >
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                {suggestion.split(", ")[0]}
-              </button>
-            ))}
+            {isLoading ? (
+              <div className="px-4 py-3 text-sm text-muted-foreground">
+                Searching...
+              </div>
+            ) : (
+              suggestions.map((suggestion) => (
+                <button
+                  key={suggestion.place_id}
+                  type="button"
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="w-full px-4 py-3 text-left hover:bg-accent transition-colors text-sm flex items-center gap-2"
+                >
+                  <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <span className="truncate">{suggestion.description}</span>
+                </button>
+              ))
+            )}
           </div>
         )}
       </div>
