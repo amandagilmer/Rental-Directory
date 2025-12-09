@@ -24,6 +24,7 @@ import AdminListings from "./pages/admin/AdminListings";
 import AdminLeads from "./pages/admin/AdminLeads";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminSupport from "./pages/admin/AdminSupport";
+import AdminReviews from "./pages/admin/AdminReviews";
 import SubmitReview from "./pages/SubmitReview";
 
 const queryClient = new QueryClient();
@@ -55,6 +56,7 @@ const App = () => (
               <Route path="users" element={<AdminUsers />} />
               <Route path="listings" element={<AdminListings />} />
               <Route path="leads" element={<AdminLeads />} />
+              <Route path="reviews" element={<AdminReviews />} />
               <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="support" element={<AdminSupport />} />
             </Route>
