@@ -27,6 +27,7 @@ import AdminLeads from "./pages/admin/AdminLeads";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminSupport from "./pages/admin/AdminSupport";
 import AdminReviews from "./pages/admin/AdminReviews";
+import AdminBulkImport from "./pages/admin/AdminBulkImport";
 import SubmitReview from "./pages/SubmitReview";
 
 const queryClient = new QueryClient();
@@ -59,6 +60,7 @@ const App = () => (
               <Route index element={<AdminOverview />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="listings" element={<AdminListings />} />
+              <Route path="import" element={<AdminBulkImport />} />
               <Route path="leads" element={<AdminLeads />} />
               <Route path="reviews" element={<AdminReviews />} />
               <Route path="analytics" element={<AdminAnalytics />} />
