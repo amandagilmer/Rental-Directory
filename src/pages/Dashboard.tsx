@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminCheck } from '@/hooks/useAdminCheck';
 import { supabase } from '@/integrations/supabase/client';
-import { Home, LayoutDashboard, FileText, BarChart3, Settings, LogOut, Upload, Link as LinkIcon, Inbox, Sparkles, Shield } from 'lucide-react';
+import { Home, LayoutDashboard, FileText, BarChart3, Settings, LogOut, Upload, Link as LinkIcon, Inbox, Sparkles, Shield, MessageSquare } from 'lucide-react';
 import NotificationBell from '@/components/dashboard/NotificationBell';
 import { cn } from '@/lib/utils';
 
@@ -12,6 +12,7 @@ const navigation = [
   { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
   { name: 'My Listing', href: '/dashboard/listing', icon: FileText },
   { name: 'Leads', href: '/dashboard/leads', icon: Inbox },
+  { name: 'Reviews', href: '/dashboard/reviews', icon: MessageSquare },
   { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
   { name: 'GMB Integration', href: '/dashboard/gmb', icon: LinkIcon },
   { name: 'Bulk Import', href: '/dashboard/bulk-import', icon: Upload },

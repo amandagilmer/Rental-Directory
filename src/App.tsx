@@ -14,7 +14,9 @@ import GmbSettings from "./pages/dashboard/GmbSettings";
 import BulkImport from "./pages/dashboard/BulkImport";
 import Settings from "./pages/dashboard/Settings";
 import LeadInbox from "./pages/dashboard/LeadInbox";
+import Reviews from "./pages/dashboard/Reviews";
 import BusinessDetail from "./pages/BusinessDetail";
+import ReviewWidget from "./pages/ReviewWidget";
 import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -41,11 +43,13 @@ const App = () => (
             <Route path="/business/:slug" element={<BusinessDetail />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/review/:token" element={<SubmitReview />} />
+            <Route path="/widget/reviews/:businessId" element={<ReviewWidget />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />}>
               <Route index element={<Overview />} />
               <Route path="listing" element={<MyListing />} />
               <Route path="leads" element={<LeadInbox />} />
+              <Route path="reviews" element={<Reviews />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="gmb" element={<GmbSettings />} />
               <Route path="bulk-import" element={<BulkImport />} />
