@@ -13,7 +13,8 @@ import {
   LogOut, 
   Home,
   Shield,
-  Star
+  Star,
+  Upload
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -21,6 +22,7 @@ const navigation = [
   { name: 'Overview', href: '/admin', icon: LayoutDashboard },
   { name: 'Users', href: '/admin/users', icon: Users },
   { name: 'Listings', href: '/admin/listings', icon: Building2 },
+  { name: 'Bulk Import', href: '/admin/import', icon: Upload },
   { name: 'Leads', href: '/admin/leads', icon: MessageSquare },
   { name: 'Reviews', href: '/admin/reviews', icon: Star },
   { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
