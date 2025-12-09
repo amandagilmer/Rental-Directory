@@ -70,6 +70,7 @@ export type Database = {
           is_published: boolean | null
           linkedin_url: string | null
           phone: string | null
+          place_id: string | null
           twitter_url: string | null
           updated_at: string | null
           user_id: string
@@ -90,6 +91,7 @@ export type Database = {
           is_published?: boolean | null
           linkedin_url?: string | null
           phone?: string | null
+          place_id?: string | null
           twitter_url?: string | null
           updated_at?: string | null
           user_id: string
@@ -110,6 +112,7 @@ export type Database = {
           is_published?: boolean | null
           linkedin_url?: string | null
           phone?: string | null
+          place_id?: string | null
           twitter_url?: string | null
           updated_at?: string | null
           user_id?: string
@@ -249,6 +252,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      gmb_reviews: {
+        Row: {
+          author: string
+          business_id: string
+          created_at: string
+          expires_at: string
+          fetched_at: string
+          id: string
+          rating: number
+          review_date: string | null
+          review_text: string | null
+        }
+        Insert: {
+          author: string
+          business_id: string
+          created_at?: string
+          expires_at?: string
+          fetched_at?: string
+          id?: string
+          rating: number
+          review_date?: string | null
+          review_text?: string | null
+        }
+        Update: {
+          author?: string
+          business_id?: string
+          created_at?: string
+          expires_at?: string
+          fetched_at?: string
+          id?: string
+          rating?: number
+          review_date?: string | null
+          review_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gmb_reviews_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_listings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       import_history: {
         Row: {
@@ -523,6 +570,57 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      your_reviews: {
+        Row: {
+          author_email: string | null
+          author_name: string
+          business_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          lead_id: string | null
+          rating: number
+          review_text: string | null
+        }
+        Insert: {
+          author_email?: string | null
+          author_name: string
+          business_id: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          lead_id?: string | null
+          rating: number
+          review_text?: string | null
+        }
+        Update: {
+          author_email?: string | null
+          author_name?: string
+          business_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          lead_id?: string | null
+          rating?: number
+          review_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "your_reviews_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "your_reviews_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
