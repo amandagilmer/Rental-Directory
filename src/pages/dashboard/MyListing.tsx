@@ -18,6 +18,7 @@ import BusinessHoursEditor from '@/components/dashboard/BusinessHoursEditor';
 import ServicesEditor from '@/components/dashboard/ServicesEditor';
 import ServiceAreaEditor from '@/components/dashboard/ServiceAreaEditor';
 import SocialLinksEditor from '@/components/dashboard/SocialLinksEditor';
+import ReviewsManager from '@/components/dashboard/ReviewsManager';
 
 const categories = [
   'Car Rental',
@@ -610,6 +611,11 @@ export default function MyListing() {
             window.location.reload();
           }}
         />
+      )}
+
+      {/* Customer Reviews Manager */}
+      {listing && (
+        <ReviewsManager listingId={listing.id} />
       )}
 
       {/* Tips Card */}

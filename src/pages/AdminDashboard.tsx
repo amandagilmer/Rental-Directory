@@ -12,7 +12,8 @@ import {
   Ticket, 
   LogOut, 
   Home,
-  Shield
+  Shield,
+  Star
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -21,6 +22,7 @@ const navigation = [
   { name: 'Users', href: '/admin/users', icon: Users },
   { name: 'Listings', href: '/admin/listings', icon: Building2 },
   { name: 'Leads', href: '/admin/leads', icon: MessageSquare },
+  { name: 'Reviews', href: '/admin/reviews', icon: Star },
   { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
   { name: 'Support Tickets', href: '/admin/support', icon: Ticket },
 ];
