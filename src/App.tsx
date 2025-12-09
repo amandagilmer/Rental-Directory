@@ -24,6 +24,7 @@ import AdminListings from "./pages/admin/AdminListings";
 import AdminLeads from "./pages/admin/AdminLeads";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminSupport from "./pages/admin/AdminSupport";
+import SubmitReview from "./pages/SubmitReview";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/business/:slug" element={<BusinessDetail />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/review/:token" element={<SubmitReview />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />}>
               <Route index element={<Overview />} />
