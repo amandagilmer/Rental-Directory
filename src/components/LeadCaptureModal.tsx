@@ -16,6 +16,7 @@ interface LeadCaptureModalProps {
   businessName: string;
   businessId: string;
   services?: Service[];
+  onLeadSubmitted?: (leadData: { name: string; email: string }) => void;
 }
 
 interface FormData {
@@ -34,7 +35,7 @@ interface FormErrors {
   phone?: string;
 }
 
-export const LeadCaptureModal = ({ open, onOpenChange, businessName, businessId, services }: LeadCaptureModalProps) => {
+export const LeadCaptureModal = ({ open, onOpenChange, businessName, businessId, services, onLeadSubmitted }: LeadCaptureModalProps) => {
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -95,6 +96,12 @@ export const LeadCaptureModal = ({ open, onOpenChange, businessName, businessId,
       if (error) throw error;
 
       setSubmitted(true);
+      
+      // Trigger callback for review modal
+      if (onLeadSubmitted) {
+        onLeadSubmitted({ name: formData.name.trim(), email: formData.email.trim() });
+      }
+      
       toast({
         title: "Request Submitted!",
         description: `${businessName} will contact you soon.`,

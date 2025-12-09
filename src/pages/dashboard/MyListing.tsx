@@ -150,16 +150,9 @@ export default function MyListing() {
 
       if (gmbConnection) {
         setHasGmbConnection(true);
-        // Mock GMB stats - in production this would come from GMB API
-        setGmbStats({
-          rating: 4.7,
-          reviewCount: 28,
-          recentReviews: [
-            { author: 'John D.', rating: 5, text: 'Excellent service! Highly recommend.', date: '2024-12-01' },
-            { author: 'Sarah M.', rating: 4, text: 'Good experience, will come back.', date: '2024-11-28' },
-            { author: 'Mike R.', rating: 5, text: 'Best rental business in town!', date: '2024-11-25' },
-          ]
-        });
+        // GMB stats will now come from real API via edge function
+        // Stats are fetched separately on the business detail page
+        setGmbStats(null);
       }
 
       setLoading(false);

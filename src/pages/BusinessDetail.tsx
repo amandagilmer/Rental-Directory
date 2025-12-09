@@ -6,7 +6,9 @@ import { Card } from "@/components/ui/card";
 import { PhotoGallery } from "@/components/PhotoGallery";
 import { LeadCaptureModal } from "@/components/LeadCaptureModal";
 import { Footer } from "@/components/Footer";
-import { useState, useEffect } from "react";
+import BusinessReviews from "@/components/BusinessReviews";
+import ReviewModal from "@/components/ReviewModal";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Star,
@@ -41,6 +43,7 @@ interface DbListing {
   twitter_url: string | null;
   linkedin_url: string | null;
   youtube_url: string | null;
+  place_id: string | null;
 }
 
 interface DbHours {
@@ -81,6 +84,9 @@ const BusinessDetail = () => {
   const [dbServiceArea, setDbServiceArea] = useState<DbServiceArea | null>(null);
   const [dbPhotos, setDbPhotos] = useState<DbPhoto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [leadSubmitter, setLeadSubmitter] = useState<{ name: string; email: string } | null>(null);
+  const reviewTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Try to get mock business first
   const mockBusiness = getBusinessBySlug(slug || "");
@@ -385,43 +391,12 @@ const BusinessDetail = () => {
               </Card>
             )}
 
-            {/* Reviews */}
-            {business?.reviews && business.reviews.length > 0 && (
-              <Card className="p-6 bg-card">
-                <h2 className="text-xl font-bold text-foreground mb-4">
-                  Customer Reviews
-                </h2>
-                <div className="space-y-6">
-                  {business.reviews.map((review) => (
-                    <div
-                      key={review.id}
-                      className="pb-6 border-b border-border last:border-0 last:pb-0"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-semibold text-foreground">
-                          {review.reviewerName}
-                        </span>
-                        <span className="text-sm text-muted-foreground">
-                          {new Date(review.date).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 mb-2">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`h-4 w-4 ${
-                              i < review.rating
-                                ? "fill-accent text-accent"
-                                : "fill-muted text-muted"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <p className="text-muted-foreground">{review.text}</p>
-                    </div>
-                  ))}
-                </div>
-              </Card>
+            {/* Reviews - New Component */}
+            {dbListing?.id && (
+              <BusinessReviews 
+                businessId={dbListing.id} 
+                placeId={dbListing.place_id} 
+              />
             )}
           </div>
 
@@ -530,7 +505,29 @@ const BusinessDetail = () => {
         businessName={displayData.name}
         businessId={dbListing?.id || business?.slug || ''}
         services={displayServices}
+        onLeadSubmitted={(data) => {
+          setLeadSubmitter(data);
+          // Trigger review modal after 5 minutes (300000ms) - using 10s for testing
+          if (reviewTimerRef.current) clearTimeout(reviewTimerRef.current);
+          reviewTimerRef.current = setTimeout(() => {
+            setReviewModalOpen(true);
+          }, 300000); // 5 minutes
+        }}
       />
+
+      {leadSubmitter && dbListing?.id && (
+        <ReviewModal
+          isOpen={reviewModalOpen}
+          onClose={() => {
+            setReviewModalOpen(false);
+            setLeadSubmitter(null);
+          }}
+          businessId={dbListing.id}
+          businessName={displayData.name}
+          authorName={leadSubmitter.name}
+          authorEmail={leadSubmitter.email}
+        />
+      )}
     </div>
   );
 };
