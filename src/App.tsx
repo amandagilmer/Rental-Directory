@@ -11,7 +11,7 @@ import Overview from "./pages/dashboard/Overview";
 import MyListing from "./pages/dashboard/MyListing";
 import Analytics from "./pages/dashboard/Analytics";
 import GmbSettings from "./pages/dashboard/GmbSettings";
-import BulkImport from "./pages/dashboard/BulkImport";
+
 import Settings from "./pages/dashboard/Settings";
 import LeadInbox from "./pages/dashboard/LeadInbox";
 import Reviews from "./pages/dashboard/Reviews";
@@ -53,7 +53,6 @@ const App = () => (
               <Route path="reviews" element={<Reviews />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="gmb" element={<GmbSettings />} />
-              <Route path="bulk-import" element={<BulkImport />} />
               <Route path="settings" element={<Settings />} />
             </Route>
             <Route path="/admin" element={<AdminDashboard />}>
