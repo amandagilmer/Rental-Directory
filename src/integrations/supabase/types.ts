@@ -255,6 +255,7 @@ export type Database = {
       }
       gmb_reviews: {
         Row: {
+          admin_hidden: boolean | null
           author: string
           business_id: string
           created_at: string
@@ -266,6 +267,7 @@ export type Database = {
           review_text: string | null
         }
         Insert: {
+          admin_hidden?: boolean | null
           author: string
           business_id: string
           created_at?: string
@@ -277,6 +279,7 @@ export type Database = {
           review_text?: string | null
         }
         Update: {
+          admin_hidden?: boolean | null
           author?: string
           business_id?: string
           created_at?: string
@@ -347,6 +350,9 @@ export type Database = {
           message: string | null
           name: string
           phone: string
+          review_email_sent: boolean | null
+          review_email_sent_at: string | null
+          review_token: string | null
           service_type: string | null
           status: string
           updated_at: string
@@ -361,6 +367,9 @@ export type Database = {
           message?: string | null
           name: string
           phone: string
+          review_email_sent?: boolean | null
+          review_email_sent_at?: string | null
+          review_token?: string | null
           service_type?: string | null
           status?: string
           updated_at?: string
@@ -375,6 +384,9 @@ export type Database = {
           message?: string | null
           name?: string
           phone?: string
+          review_email_sent?: boolean | null
+          review_email_sent_at?: string | null
+          review_token?: string | null
           service_type?: string | null
           status?: string
           updated_at?: string
@@ -577,33 +589,39 @@ export type Database = {
           author_name: string
           business_id: string
           created_at: string
-          expires_at: string
           id: string
           lead_id: string | null
           rating: number
           review_text: string | null
+          show_initials: boolean | null
+          vendor_response: string | null
+          vendor_response_at: string | null
         }
         Insert: {
           author_email?: string | null
           author_name: string
           business_id: string
           created_at?: string
-          expires_at?: string
           id?: string
           lead_id?: string | null
           rating: number
           review_text?: string | null
+          show_initials?: boolean | null
+          vendor_response?: string | null
+          vendor_response_at?: string | null
         }
         Update: {
           author_email?: string | null
           author_name?: string
           business_id?: string
           created_at?: string
-          expires_at?: string
           id?: string
           lead_id?: string | null
           rating?: number
           review_text?: string | null
+          show_initials?: boolean | null
+          vendor_response?: string | null
+          vendor_response_at?: string | null
         }
         Relationships: [
           {
