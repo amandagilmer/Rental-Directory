@@ -39,7 +39,6 @@ import AdminPages from "./pages/admin/AdminPages";
 import AdminFaqs from "./pages/admin/AdminFaqs";
 import AdminBlog from "./pages/admin/AdminBlog";
 import AdminContacts from "./pages/admin/AdminContacts";
-import SubmitReview from "./pages/SubmitReview";
 
 const queryClient = new QueryClient();
 
