@@ -73,10 +73,12 @@ export default function Privacy() {
               {items.map((item, i) => {
                 const linkMatch = item.match(/\[(.+?)\]\((.+?)\)/);
                 if (linkMatch) {
-                  const [, text, href] = linkMatch;
+                  const [, linkText, href] = linkMatch;
+                  const prefix = item.replace(/^\d+\.\s*/, '').replace(/\[.+?\]\(.+?\)/, '').trim();
                   return (
                     <li key={i}>
-                      <a href={href} className="text-primary hover:underline">{text}</a>
+                      {prefix && <span>{prefix} </span>}
+                      <a href={href} className="text-primary hover:underline">{linkText}</a>
                     </li>
                   );
                 }
