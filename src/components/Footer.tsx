@@ -30,22 +30,37 @@ export const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/pricing" className="text-background/70 hover:text-background transition-colors text-sm">
-                  Pricing
+                <Link to="/about" className="text-background/70 hover:text-background transition-colors text-sm">
+                  About Us
                 </Link>
               </li>
               <li>
-                <Link to="/auth" className="text-background/70 hover:text-background transition-colors text-sm">
-                  Business Login
+                <Link to="/blog" className="text-background/70 hover:text-background transition-colors text-sm">
+                  Blog
+                </Link>
+              </li>
+              <li>
+                <Link to="/pricing" className="text-background/70 hover:text-background transition-colors text-sm">
+                  Pricing
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* For Businesses */}
+          {/* Resources */}
           <div className="space-y-4">
-            <h4 className="font-semibold text-lg">For Businesses</h4>
+            <h4 className="font-semibold text-lg">Resources</h4>
             <ul className="space-y-2">
+              <li>
+                <Link to="/faq" className="text-background/70 hover:text-background transition-colors text-sm">
+                  FAQ
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact" className="text-background/70 hover:text-background transition-colors text-sm">
+                  Contact Us
+                </Link>
+              </li>
               <li>
                 <Link to="/auth" className="text-background/70 hover:text-background transition-colors text-sm">
                   List Your Business
@@ -53,7 +68,7 @@ export const Footer = () => {
               </li>
               <li>
                 <Link to="/dashboard" className="text-background/70 hover:text-background transition-colors text-sm">
-                  Dashboard
+                  Business Dashboard
                 </Link>
               </li>
               <li>

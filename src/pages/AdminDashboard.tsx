@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+import { FileText, HelpCircle, BookOpen, Mail } from 'lucide-react';
+
 const navigation = [
   { name: 'Overview', href: '/admin', icon: LayoutDashboard },
   { name: 'Users', href: '/admin/users', icon: Users },
@@ -27,6 +29,10 @@ const navigation = [
   { name: 'Reviews', href: '/admin/reviews', icon: Star },
   { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
   { name: 'Support Tickets', href: '/admin/support', icon: Ticket },
+  { name: 'Pages', href: '/admin/pages', icon: FileText },
+  { name: 'FAQs', href: '/admin/faqs', icon: HelpCircle },
+  { name: 'Blog', href: '/admin/blog', icon: BookOpen },
+  { name: 'Contact Messages', href: '/admin/contacts', icon: Mail },
 ];
 
 export default function AdminDashboard() {
