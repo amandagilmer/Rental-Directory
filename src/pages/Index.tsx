@@ -1,7 +1,5 @@
 import { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { LogIn } from "lucide-react";
+import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { BusinessCard } from "@/components/BusinessCard";
@@ -43,21 +41,9 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="absolute top-4 right-4 z-20 flex items-center gap-3">
-        <Link to="/pricing">
-          <Button variant="ghost" className="bg-background/80 backdrop-blur-sm">
-            Pricing
-          </Button>
-        </Link>
-        <Link to="/auth">
-          <Button variant="outline" className="gap-2 bg-background/80 backdrop-blur-sm">
-            <LogIn className="h-4 w-4" />
-            Business Login
-          </Button>
-        </Link>
-      </div>
+      <Header />
       
-      <Hero 
+      <Hero
         onSearch={setSearchQuery}
         onLocationChange={setUserLocation}
         onRadiusChange={setRadius}

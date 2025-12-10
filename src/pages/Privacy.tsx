@@ -85,6 +85,22 @@ export default function Privacy() {
             </ol>
           );
         }
+        // Handle inline markdown links in paragraphs
+        if (block.includes('[') && block.includes('](')) {
+          const parts = block.split(/(\[.+?\]\(.+?\))/g);
+          return (
+            <p key={index} className="text-muted-foreground my-4 leading-relaxed">
+              {parts.map((part, i) => {
+                const linkMatch = part.match(/\[(.+?)\]\((.+?)\)/);
+                if (linkMatch) {
+                  const [, text, href] = linkMatch;
+                  return <a key={i} href={href} className="text-primary hover:underline">{text}</a>;
+                }
+                return part;
+              })}
+            </p>
+          );
+        }
         return (
           <p key={index} className="text-muted-foreground my-4 leading-relaxed">
             {block}
