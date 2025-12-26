@@ -18,6 +18,7 @@ import BlogPost from "./pages/BlogPost";
 import Dashboard from "./pages/Dashboard";
 import Overview from "./pages/dashboard/Overview";
 import MyListing from "./pages/dashboard/MyListing";
+import BusinessInfo from "./pages/dashboard/BusinessInfo";
 import Analytics from "./pages/dashboard/Analytics";
 import GmbSettings from "./pages/dashboard/GmbSettings";
 import Settings from "./pages/dashboard/Settings";
@@ -70,6 +71,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />}>
             <Route index element={<Overview />} />
+            <Route path="business-info" element={<BusinessInfo />} />
             <Route path="listing" element={<MyListing />} />
             <Route path="trigger-links" element={<TriggerLinks />} />
             <Route path="leads" element={<LeadInbox />} />
