@@ -11,10 +11,10 @@ import { cn } from '@/lib/utils';
 const navigation = [
   { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
   { name: 'My Listing', href: '/dashboard/listing', icon: FileText },
+  { name: 'Trigger Links', href: '/dashboard/trigger-links', icon: LinkIcon },
   { name: 'Leads', href: '/dashboard/leads', icon: Inbox },
   { name: 'Reviews', href: '/dashboard/reviews', icon: MessageSquare },
   { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-  { name: 'GMB Integration', href: '/dashboard/gmb', icon: LinkIcon },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
