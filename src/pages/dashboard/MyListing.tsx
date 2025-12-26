@@ -314,7 +314,7 @@ export default function MyListing() {
         <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto">
           <TabsTrigger value="basic" className="gap-2 py-2">
             <Building2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Basic Info</span>
+            <span className="hidden sm:inline">Business Info</span>
           </TabsTrigger>
           <TabsTrigger value="photos" className="gap-2 py-2">
             <Image className="h-4 w-4" />
@@ -326,7 +326,7 @@ export default function MyListing() {
           </TabsTrigger>
           <TabsTrigger value="services" className="gap-2 py-2">
             <DollarSign className="h-4 w-4" />
-            <span className="hidden sm:inline">Services</span>
+            <span className="hidden sm:inline">Units & Listings</span>
           </TabsTrigger>
           <TabsTrigger value="reviews" className="gap-2 py-2">
             <MessageSquare className="h-4 w-4" />
@@ -334,7 +334,7 @@ export default function MyListing() {
           </TabsTrigger>
           <TabsTrigger value="more" className="gap-2 py-2">
             <Edit className="h-4 w-4" />
-            <span className="hidden sm:inline">More</span>
+            <span className="hidden sm:inline">Business Settings</span>
           </TabsTrigger>
         </TabsList>
 
