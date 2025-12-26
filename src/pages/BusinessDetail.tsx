@@ -10,6 +10,7 @@ import BusinessReviews from "@/components/BusinessReviews";
 import ReviewModal from "@/components/ReviewModal";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useInteractionTracking } from "@/hooks/useInteractionTracking";
 import {
   Star,
   MapPin,
@@ -87,6 +88,11 @@ const BusinessDetail = () => {
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [leadSubmitter, setLeadSubmitter] = useState<{ name: string; email: string } | null>(null);
   const reviewTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const hasTrackedView = useRef(false);
+
+  // Interaction tracking
+  const { trackProfileView, trackClickToCall, trackButtonClick, trackFormSubmit } = 
+    useInteractionTracking(dbListing?.id || null);
 
   // Try to get mock business first
   const mockBusiness = getBusinessBySlug(slug || "");
@@ -127,6 +133,14 @@ const BusinessDetail = () => {
 
     fetchDbListing();
   }, [slug]);
+
+  // Track profile view once when listing is loaded
+  useEffect(() => {
+    if (dbListing?.id && !hasTrackedView.current) {
+      hasTrackedView.current = true;
+      trackProfileView();
+    }
+  }, [dbListing?.id, trackProfileView]);
 
   // Use DB data if available, otherwise use mock data
   const isDbListing = !!dbListing;
@@ -412,6 +426,7 @@ const BusinessDetail = () => {
                   {displayData.phone && (
                     <a
                       href={`tel:${displayData.phone}`}
+                      onClick={() => trackClickToCall()}
                       className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors"
                     >
                       <Phone className="h-5 w-5 text-primary" />
@@ -422,6 +437,7 @@ const BusinessDetail = () => {
                   {displayData.email && (
                     <a
                       href={`mailto:${displayData.email}`}
+                      onClick={() => trackButtonClick('email')}
                       className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors"
                     >
                       <Mail className="h-5 w-5 text-primary" />
@@ -434,6 +450,7 @@ const BusinessDetail = () => {
                       href={displayData.website}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => trackButtonClick('website')}
                       className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors"
                     >
                       <Globe className="h-5 w-5 text-primary" />
@@ -480,7 +497,10 @@ const BusinessDetail = () => {
               <Button
                 size="lg"
                 className="w-full text-lg py-6"
-                onClick={() => setLeadModalOpen(true)}
+                onClick={() => {
+                  trackButtonClick('request_quote');
+                  setLeadModalOpen(true);
+                }}
               >
                 Request a Quote
               </Button>
@@ -506,8 +526,9 @@ const BusinessDetail = () => {
         businessId={dbListing?.id || business?.slug || ''}
         services={displayServices}
         onLeadSubmitted={(data) => {
+          trackFormSubmit('lead_form');
           setLeadSubmitter(data);
-          // Trigger review modal after 5 minutes (300000ms) - using 10s for testing
+          // Trigger review modal after 5 minutes (300000ms)
           if (reviewTimerRef.current) clearTimeout(reviewTimerRef.current);
           reviewTimerRef.current = setTimeout(() => {
             setReviewModalOpen(true);
