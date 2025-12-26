@@ -117,6 +117,8 @@ export type Database = {
           address: string | null
           business_name: string
           category: string
+          claim_token: string | null
+          claimed: boolean | null
           created_at: string | null
           description: string | null
           email: string | null
@@ -126,8 +128,10 @@ export type Database = {
           instagram_url: string | null
           is_published: boolean | null
           linkedin_url: string | null
+          owner_name: string | null
           phone: string | null
           place_id: string | null
+          status: string | null
           twitter_url: string | null
           updated_at: string | null
           user_id: string
@@ -138,6 +142,8 @@ export type Database = {
           address?: string | null
           business_name: string
           category: string
+          claim_token?: string | null
+          claimed?: boolean | null
           created_at?: string | null
           description?: string | null
           email?: string | null
@@ -147,8 +153,10 @@ export type Database = {
           instagram_url?: string | null
           is_published?: boolean | null
           linkedin_url?: string | null
+          owner_name?: string | null
           phone?: string | null
           place_id?: string | null
+          status?: string | null
           twitter_url?: string | null
           updated_at?: string | null
           user_id: string
@@ -159,6 +167,8 @@ export type Database = {
           address?: string | null
           business_name?: string
           category?: string
+          claim_token?: string | null
+          claimed?: boolean | null
           created_at?: string | null
           description?: string | null
           email?: string | null
@@ -168,8 +178,10 @@ export type Database = {
           instagram_url?: string | null
           is_published?: boolean | null
           linkedin_url?: string | null
+          owner_name?: string | null
           phone?: string | null
           place_id?: string | null
+          status?: string | null
           twitter_url?: string | null
           updated_at?: string | null
           user_id?: string
@@ -459,6 +471,54 @@ export type Database = {
         }
         Relationships: []
       }
+      interactions: {
+        Row: {
+          created_at: string
+          host_id: string
+          id: string
+          interaction_type: string
+          ip_hash: string | null
+          source: string | null
+          trigger_link_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          host_id: string
+          id?: string
+          interaction_type: string
+          ip_hash?: string | null
+          source?: string | null
+          trigger_link_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          host_id?: string
+          id?: string
+          interaction_type?: string
+          ip_hash?: string | null
+          source?: string | null
+          trigger_link_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interactions_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "business_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interactions_trigger_link_id_fkey"
+            columns: ["trigger_link_id"]
+            isOneToOne: false
+            referencedRelation: "trigger_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           business_id: string
@@ -714,6 +774,44 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      trigger_links: {
+        Row: {
+          click_count: number | null
+          code: string
+          created_at: string
+          destination: string
+          host_id: string
+          id: string
+          link_type: string
+        }
+        Insert: {
+          click_count?: number | null
+          code: string
+          created_at?: string
+          destination: string
+          host_id: string
+          id?: string
+          link_type: string
+        }
+        Update: {
+          click_count?: number | null
+          code?: string
+          created_at?: string
+          destination?: string
+          host_id?: string
+          id?: string
+          link_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trigger_links_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "business_listings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

@@ -1,4 +1,4 @@
-import { Search, Map, List } from "lucide-react";
+import { Search, Map, List, Truck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { LocationSearch } from "@/components/LocationSearch";
@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import heroImage from "@/assets/hero-rental.jpg";
 
 interface HeroProps {
   onSearch: (query: string) => void;
@@ -41,20 +40,31 @@ export const Hero = ({
   };
 
   return (
-    <section className="relative min-h-[500px] flex items-center justify-center overflow-hidden">
-      <div 
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${heroImage})` }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/90 to-accent/80" />
+    <section className="relative min-h-[520px] flex items-center justify-center overflow-hidden bg-patriot-gradient">
+      {/* Decorative elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/20 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-accent/20 rounded-full blur-3xl" />
+        {/* Stars decoration */}
+        <div className="absolute top-20 left-[10%] w-4 h-4 bg-primary-foreground/30 rotate-45" />
+        <div className="absolute top-40 right-[15%] w-3 h-3 bg-primary-foreground/20 rotate-45" />
+        <div className="absolute bottom-32 left-[20%] w-2 h-2 bg-primary-foreground/25 rotate-45" />
       </div>
       
       <div className="relative z-10 max-w-4xl mx-auto px-4 py-20 text-center">
-        <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
-          Find Local Rental Businesses
+        <div className="inline-flex items-center gap-2 bg-primary-foreground/10 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
+          <Truck className="h-5 w-5 text-primary-foreground" />
+          <span className="text-sm font-medium text-primary-foreground">
+            #1 Trailer Rental Directory
+          </span>
+        </div>
+        
+        <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-bold text-primary-foreground mb-6 tracking-tight">
+          Find Local Trailer Rentals
+          <span className="block text-primary mt-2">Near You</span>
         </h1>
-        <p className="text-xl text-white/90 mb-10 max-w-2xl mx-auto">
-          Discover car rentals, equipment, event supplies, and more in your area
+        <p className="text-xl text-primary-foreground/90 mb-10 max-w-2xl mx-auto">
+          Connect with trusted local trailer rental hosts for dump trailers, utility trailers, enclosed trailers, and more.
         </p>
         
         <div className="space-y-4 max-w-3xl mx-auto">
@@ -64,12 +74,12 @@ export const Hero = ({
               <Input
                 type="text"
                 name="search"
-                placeholder="Search for rental businesses..."
-                className="pl-12 h-14 text-lg bg-white border-0 shadow-xl"
+                placeholder="Search for trailer rentals..."
+                className="pl-12 h-14 text-lg bg-background border-0 shadow-xl text-foreground"
               />
             </div>
             <Select value={activeCategory} onValueChange={onCategoryChange}>
-              <SelectTrigger className="w-full sm:w-[180px] h-14 bg-white border-0 shadow-xl">
+              <SelectTrigger className="w-full sm:w-[180px] h-14 bg-background border-0 shadow-xl text-foreground">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent className="bg-popover border-border">
@@ -80,7 +90,7 @@ export const Hero = ({
                 ))}
               </SelectContent>
             </Select>
-            <Button type="submit" size="lg" className="h-14 px-8 bg-accent hover:bg-accent/90 text-white">
+            <Button type="submit" size="lg" className="h-14 px-8 bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl font-semibold">
               Search
             </Button>
           </form>
@@ -97,7 +107,7 @@ export const Hero = ({
               type="button"
               variant="outline"
               onClick={onToggleMapView}
-              className="h-12 px-6 bg-white/90 hover:bg-white border-0 text-foreground gap-2 whitespace-nowrap"
+              className="h-12 px-6 bg-background/90 hover:bg-background border-0 text-foreground gap-2 whitespace-nowrap shadow-lg"
             >
               {isMapView ? (
                 <>
@@ -111,6 +121,22 @@ export const Hero = ({
                 </>
               )}
             </Button>
+          </div>
+        </div>
+
+        {/* Trust badges */}
+        <div className="mt-12 flex flex-wrap justify-center gap-6 text-primary-foreground/70 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+            Verified Hosts
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+            Instant Quotes
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+            Local Providers
           </div>
         </div>
       </div>
