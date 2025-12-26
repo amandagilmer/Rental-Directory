@@ -8,9 +8,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface ReviewRequestPayload {
+interface ManualReviewRequest {
+  customerName: string;
+  customerEmail: string;
+  businessId: string;
+}
+
+interface LeadReviewRequest {
   lead_id: string;
 }
+
+type ReviewRequestPayload = ManualReviewRequest | LeadReviewRequest;
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -22,30 +30,86 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { lead_id }: ReviewRequestPayload = await req.json();
-    console.log("Processing review request for lead:", lead_id);
+    const payload: ReviewRequestPayload = await req.json();
+    
+    let customerName: string;
+    let customerEmail: string;
+    let businessId: string;
+    let reviewToken: string;
 
-    // Fetch lead details with business info
-    const { data: lead, error: leadError } = await supabase
-      .from("leads")
-      .select("*")
-      .eq("id", lead_id)
-      .maybeSingle();
+    // Check if this is a manual request or a lead-based request
+    if ('customerName' in payload && 'customerEmail' in payload) {
+      // Manual review request - create a temporary lead entry for tracking
+      customerName = payload.customerName;
+      customerEmail = payload.customerEmail;
+      businessId = payload.businessId;
 
-    if (leadError || !lead) {
-      console.error("Lead not found:", leadError);
+      console.log("Processing manual review request for:", customerEmail);
+
+      // Create a lead entry for tracking (marked as already sent)
+      const { data: newLead, error: insertError } = await supabase
+        .from("leads")
+        .insert({
+          name: customerName,
+          email: customerEmail,
+          phone: "manual-request",
+          business_id: businessId,
+          status: "review_requested",
+          review_email_sent: true,
+          review_email_sent_at: new Date().toISOString(),
+        })
+        .select("review_token")
+        .single();
+
+      if (insertError) {
+        console.error("Error creating lead:", insertError);
+        throw new Error("Failed to create review request");
+      }
+
+      reviewToken = newLead.review_token;
+    } else if ('lead_id' in payload) {
+      // Lead-based review request
+      console.log("Processing review request for lead:", payload.lead_id);
+
+      const { data: lead, error: leadError } = await supabase
+        .from("leads")
+        .select("*")
+        .eq("id", payload.lead_id)
+        .maybeSingle();
+
+      if (leadError || !lead) {
+        console.error("Lead not found:", leadError);
+        return new Response(
+          JSON.stringify({ error: "Lead not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (lead.review_email_sent) {
+        console.log("Review email already sent for this lead");
+        return new Response(
+          JSON.stringify({ message: "Email already sent" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      customerName = lead.name;
+      customerEmail = lead.email;
+      businessId = lead.business_id;
+      reviewToken = lead.review_token;
+
+      // Mark email as sent
+      await supabase
+        .from("leads")
+        .update({
+          review_email_sent: true,
+          review_email_sent_at: new Date().toISOString(),
+        })
+        .eq("id", payload.lead_id);
+    } else {
       return new Response(
-        JSON.stringify({ error: "Lead not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Check if email already sent
-    if (lead.review_email_sent) {
-      console.log("Review email already sent for this lead");
-      return new Response(
-        JSON.stringify({ message: "Email already sent" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Invalid request payload" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -53,18 +117,18 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: business } = await supabase
       .from("business_listings")
       .select("business_name")
-      .eq("id", lead.business_id)
+      .eq("id", businessId)
       .maybeSingle();
 
     const businessName = business?.business_name || "the vendor";
     
     const baseUrl = Deno.env.get("SITE_URL") || "https://qhzefqdrucocwzmadbvr.lovable.app";
-    const finalReviewUrl = `${baseUrl}/review/${lead.review_token}`;
+    const finalReviewUrl = `${baseUrl}/review/${reviewToken}`;
 
-    console.log("Sending review request email to:", lead.email);
+    console.log("Sending review request email to:", customerEmail);
     console.log("Review URL:", finalReviewUrl);
 
-    // Send email using Resend API directly
+    // Send email using Resend API
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -73,7 +137,7 @@ const handler = async (req: Request): Promise<Response> => {
       },
       body: JSON.stringify({
         from: "Local Rental Directory <onboarding@resend.dev>",
-        to: [lead.email],
+        to: [customerEmail],
         subject: `Rate your experience with ${businessName}`,
         html: `
           <!DOCTYPE html>
@@ -87,9 +151,9 @@ const handler = async (req: Request): Promise<Response> => {
               <h1 style="color: white; margin: 0; font-size: 24px;">Rate Your Experience</h1>
             </div>
             <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
-              <p style="font-size: 16px; margin-bottom: 20px;">Hi ${lead.name},</p>
+              <p style="font-size: 16px; margin-bottom: 20px;">Hi ${customerName},</p>
               <p style="font-size: 16px; margin-bottom: 20px;">
-                Thank you for contacting <strong>${businessName}</strong> through Local Rental Directory!
+                Thank you for choosing <strong>${businessName}</strong>!
               </p>
               <p style="font-size: 16px; margin-bottom: 25px;">
                 We'd love to hear about your experience. Your feedback helps other customers make informed decisions.
@@ -117,19 +181,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!emailResponse.ok) {
       throw new Error(emailData.message || "Failed to send email");
-    }
-
-    // Mark email as sent
-    const { error: updateError } = await supabase
-      .from("leads")
-      .update({
-        review_email_sent: true,
-        review_email_sent_at: new Date().toISOString(),
-      })
-      .eq("id", lead_id);
-
-    if (updateError) {
-      console.error("Failed to update lead:", updateError);
     }
 
     return new Response(

@@ -9,10 +9,12 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Package, Plus, Edit, Trash2, DollarSign, Image as ImageIcon, ChevronDown, ChevronUp } from 'lucide-react';
+import { Package, Plus, Edit, Trash2, DollarSign, Image as ImageIcon, ChevronDown, ChevronUp, BarChart3 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ServicePhotoUpload from './ServicePhotoUpload';
+import UnitAnalytics from './UnitAnalytics';
 
 const PRICE_UNITS = [
   { value: 'per hour', label: 'Per Hour' },
@@ -370,12 +372,32 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                   
                   <CollapsibleContent>
                     <div className="px-4 pb-4 border-t border-border pt-4">
-                      <ServicePhotoUpload
-                        serviceId={service.id!}
-                        listingId={listingId}
-                        photos={service.photos || []}
-                        onPhotosChange={fetchServices}
-                      />
+                      <Tabs defaultValue="photos">
+                        <TabsList className="grid w-full grid-cols-2 mb-4">
+                          <TabsTrigger value="photos" className="text-xs">
+                            <ImageIcon className="h-3 w-3 mr-1" />
+                            Photos
+                          </TabsTrigger>
+                          <TabsTrigger value="analytics" className="text-xs">
+                            <BarChart3 className="h-3 w-3 mr-1" />
+                            Analytics
+                          </TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="photos">
+                          <ServicePhotoUpload
+                            serviceId={service.id!}
+                            listingId={listingId}
+                            photos={service.photos || []}
+                            onPhotosChange={fetchServices}
+                          />
+                        </TabsContent>
+                        <TabsContent value="analytics">
+                          <UnitAnalytics 
+                            serviceId={service.id!} 
+                            serviceName={service.service_name}
+                          />
+                        </TabsContent>
+                      </Tabs>
                     </div>
                   </CollapsibleContent>
                 </div>
