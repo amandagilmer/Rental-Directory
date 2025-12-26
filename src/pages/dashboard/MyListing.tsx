@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -20,14 +19,12 @@ import {
   Phone, 
   Mail, 
   Globe, 
-  Image, 
-  DollarSign,
+  Package,
   Loader2,
   CheckCircle2,
   AlertCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import PhotoUpload from '@/components/dashboard/PhotoUpload';
 import ServicesEditor from '@/components/dashboard/ServicesEditor';
 
 const categories = [
@@ -57,22 +54,14 @@ interface Analytics {
   searchImpressions: number;
 }
 
-interface Photo {
-  id: string;
-  storage_path: string;
-  file_name: string;
-  is_primary: boolean;
-  display_order: number;
-}
-
 export default function MyListing() {
   const { user } = useAuth();
   const [listing, setListing] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [analytics, setAnalytics] = useState<Analytics>({ views: 0, searchImpressions: 0 });
-  const [photos, setPhotos] = useState<Photo[]>([]);
   const [reviewCount, setReviewCount] = useState(0);
+  const [unitCount, setUnitCount] = useState(0);
   
   const [formData, setFormData] = useState({
     business_name: '',
@@ -84,18 +73,6 @@ export default function MyListing() {
     website: '',
     is_published: false
   });
-
-  const fetchPhotos = useCallback(async (listingId: string) => {
-    const { data } = await supabase
-      .from('business_photos')
-      .select('*')
-      .eq('listing_id', listingId)
-      .order('display_order', { ascending: true });
-    
-    if (data) {
-      setPhotos(data as Photo[]);
-    }
-  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -134,8 +111,13 @@ export default function MyListing() {
           setAnalytics({ views: totalViews, searchImpressions: totalImpressions });
         }
 
-        // Fetch photos
-        fetchPhotos(listingData.id);
+        // Fetch unit count
+        const { count: unitsCount } = await supabase
+          .from('business_services')
+          .select('*', { count: 'exact', head: true })
+          .eq('listing_id', listingData.id);
+        
+        setUnitCount(unitsCount || 0);
 
         // Fetch review count
         const { count } = await supabase
@@ -150,7 +132,7 @@ export default function MyListing() {
     };
 
     fetchData();
-  }, [user, fetchPhotos]);
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -276,11 +258,11 @@ export default function MyListing() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">
-                <Image className="h-5 w-5 text-primary" />
+                <Package className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Photos</p>
-                <p className="text-2xl font-bold">{photos.length}</p>
+                <p className="text-sm text-muted-foreground">Units</p>
+                <p className="text-2xl font-bold">{unitCount}</p>
               </div>
             </div>
           </CardContent>
@@ -300,33 +282,8 @@ export default function MyListing() {
         </Card>
       </div>
 
-      {/* Tabbed Content */}
-      <Tabs defaultValue="photos" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 h-auto">
-          <TabsTrigger value="photos" className="gap-2 py-2">
-            <Image className="h-4 w-4" />
-            <span>Photos</span>
-          </TabsTrigger>
-          <TabsTrigger value="services" className="gap-2 py-2">
-            <DollarSign className="h-4 w-4" />
-            <span>Units & Listings</span>
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Photos Tab */}
-        <TabsContent value="photos">
-          <PhotoUpload
-            listingId={listing.id}
-            photos={photos}
-            onPhotosChange={() => fetchPhotos(listing.id)}
-          />
-        </TabsContent>
-
-        {/* Services Tab */}
-        <TabsContent value="services">
-          <ServicesEditor listingId={listing.id} />
-        </TabsContent>
-      </Tabs>
+      {/* Units & Listings */}
+      <ServicesEditor listingId={listing.id} />
     </div>
   );
 }
@@ -473,7 +430,7 @@ function CreateListingForm({
               </div>
             </div>
 
-            <Button type="submit" disabled={saving} size="lg">
+            <Button type="submit" disabled={saving} className="w-full">
               {saving ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -490,17 +447,7 @@ function CreateListingForm({
       <Card className="border-dashed">
         <CardContent className="pt-6">
           <div className="text-center text-muted-foreground">
-            <p className="text-sm">After creating your listing, you'll be able to:</p>
-            <div className="grid grid-cols-2 gap-4 mt-4">
-              <div className="flex flex-col items-center gap-2 p-3">
-                <Image className="h-6 w-6" />
-                <span className="text-xs">Upload Photos</span>
-              </div>
-              <div className="flex flex-col items-center gap-2 p-3">
-                <DollarSign className="h-6 w-6" />
-                <span className="text-xs">Add Units & Listings</span>
-              </div>
-            </div>
+            <p className="text-sm">After creating your listing, you'll be able to add units and photos.</p>
           </div>
         </CardContent>
       </Card>
