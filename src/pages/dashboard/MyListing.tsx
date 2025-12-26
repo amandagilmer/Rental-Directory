@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,27 +16,19 @@ import {
   Star, 
   Eye, 
   Search, 
-  MessageSquare, 
-  Edit, 
   MapPin, 
   Phone, 
   Mail, 
   Globe, 
   Image, 
-  Clock, 
   DollarSign,
-  Building2,
   Loader2,
   CheckCircle2,
   AlertCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import PhotoUpload from '@/components/dashboard/PhotoUpload';
-import BusinessHoursEditor from '@/components/dashboard/BusinessHoursEditor';
 import ServicesEditor from '@/components/dashboard/ServicesEditor';
-import ServiceAreaEditor from '@/components/dashboard/ServiceAreaEditor';
-import SocialLinksEditor from '@/components/dashboard/SocialLinksEditor';
-import ReviewsManager from '@/components/dashboard/ReviewsManager';
 
 const categories = [
   'Car Rental',
@@ -311,29 +302,16 @@ export default function MyListing() {
 
       {/* Tabbed Content */}
       <Tabs defaultValue="photos" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 md:grid-cols-5 h-auto">
+        <TabsList className="grid w-full grid-cols-2 h-auto">
           <TabsTrigger value="photos" className="gap-2 py-2">
             <Image className="h-4 w-4" />
-            <span className="hidden sm:inline">Photos</span>
-          </TabsTrigger>
-          <TabsTrigger value="hours" className="gap-2 py-2">
-            <Clock className="h-4 w-4" />
-            <span className="hidden sm:inline">Hours</span>
+            <span>Photos</span>
           </TabsTrigger>
           <TabsTrigger value="services" className="gap-2 py-2">
             <DollarSign className="h-4 w-4" />
-            <span className="hidden sm:inline">Units & Listings</span>
-          </TabsTrigger>
-          <TabsTrigger value="reviews" className="gap-2 py-2">
-            <MessageSquare className="h-4 w-4" />
-            <span className="hidden sm:inline">Reviews</span>
-          </TabsTrigger>
-          <TabsTrigger value="more" className="gap-2 py-2">
-            <Edit className="h-4 w-4" />
-            <span className="hidden sm:inline">Settings</span>
+            <span>Units & Listings</span>
           </TabsTrigger>
         </TabsList>
-
 
         {/* Photos Tab */}
         <TabsContent value="photos">
@@ -344,38 +322,9 @@ export default function MyListing() {
           />
         </TabsContent>
 
-        {/* Hours Tab */}
-        <TabsContent value="hours">
-          <BusinessHoursEditor listingId={listing.id} />
-        </TabsContent>
-
         {/* Services Tab */}
         <TabsContent value="services">
           <ServicesEditor listingId={listing.id} />
-        </TabsContent>
-
-        {/* Reviews Tab */}
-        <TabsContent value="reviews">
-          <ReviewsManager listingId={listing.id} />
-        </TabsContent>
-
-        {/* More Tab (Service Area, Social Links) */}
-        <TabsContent value="more" className="space-y-6">
-          <ServiceAreaEditor listingId={listing.id} />
-          <SocialLinksEditor
-            listingId={listing.id}
-            initialData={{
-              facebook_url: listing.facebook_url,
-              instagram_url: listing.instagram_url,
-              twitter_url: listing.twitter_url,
-              linkedin_url: listing.linkedin_url,
-              youtube_url: listing.youtube_url
-            }}
-            onSave={() => {
-              // Refresh listing data
-              window.location.reload();
-            }}
-          />
         </TabsContent>
       </Tabs>
     </div>
@@ -542,22 +491,14 @@ function CreateListingForm({
         <CardContent className="pt-6">
           <div className="text-center text-muted-foreground">
             <p className="text-sm">After creating your listing, you'll be able to:</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+            <div className="grid grid-cols-2 gap-4 mt-4">
               <div className="flex flex-col items-center gap-2 p-3">
                 <Image className="h-6 w-6" />
                 <span className="text-xs">Upload Photos</span>
               </div>
               <div className="flex flex-col items-center gap-2 p-3">
-                <Clock className="h-6 w-6" />
-                <span className="text-xs">Set Hours</span>
-              </div>
-              <div className="flex flex-col items-center gap-2 p-3">
                 <DollarSign className="h-6 w-6" />
-                <span className="text-xs">Add Services</span>
-              </div>
-              <div className="flex flex-col items-center gap-2 p-3">
-                <MessageSquare className="h-6 w-6" />
-                <span className="text-xs">Manage Reviews</span>
+                <span className="text-xs">Add Units & Listings</span>
               </div>
             </div>
           </div>
