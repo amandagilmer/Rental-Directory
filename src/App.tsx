@@ -23,9 +23,12 @@ import GmbSettings from "./pages/dashboard/GmbSettings";
 import Settings from "./pages/dashboard/Settings";
 import LeadInbox from "./pages/dashboard/LeadInbox";
 import Reviews from "./pages/dashboard/Reviews";
+import TriggerLinks from "./pages/dashboard/TriggerLinks";
 import Auth from "./pages/Auth";
 import SubmitReview from "./pages/SubmitReview";
 import ReviewWidget from "./pages/ReviewWidget";
+import TriggerRedirect from "./pages/TriggerRedirect";
+import ClaimBusiness from "./pages/ClaimBusiness";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminOverview from "./pages/admin/AdminOverview";
 import AdminUsers from "./pages/admin/AdminUsers";
@@ -62,6 +65,8 @@ const App = () => (
           <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="/review/:token" element={<SubmitReview />} />
           <Route path="/widget/reviews/:businessId" element={<ReviewWidget />} />
+          <Route path="/go/:code" element={<TriggerRedirect />} />
+          <Route path="/claim/:token" element={<ClaimBusiness />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />}>
             <Route index element={<Overview />} />
@@ -69,6 +74,7 @@ const App = () => (
             <Route path="leads" element={<LeadInbox />} />
             <Route path="reviews" element={<Reviews />} />
             <Route path="analytics" element={<Analytics />} />
+            <Route path="links" element={<TriggerLinks />} />
             <Route path="gmb" element={<GmbSettings />} />
             <Route path="settings" element={<Settings />} />
           </Route>
