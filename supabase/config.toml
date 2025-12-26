@@ -1,5 +1,11 @@
 project_id = "qhzefqdrucocwzmadbvr"
 
+[functions.track-interaction]
+verify_jwt = false
+
+[functions.trigger-redirect]
+verify_jwt = false
+
 [functions.process-bulk-import]
 verify_jwt = true
 
