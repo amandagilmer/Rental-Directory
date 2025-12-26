@@ -71,10 +71,10 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />}>
             <Route index element={<Overview />} />
             <Route path="listing" element={<MyListing />} />
+            <Route path="trigger-links" element={<TriggerLinks />} />
             <Route path="leads" element={<LeadInbox />} />
             <Route path="reviews" element={<Reviews />} />
             <Route path="analytics" element={<Analytics />} />
-            <Route path="links" element={<TriggerLinks />} />
             <Route path="gmb" element={<GmbSettings />} />
             <Route path="settings" element={<Settings />} />
           </Route>
