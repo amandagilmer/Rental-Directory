@@ -18,7 +18,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { host_id, interaction_type, trigger_link_id, source } = await req.json();
+    const { host_id, interaction_type, trigger_link_id, source, service_id } = await req.json();
 
     if (!host_id || !interaction_type) {
       return new Response(
@@ -28,7 +28,7 @@ serve(async (req) => {
     }
 
     // Validate interaction type
-    const validTypes = ['profile_view', 'click_to_call', 'button_click', 'form_submit'];
+    const validTypes = ['profile_view', 'click_to_call', 'button_click', 'form_submit', 'unit_view', 'unit_inquiry'];
     if (!validTypes.includes(interaction_type)) {
       return new Response(
         JSON.stringify({ error: 'Invalid interaction_type' }),
@@ -56,6 +56,7 @@ serve(async (req) => {
         interaction_type,
         trigger_link_id: trigger_link_id || null,
         source: source || null,
+        service_id: service_id || null,
         ip_hash: ipHash,
         user_agent: userAgent.substring(0, 500) // Limit length
       })

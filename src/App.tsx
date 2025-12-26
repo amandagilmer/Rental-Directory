@@ -28,6 +28,7 @@ import TriggerLinks from "./pages/dashboard/TriggerLinks";
 import Auth from "./pages/Auth";
 import SubmitReview from "./pages/SubmitReview";
 import ReviewWidget from "./pages/ReviewWidget";
+import ReviewLanding from "./pages/ReviewLanding";
 import TriggerRedirect from "./pages/TriggerRedirect";
 import ClaimBusiness from "./pages/ClaimBusiness";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -66,6 +67,7 @@ const App = () => (
           <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="/review/:token" element={<SubmitReview />} />
           <Route path="/widget/reviews/:businessId" element={<ReviewWidget />} />
+          <Route path="/review-landing/:businessId" element={<ReviewLanding />} />
           <Route path="/go/:code" element={<TriggerRedirect />} />
           <Route path="/claim/:token" element={<ClaimBusiness />} />
           <Route path="/auth" element={<Auth />} />

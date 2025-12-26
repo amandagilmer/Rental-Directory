@@ -478,6 +478,7 @@ export type Database = {
           id: string
           interaction_type: string
           ip_hash: string | null
+          service_id: string | null
           source: string | null
           trigger_link_id: string | null
           user_agent: string | null
@@ -488,6 +489,7 @@ export type Database = {
           id?: string
           interaction_type: string
           ip_hash?: string | null
+          service_id?: string | null
           source?: string | null
           trigger_link_id?: string | null
           user_agent?: string | null
@@ -498,6 +500,7 @@ export type Database = {
           id?: string
           interaction_type?: string
           ip_hash?: string | null
+          service_id?: string | null
           source?: string | null
           trigger_link_id?: string | null
           user_agent?: string | null
@@ -508,6 +511,13 @@ export type Database = {
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "business_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interactions_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "business_services"
             referencedColumns: ["id"]
           },
           {

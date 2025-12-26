@@ -20,14 +20,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Processing pending review email requests...");
 
-    // Find leads that are 24+ hours old and haven't had review email sent
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    // Find leads that are 48+ hours old and haven't had review email sent
+    const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
     
     const { data: leads, error: leadsError } = await supabase
       .from("leads")
       .select("id, email, name, business_id, review_token")
       .eq("review_email_sent", false)
-      .lt("created_at", twentyFourHoursAgo)
+      .lt("created_at", fortyEightHoursAgo)
       .limit(50); // Process max 50 at a time
 
     if (leadsError) {

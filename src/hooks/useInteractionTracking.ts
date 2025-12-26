@@ -1,19 +1,21 @@
 import { supabase } from "@/integrations/supabase/client";
 
-type InteractionType = 'profile_view' | 'click_to_call' | 'button_click' | 'form_submit';
+type InteractionType = 'profile_view' | 'click_to_call' | 'button_click' | 'form_submit' | 'unit_view' | 'unit_inquiry';
 
 interface TrackInteractionParams {
   hostId: string;
   interactionType: InteractionType;
   triggerLinkId?: string;
   source?: string;
+  serviceId?: string;
 }
 
 export const trackInteraction = async ({
   hostId,
   interactionType,
   triggerLinkId,
-  source
+  source,
+  serviceId
 }: TrackInteractionParams) => {
   try {
     const { error } = await supabase.functions.invoke('track-interaction', {
@@ -21,7 +23,8 @@ export const trackInteraction = async ({
         host_id: hostId,
         interaction_type: interactionType,
         trigger_link_id: triggerLinkId,
-        source: source
+        source: source,
+        service_id: serviceId
       }
     });
 
@@ -57,12 +60,35 @@ export const useInteractionTracking = (hostId: string | null) => {
     }
   };
 
-  const trackFormSubmit = (formName?: string) => {
+  const trackFormSubmit = (formName?: string, serviceId?: string) => {
     if (hostId) {
       trackInteraction({ 
         hostId, 
         interactionType: 'form_submit', 
-        source: formName || 'lead_form' 
+        source: formName || 'lead_form',
+        serviceId
+      });
+    }
+  };
+
+  const trackUnitView = (serviceId: string) => {
+    if (hostId) {
+      trackInteraction({ 
+        hostId, 
+        interactionType: 'unit_view', 
+        source: 'profile',
+        serviceId
+      });
+    }
+  };
+
+  const trackUnitInquiry = (serviceId: string) => {
+    if (hostId) {
+      trackInteraction({ 
+        hostId, 
+        interactionType: 'unit_inquiry', 
+        source: 'profile',
+        serviceId
       });
     }
   };
@@ -71,6 +97,8 @@ export const useInteractionTracking = (hostId: string | null) => {
     trackProfileView,
     trackClickToCall,
     trackButtonClick,
-    trackFormSubmit
+    trackFormSubmit,
+    trackUnitView,
+    trackUnitInquiry
   };
 };
