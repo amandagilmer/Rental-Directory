@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,8 +9,10 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Package, Plus, Edit, Trash2, DollarSign } from 'lucide-react';
+import { Package, Plus, Edit, Trash2, DollarSign, Image as ImageIcon, ChevronDown, ChevronUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import ServicePhotoUpload from './ServicePhotoUpload';
 
 const PRICE_UNITS = [
   { value: 'per hour', label: 'Per Hour' },
@@ -20,6 +22,14 @@ const PRICE_UNITS = [
   { value: 'contact for pricing', label: 'Contact for Pricing' }
 ];
 
+interface ServicePhoto {
+  id: string;
+  storage_path: string;
+  file_name: string;
+  is_primary: boolean;
+  display_order: number;
+}
+
 interface Service {
   id?: string;
   service_name: string;
@@ -27,6 +37,7 @@ interface Service {
   price: number | null;
   price_unit: string;
   is_available: boolean;
+  photos?: ServicePhoto[];
 }
 
 interface ServicesEditorProps {
@@ -48,23 +59,36 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [formData, setFormData] = useState<Service>(emptyService);
   const [saving, setSaving] = useState(false);
+  const [expandedService, setExpandedService] = useState<string | null>(null);
 
-  const fetchServices = async () => {
-    const { data } = await supabase
+  const fetchServices = useCallback(async () => {
+    const { data: servicesData } = await supabase
       .from('business_services')
       .select('*')
       .eq('listing_id', listingId)
       .order('display_order');
 
-    if (data) {
-      setServices(data as Service[]);
+    if (servicesData) {
+      // Fetch photos for each service
+      const servicesWithPhotos = await Promise.all(
+        servicesData.map(async (service) => {
+          const { data: photos } = await supabase
+            .from('service_photos')
+            .select('*')
+            .eq('service_id', service.id)
+            .order('display_order');
+          
+          return { ...service, photos: photos || [] } as Service;
+        })
+      );
+      setServices(servicesWithPhotos);
     }
     setLoading(false);
-  };
+  }, [listingId]);
 
   useEffect(() => {
     fetchServices();
-  }, [listingId]);
+  }, [fetchServices]);
 
   const openAddDialog = () => {
     setEditingService(null);
@@ -87,7 +111,6 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
     setSaving(true);
     try {
       if (editingService?.id) {
-        // Update existing
         const { error } = await supabase
           .from('business_services')
           .update({
@@ -101,9 +124,8 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
           .eq('id', editingService.id);
 
         if (error) throw error;
-        toast.success('Service updated');
+        toast.success('Unit updated');
       } else {
-        // Insert new
         const { error } = await supabase
           .from('business_services')
           .insert({
@@ -117,14 +139,14 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
           });
 
         if (error) throw error;
-        toast.success('Service added');
+        toast.success('Unit added');
       }
 
       setDialogOpen(false);
       fetchServices();
     } catch (error) {
       console.error('Error saving service:', error);
-      toast.error('Failed to save service');
+      toast.error('Failed to save unit');
     } finally {
       setSaving(false);
     }
@@ -132,17 +154,28 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
 
   const handleDelete = async (serviceId: string) => {
     try {
+      // First delete all photos from storage
+      const { data: photos } = await supabase
+        .from('service_photos')
+        .select('storage_path')
+        .eq('service_id', serviceId);
+
+      if (photos && photos.length > 0) {
+        const paths = photos.map(p => p.storage_path);
+        await supabase.storage.from('business-photos').remove(paths);
+      }
+
       const { error } = await supabase
         .from('business_services')
         .delete()
         .eq('id', serviceId);
 
       if (error) throw error;
-      toast.success('Service deleted');
+      toast.success('Unit deleted');
       fetchServices();
     } catch (error) {
       console.error('Error deleting service:', error);
-      toast.error('Failed to delete service');
+      toast.error('Failed to delete unit');
     }
   };
 
@@ -153,8 +186,13 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
     return `$${service.price.toFixed(2)} ${service.price_unit}`;
   };
 
+  const getPublicUrl = (storagePath: string) => {
+    const { data } = supabase.storage.from('business-photos').getPublicUrl(storagePath);
+    return data.publicUrl;
+  };
+
   if (loading) {
-    return <Card><CardContent className="pt-6"><p className="text-muted-foreground">Loading services...</p></CardContent></Card>;
+    return <Card><CardContent className="pt-6"><p className="text-muted-foreground">Loading units...</p></CardContent></Card>;
   }
 
   return (
@@ -164,26 +202,26 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Package className="h-5 w-5" />
-              Services & Pricing
+              Units & Listings
             </CardTitle>
             <CardDescription>
-              Add your rental services and equipment with pricing
+              Add your rental units and equipment with pricing and photos
             </CardDescription>
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm" onClick={openAddDialog} className="gap-2">
                 <Plus className="h-4 w-4" />
-                Add Service
+                Add Unit
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>{editingService ? 'Edit Service' : 'Add New Service'}</DialogTitle>
+                <DialogTitle>{editingService ? 'Edit Unit' : 'Add New Unit'}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 pt-4">
                 <div className="space-y-2">
-                  <Label>Service/Equipment Name *</Label>
+                  <Label>Unit/Equipment Name *</Label>
                   <Input
                     value={formData.service_name}
                     onChange={(e) => setFormData({ ...formData, service_name: e.target.value })}
@@ -196,7 +234,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                   <Textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Describe the service or equipment..."
+                    placeholder="Describe the unit or equipment..."
                     rows={3}
                   />
                 </div>
@@ -252,7 +290,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                     Cancel
                   </Button>
                   <Button onClick={handleSave} disabled={saving}>
-                    {saving ? 'Saving...' : 'Save Service'}
+                    {saving ? 'Saving...' : 'Save Unit'}
                   </Button>
                 </div>
               </div>
@@ -263,33 +301,85 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
       <CardContent>
         {services.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">
-            No services added yet. Add your rental services and equipment to attract more customers.
+            No units added yet. Add your rental units and equipment to attract more customers.
           </p>
         ) : (
           <div className="space-y-3">
             {services.map((service) => (
-              <div key={service.id} className="flex items-start justify-between p-4 bg-muted/50 rounded-lg">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-medium">{service.service_name}</h4>
-                    {!service.is_available && (
-                      <Badge variant="secondary">Unavailable</Badge>
-                    )}
+              <Collapsible
+                key={service.id}
+                open={expandedService === service.id}
+                onOpenChange={(open) => setExpandedService(open ? service.id! : null)}
+              >
+                <div className="bg-muted/50 rounded-lg overflow-hidden">
+                  <div className="flex items-start justify-between p-4">
+                    <div className="flex gap-3 flex-1">
+                      {/* Thumbnail */}
+                      {service.photos && service.photos.length > 0 ? (
+                        <div className="w-16 h-16 rounded-md overflow-hidden bg-muted flex-shrink-0">
+                          <img
+                            src={getPublicUrl(service.photos.find(p => p.is_primary)?.storage_path || service.photos[0].storage_path)}
+                            alt={service.service_name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-16 h-16 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
+                          <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-medium">{service.service_name}</h4>
+                          {!service.is_available && (
+                            <Badge variant="secondary">Unavailable</Badge>
+                          )}
+                          {service.photos && service.photos.length > 0 && (
+                            <Badge variant="outline" className="text-xs">
+                              <ImageIcon className="h-3 w-3 mr-1" />
+                              {service.photos.length}
+                            </Badge>
+                          )}
+                        </div>
+                        {service.description && (
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{service.description}</p>
+                        )}
+                        <p className="text-sm font-medium text-primary mt-1">{formatPrice(service)}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => openEditDialog(service)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => service.id && handleDelete(service.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          {expandedService === service.id ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </CollapsibleTrigger>
+                    </div>
                   </div>
-                  {service.description && (
-                    <p className="text-sm text-muted-foreground mt-1">{service.description}</p>
-                  )}
-                  <p className="text-sm font-medium text-primary mt-2">{formatPrice(service)}</p>
+                  
+                  <CollapsibleContent>
+                    <div className="px-4 pb-4 border-t border-border pt-4">
+                      <ServicePhotoUpload
+                        serviceId={service.id!}
+                        listingId={listingId}
+                        photos={service.photos || []}
+                        onPhotosChange={fetchServices}
+                      />
+                    </div>
+                  </CollapsibleContent>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => openEditDialog(service)}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => service.id && handleDelete(service.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              </div>
+              </Collapsible>
             ))}
           </div>
         )}

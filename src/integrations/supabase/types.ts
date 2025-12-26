@@ -739,6 +739,47 @@ export type Database = {
           },
         ]
       }
+      service_photos: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          file_name: string
+          file_size: number | null
+          id: string
+          is_primary: boolean | null
+          service_id: string
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          file_name: string
+          file_size?: number | null
+          id?: string
+          is_primary?: boolean | null
+          service_id: string
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          file_name?: string
+          file_size?: number | null
+          id?: string
+          is_primary?: boolean | null
+          service_id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_photos_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "business_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_tickets: {
         Row: {
           assigned_to: string | null

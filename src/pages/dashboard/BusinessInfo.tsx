@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,11 +19,21 @@ import {
   Loader2,
   Building2,
   Clock,
-  Settings
+  Settings,
+  Image as ImageIcon
 } from 'lucide-react';
 import BusinessHoursEditor from '@/components/dashboard/BusinessHoursEditor';
 import ServiceAreaEditor from '@/components/dashboard/ServiceAreaEditor';
 import SocialLinksEditor from '@/components/dashboard/SocialLinksEditor';
+import PhotoUpload from '@/components/dashboard/PhotoUpload';
+
+interface Photo {
+  id: string;
+  storage_path: string;
+  file_name: string;
+  is_primary: boolean;
+  display_order: number;
+}
 
 const categories = [
   'Car Rental',
@@ -52,6 +62,7 @@ export default function BusinessInfo() {
   const [listing, setListing] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [photos, setPhotos] = useState<Photo[]>([]);
   
   const [formData, setFormData] = useState({
     business_name: '',
@@ -63,6 +74,18 @@ export default function BusinessInfo() {
     website: '',
     is_published: false
   });
+
+  const fetchPhotos = useCallback(async (listingId: string) => {
+    const { data } = await supabase
+      .from('business_photos')
+      .select('*')
+      .eq('listing_id', listingId)
+      .order('display_order', { ascending: true });
+    
+    if (data) {
+      setPhotos(data as Photo[]);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -86,13 +109,14 @@ export default function BusinessInfo() {
           website: listingData.website || '',
           is_published: listingData.is_published || false
         });
+        fetchPhotos(listingData.id);
       }
 
       setLoading(false);
     };
 
     fetchData();
-  }, [user]);
+  }, [user, fetchPhotos]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,10 +179,14 @@ export default function BusinessInfo() {
       </div>
 
       <Tabs defaultValue="details" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="details" className="gap-2">
             <Building2 className="h-4 w-4" />
             <span className="hidden sm:inline">Details</span>
+          </TabsTrigger>
+          <TabsTrigger value="photos" className="gap-2">
+            <ImageIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">Photos</span>
           </TabsTrigger>
           <TabsTrigger value="hours" className="gap-2">
             <Clock className="h-4 w-4" />
@@ -307,6 +335,27 @@ export default function BusinessInfo() {
               </form>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Photos Tab */}
+        <TabsContent value="photos">
+          {listing ? (
+            <PhotoUpload
+              listingId={listing.id}
+              photos={photos}
+              onPhotosChange={() => fetchPhotos(listing.id)}
+            />
+          ) : (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <ImageIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Create Your Business First</h3>
+                <p className="text-muted-foreground">
+                  Save your business details to upload photos.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Hours Tab */}
