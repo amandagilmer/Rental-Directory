@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -15,8 +16,14 @@ import {
   Phone, 
   Mail, 
   Globe,
-  Loader2
+  Loader2,
+  Building2,
+  Clock,
+  Settings
 } from 'lucide-react';
+import BusinessHoursEditor from '@/components/dashboard/BusinessHoursEditor';
+import ServiceAreaEditor from '@/components/dashboard/ServiceAreaEditor';
+import SocialLinksEditor from '@/components/dashboard/SocialLinksEditor';
 
 const categories = [
   'Car Rental',
@@ -147,141 +154,210 @@ export default function BusinessInfo() {
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Basic Details</CardTitle>
-          <CardDescription>
-            This information will be displayed on your public business profile
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="business_name">Business Name *</Label>
-                <Input
-                  id="business_name"
-                  value={formData.business_name}
-                  onChange={(e) => setFormData({ ...formData, business_name: e.target.value })}
-                  required
-                />
-              </div>
+      <Tabs defaultValue="details" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="details" className="gap-2">
+            <Building2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Details</span>
+          </TabsTrigger>
+          <TabsTrigger value="hours" className="gap-2">
+            <Clock className="h-4 w-4" />
+            <span className="hidden sm:inline">Hours</span>
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="gap-2">
+            <Settings className="h-4 w-4" />
+            <span className="hidden sm:inline">Settings</span>
+          </TabsTrigger>
+        </TabsList>
 
-              <div className="space-y-2">
-                <Label htmlFor="category">Category *</Label>
-                <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+        {/* Details Tab */}
+        <TabsContent value="details">
+          <Card>
+            <CardHeader>
+              <CardTitle>Basic Details</CardTitle>
+              <CardDescription>
+                This information will be displayed on your public business profile
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="business_name">Business Name *</Label>
+                    <Input
+                      id="business_name"
+                      value={formData.business_name}
+                      onChange={(e) => setFormData({ ...formData, business_name: e.target.value })}
+                      required
+                    />
+                  </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Tell customers about your rental business..."
-                rows={4}
-              />
-              <p className="text-xs text-muted-foreground">{formData.description.length}/500 characters</p>
-            </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Category *</Label>
+                    <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="address"
-                  className="pl-10"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  placeholder="123 Main St, City, State ZIP"
-                />
-              </div>
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Tell customers about your rental business..."
+                    rows={4}
+                  />
+                  <p className="text-xs text-muted-foreground">{formData.description.length}/500 characters</p>
+                </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="phone"
-                    type="tel"
-                    className="pl-10"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="(555) 123-4567"
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address</Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="address"
+                      className="pl-10"
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      placeholder="123 Main St, City, State ZIP"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="phone"
+                        type="tel"
+                        className="pl-10"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        placeholder="(555) 123-4567"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="email"
+                        type="email"
+                        className="pl-10"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        placeholder="contact@yourbusiness.com"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="website">Website</Label>
+                  <div className="relative">
+                    <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="website"
+                      type="url"
+                      className="pl-10"
+                      value={formData.website}
+                      onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                      placeholder="https://yourbusiness.com"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                  <div>
+                    <Label htmlFor="is_published" className="font-medium">Publish Listing</Label>
+                    <p className="text-sm text-muted-foreground">Make your listing visible to the public</p>
+                  </div>
+                  <Switch
+                    id="is_published"
+                    checked={formData.is_published}
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_published: checked })}
                   />
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    className="pl-10"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="contact@yourbusiness.com"
-                  />
-                </div>
-              </div>
-            </div>
+                <Button type="submit" disabled={saving} className="w-full md:w-auto">
+                  {saving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-            <div className="space-y-2">
-              <Label htmlFor="website">Website</Label>
-              <div className="relative">
-                <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="website"
-                  type="url"
-                  className="pl-10"
-                  value={formData.website}
-                  onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                  placeholder="https://yourbusiness.com"
-                />
-              </div>
-            </div>
+        {/* Hours Tab */}
+        <TabsContent value="hours">
+          {listing ? (
+            <BusinessHoursEditor listingId={listing.id} />
+          ) : (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Create Your Business First</h3>
+                <p className="text-muted-foreground">
+                  Save your business details to set up hours of operation.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
 
-            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-              <div>
-                <Label htmlFor="is_published" className="font-medium">Publish Listing</Label>
-                <p className="text-sm text-muted-foreground">Make your listing visible to the public</p>
-              </div>
-              <Switch
-                id="is_published"
-                checked={formData.is_published}
-                onCheckedChange={(checked) => setFormData({ ...formData, is_published: checked })}
+        {/* Settings Tab */}
+        <TabsContent value="settings" className="space-y-6">
+          {listing ? (
+            <>
+              <ServiceAreaEditor listingId={listing.id} />
+              <SocialLinksEditor
+                listingId={listing.id}
+                initialData={{
+                  facebook_url: listing.facebook_url,
+                  instagram_url: listing.instagram_url,
+                  twitter_url: listing.twitter_url,
+                  linkedin_url: listing.linkedin_url,
+                  youtube_url: listing.youtube_url
+                }}
+                onSave={() => {
+                  window.location.reload();
+                }}
               />
-            </div>
-
-            <Button type="submit" disabled={saving} className="w-full md:w-auto">
-              {saving ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save Changes'
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+            </>
+          ) : (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Create Your Business First</h3>
+                <p className="text-muted-foreground">
+                  Save your business details to configure additional settings.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
