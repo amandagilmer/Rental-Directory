@@ -1,4 +1,4 @@
-import { Search, Map, List, Truck } from "lucide-react";
+import { Search, Map, List } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { LocationSearch } from "@/components/LocationSearch";
@@ -40,33 +40,35 @@ export const Hero = ({
   };
 
   return (
-    <section className="relative min-h-[520px] flex items-center justify-center overflow-hidden bg-patriot-gradient">
+    <section className="relative min-h-[600px] flex items-center justify-center overflow-hidden bg-secondary">
       {/* Decorative elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-accent/20 rounded-full blur-3xl" />
-        {/* Stars decoration */}
-        <div className="absolute top-20 left-[10%] w-4 h-4 bg-primary-foreground/30 rotate-45" />
-        <div className="absolute top-40 right-[15%] w-3 h-3 bg-primary-foreground/20 rotate-45" />
-        <div className="absolute bottom-32 left-[20%] w-2 h-2 bg-primary-foreground/25 rotate-45" />
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-accent/10 rounded-full blur-3xl" />
       </div>
       
-      <div className="relative z-10 max-w-4xl mx-auto px-4 py-20 text-center">
-        <div className="inline-flex items-center gap-2 bg-primary-foreground/10 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
-          <Truck className="h-5 w-5 text-primary-foreground" />
-          <span className="text-sm font-medium text-primary-foreground">
-            #1 Trailer Rental Directory
+      <div className="relative z-10 max-w-5xl mx-auto px-4 py-20 text-center">
+        {/* Badge */}
+        <div className="inline-block bg-primary rounded px-4 py-2 mb-8">
+          <span className="text-sm font-bold uppercase tracking-wider text-primary-foreground">
+            Built for Blue-Collar America
           </span>
         </div>
         
-        <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-bold text-primary-foreground mb-6 tracking-tight">
-          Find Local Trailer Rentals
-          <span className="block text-primary mt-2">Near You</span>
+        {/* Main headline with italic slant styling */}
+        <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-bold mb-8 tracking-tight leading-tight">
+          <span className="text-primary-foreground italic">FIND LOCAL</span>
+          <br />
+          <span className="text-muted italic">TRAILER RENTALS</span>
+          <br />
+          <span className="text-primary-foreground italic">NEAR YOU</span>
         </h1>
-        <p className="text-xl text-primary-foreground/90 mb-10 max-w-2xl mx-auto">
-          Connect with trusted local trailer rental hosts for dump trailers, utility trailers, enclosed trailers, and more.
+        
+        <p className="text-lg md:text-xl text-secondary-foreground/80 mb-12 max-w-2xl mx-auto">
+          From flatbeds to dump trailers, connect with trusted local hosts who understand hard work.
         </p>
         
+        {/* Search Form */}
         <div className="space-y-4 max-w-3xl mx-auto">
           <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
@@ -125,7 +127,7 @@ export const Hero = ({
         </div>
 
         {/* Trust badges */}
-        <div className="mt-12 flex flex-wrap justify-center gap-6 text-primary-foreground/70 text-sm">
+        <div className="mt-12 flex flex-wrap justify-center gap-6 text-secondary-foreground/70 text-sm">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 bg-green-400 rounded-full"></span>
             Verified Hosts
