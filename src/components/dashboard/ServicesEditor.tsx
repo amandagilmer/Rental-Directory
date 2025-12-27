@@ -332,7 +332,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
               <div className="space-y-6 pt-4">
                 {/* MISSION BRIEFING */}
                 <div className="bg-[#0f1219] rounded-lg p-6 border border-border">
-                  <h3 className="text-lg font-bold uppercase italic text-foreground mb-4 tracking-wide">
+                  <h3 className="text-lg font-bold uppercase italic text-primary mb-4 tracking-wide">
                     Mission Briefing
                   </h3>
                   
@@ -408,7 +408,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
 
                 {/* COMBAT SPECIFICATIONS */}
                 <div className="bg-[#0f1219] rounded-lg p-6 border border-border">
-                  <h3 className="text-lg font-bold uppercase italic text-foreground mb-4 tracking-wide">
+                  <h3 className="text-lg font-bold uppercase italic text-primary mb-4 tracking-wide">
                     Combat Specifications
                   </h3>
                   
@@ -537,7 +537,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
 
                 {/* MISSION RATES */}
                 <div className="bg-[#0f1219] rounded-lg p-6 border border-border">
-                  <h3 className="text-lg font-bold uppercase italic text-foreground mb-4 tracking-wide">
+                  <h3 className="text-lg font-bold uppercase italic text-primary mb-4 tracking-wide">
                     Mission Rates
                   </h3>
                   
@@ -601,7 +601,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                   {/* TACTICAL FEATURES */}
                   <div className="bg-[#0f1219] rounded-lg p-6 border border-border">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-bold uppercase italic text-foreground tracking-wide">
+                      <h3 className="text-lg font-bold uppercase italic text-primary tracking-wide">
                         Tactical Features
                       </h3>
                       <div className="flex gap-2">
@@ -648,7 +648,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                   {/* ASSET VISUAL GALLERY */}
                   <div className="bg-[#0f1219] rounded-lg p-6 border border-border">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-bold uppercase italic text-foreground tracking-wide">
+                      <h3 className="text-lg font-bold uppercase italic text-primary tracking-wide">
                         Asset Visual Gallery
                       </h3>
                       <Button 
