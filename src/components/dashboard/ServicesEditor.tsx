@@ -290,7 +290,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
     return (
       <Card className="bg-[hsl(var(--navy-dark))] border-border">
         <CardContent className="pt-6">
-          <p className="text-muted-foreground">Loading fleet assets...</p>
+          <p className="text-white/70">Loading fleet assets...</p>
         </CardContent>
       </Card>
     );
@@ -305,7 +305,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
               <Package className="h-5 w-5 text-primary" />
               Fleet Assets
             </CardTitle>
-            <CardDescription className="text-muted-foreground uppercase tracking-widest text-xs">
+            <CardDescription className="text-white/70 uppercase tracking-widest text-xs">
               Manage your rental units and equipment inventory
             </CardDescription>
           </div>
@@ -321,10 +321,10 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
             </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto !bg-[#1a1f2e] border-t-4 border-t-primary">
               <DialogHeader className="border-b border-border pb-4">
-                <DialogTitle className="text-2xl font-bold uppercase italic text-foreground tracking-wide">
+                <DialogTitle className="text-2xl font-bold uppercase italic text-white tracking-wide">
                   {editingService ? 'Refit Combat Asset' : 'Deploy New Strategic Asset'}
                 </DialogTitle>
-                <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                <p className="text-xs uppercase tracking-widest text-white/70">
                   Fleet Operational Logistics Hub
                 </p>
               </DialogHeader>
@@ -338,7 +338,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                      <Label className="text-xs uppercase tracking-widest text-white/80">
                         Asset Tactical Name
                       </Label>
                       <Input
@@ -350,7 +350,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                      <Label className="text-xs uppercase tracking-widest text-white/80">
                         Class
                       </Label>
                       <Select
@@ -371,7 +371,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                      <Label className="text-xs uppercase tracking-widest text-white/80">
                         Deployment Sub-Class
                       </Label>
                       <Select
@@ -393,7 +393,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                    <Label className="text-xs uppercase tracking-widest text-white/80">
                       Operational Performance Brief (Description)
                     </Label>
                     <Textarea
