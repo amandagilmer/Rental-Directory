@@ -181,4 +181,18 @@
   .border-patriot {
     border-image: linear-gradient(90deg, hsl(0 75% 45%), hsl(0 0% 100%), hsl(215 85% 50%)) 1;
   }
+
+  /* Dashboard stat card colored borders */
+  .border-b-blue-500 {
+    border-bottom-color: hsl(215 85% 50%);
+  }
+  .border-b-green-500 {
+    border-bottom-color: hsl(142 71% 45%);
+  }
+  .border-b-yellow-500 {
+    border-bottom-color: hsl(45 93% 47%);
+  }
+  .border-b-amber-500 {
+    border-bottom-color: hsl(38 92% 50%);
+  }
 }

@@ -4,16 +4,35 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminCheck } from '@/hooks/useAdminCheck';
 import { supabase } from '@/integrations/supabase/client';
-import { Home, LayoutDashboard, FileText, BarChart3, Settings, LogOut, Link as LinkIcon, Inbox, Sparkles, Shield, MessageSquare, Building2, Package } from 'lucide-react';
+import { 
+  BarChart3, 
+  LogOut, 
+  Link as LinkIcon, 
+  Inbox, 
+  Sparkles, 
+  Shield, 
+  MessageSquare, 
+  Building2, 
+  Package,
+  Truck,
+  Users,
+  Settings,
+  Home
+} from 'lucide-react';
 import NotificationBell from '@/components/dashboard/NotificationBell';
 import { cn } from '@/lib/utils';
 
-const navigation = [
-  { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Business Info', href: '/dashboard/business-info', icon: Building2 },
-  { name: 'My Listings', href: '/dashboard/listing', icon: Package },
+// Main navigation tabs (pill style at top)
+const mainTabs = [
+  { name: 'Intel', href: '/dashboard', icon: BarChart3 },
+  { name: 'Contacts', href: '/dashboard/leads', icon: Users },
+  { name: 'Fleet', href: '/dashboard/listing', icon: Truck },
+  { name: 'Business', href: '/dashboard/business-info', icon: Building2 },
+];
+
+// Secondary navigation in sidebar
+const secondaryNav = [
   { name: 'Trigger Links', href: '/dashboard/trigger-links', icon: LinkIcon },
-  { name: 'Leads', href: '/dashboard/leads', icon: Inbox },
   { name: 'Reviews', href: '/dashboard/reviews', icon: MessageSquare },
   { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
@@ -26,6 +45,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [loggingOut, setLoggingOut] = useState(false);
   const [newLeadsCount, setNewLeadsCount] = useState(0);
+  const [businessName, setBusinessName] = useState('');
 
   useEffect(() => {
     if (!loading && !user) {
@@ -36,22 +56,30 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) return;
 
-    const fetchNewLeadsCount = async () => {
-      try {
-        const { count, error } = await supabase
-          .from('leads')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'new');
+    const fetchData = async () => {
+      // Fetch business name
+      const { data: listingData } = await supabase
+        .from('business_listings')
+        .select('business_name')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-        if (!error && count !== null) {
-          setNewLeadsCount(count);
-        }
-      } catch (error) {
-        console.error('Error fetching leads count:', error);
+      if (listingData?.business_name) {
+        setBusinessName(listingData.business_name);
+      }
+
+      // Fetch new leads count
+      const { count, error } = await supabase
+        .from('leads')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'new');
+
+      if (!error && count !== null) {
+        setNewLeadsCount(count);
       }
     };
 
-    fetchNewLeadsCount();
+    fetchData();
 
     // Subscribe to realtime changes
     const channel = supabase
@@ -64,7 +92,7 @@ export default function Dashboard() {
           table: 'leads',
         },
         () => {
-          fetchNewLeadsCount();
+          fetchData();
         }
       )
       .subscribe();
@@ -79,50 +107,106 @@ export default function Dashboard() {
     await signOut();
   };
 
+  // Check if a main tab is active
+  const isMainTabActive = (href: string) => {
+    if (href === '/dashboard') {
+      return location.pathname === '/dashboard';
+    }
+    return location.pathname.startsWith(href);
+  };
+
   if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-secondary">
+        <div className="animate-pulse text-secondary-foreground">Loading...</div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="flex">
-        {/* Sidebar */}
-        <aside className="w-64 min-h-screen bg-card border-r border-border">
-          <div className="p-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-foreground">Dashboard</h2>
-              <NotificationBell />
+      {/* Dark Navy Header */}
+      <header className="bg-secondary text-secondary-foreground">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {/* Operational Dashboard Badge */}
+              <span className="bg-primary text-primary-foreground text-[10px] font-semibold uppercase tracking-widest px-2 py-1 rounded">
+                Operational Dashboard
+              </span>
             </div>
-            <p className="text-sm text-muted-foreground mt-1">{user.email}</p>
+            
+            <div className="flex items-center gap-4">
+              <NotificationBell />
+              
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  className="flex items-center gap-2 text-sm text-secondary-foreground/80 hover:text-secondary-foreground transition-colors"
+                >
+                  <Shield className="h-4 w-4" />
+                  Admin
+                </Link>
+              )}
+              
+              <Link
+                to="/"
+                className="flex items-center gap-2 text-sm text-secondary-foreground/80 hover:text-secondary-foreground transition-colors"
+              >
+                <Home className="h-4 w-4" />
+                Directory
+              </Link>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-secondary-foreground/80 hover:text-secondary-foreground hover:bg-secondary-foreground/10"
+                onClick={handleSignOut}
+                disabled={loggingOut}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                {loggingOut ? 'Logging out...' : 'Logout'}
+              </Button>
+            </div>
           </div>
           
-          <nav className="px-3 space-y-1">
-            {navigation.map((item) => {
-              const isActive = location.pathname === item.href;
-              const showBadge = item.name === 'Leads' && newLeadsCount > 0;
+          {/* Business Name */}
+          <h1 className="font-display text-2xl md:text-3xl font-bold italic mt-3 tracking-wide uppercase">
+            {businessName || 'Your Business'}
+          </h1>
+        </div>
+        
+        {/* Red Accent Bar */}
+        <div className="h-1 bg-primary" />
+      </header>
+
+      {/* Main Navigation Tabs */}
+      <div className="bg-background border-b border-border">
+        <div className="px-6 py-4 flex items-center justify-between">
+          <div className="flex-1" />
+          
+          {/* Pill Navigation */}
+          <nav className="flex items-center gap-1 bg-muted/30 rounded-full p-1">
+            {mainTabs.map((tab) => {
+              const isActive = isMainTabActive(tab.href);
+              const showBadge = tab.name === 'Contacts' && newLeadsCount > 0;
               
               return (
                 <Link
-                  key={item.name}
-                  to={item.href}
+                  key={tab.name}
+                  to={tab.href}
                   className={cn(
-                    'flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                    'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all',
                     isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                   )}
                 >
-                  <span className="flex items-center gap-3">
-                    <item.icon className="h-5 w-5" />
-                    {item.name}
-                  </span>
+                  <tab.icon className="h-4 w-4" />
+                  <span className="uppercase tracking-wide text-xs font-semibold">{tab.name}</span>
                   {showBadge && (
                     <span className={cn(
-                      'px-2 py-0.5 text-xs font-semibold rounded-full',
+                      'px-1.5 py-0.5 text-[10px] font-bold rounded-full',
                       isActive 
                         ? 'bg-primary-foreground text-primary' 
                         : 'bg-primary text-primary-foreground'
@@ -133,54 +217,27 @@ export default function Dashboard() {
                 </Link>
               );
             })}
-            
-            <div className="pt-4 pb-2">
-              <Link to="/pricing">
-                <Button
-                  variant="outline"
-                  className="w-full gap-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  Upgrade Plan
-                </Button>
-              </Link>
-            </div>
-            
-            {isAdmin && (
-              <Link
-                to="/admin"
-                className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
-              >
-                <Shield className="h-5 w-5" />
-                Admin Dashboard
-              </Link>
-            )}
-            
-            <Link
-              to="/"
-              className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-            >
-              <Home className="h-5 w-5" />
-              Back to Directory
-            </Link>
-            
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 px-3 py-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              onClick={handleSignOut}
-              disabled={loggingOut}
-            >
-              <LogOut className="h-5 w-5" />
-              {loggingOut ? 'Logging out...' : 'Logout'}
-            </Button>
           </nav>
-        </aside>
-
-        {/* Main content */}
-        <main className="flex-1 p-8">
-          <Outlet />
-        </main>
+          
+          <div className="flex-1 flex justify-end">
+            <Link to="/pricing">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+              >
+                <Sparkles className="h-4 w-4" />
+                Upgrade
+              </Button>
+            </Link>
+          </div>
+        </div>
       </div>
+
+      {/* Main Content */}
+      <main className="p-6 md:p-8 max-w-7xl mx-auto">
+        <Outlet />
+      </main>
     </div>
   );
 }
