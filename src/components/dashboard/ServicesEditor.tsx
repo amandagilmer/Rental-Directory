@@ -319,7 +319,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                 Deploy Asset
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-[hsl(var(--navy-dark))] border-t-4 border-t-primary">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto !bg-[#1a1f2e] border-t-4 border-t-primary">
               <DialogHeader className="border-b border-border pb-4">
                 <DialogTitle className="text-2xl font-bold uppercase italic text-foreground tracking-wide">
                   {editingService ? 'Refit Combat Asset' : 'Deploy New Strategic Asset'}
@@ -331,7 +331,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
 
               <div className="space-y-6 pt-4">
                 {/* MISSION BRIEFING */}
-                <div className="bg-background/50 rounded-lg p-6 border border-border">
+                <div className="bg-[#0f1219] rounded-lg p-6 border border-border">
                   <h3 className="text-lg font-bold uppercase italic text-foreground mb-4 tracking-wide">
                     Mission Briefing
                   </h3>
@@ -407,7 +407,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                 </div>
 
                 {/* COMBAT SPECIFICATIONS */}
-                <div className="bg-background/50 rounded-lg p-6 border border-border">
+                <div className="bg-[#0f1219] rounded-lg p-6 border border-border">
                   <h3 className="text-lg font-bold uppercase italic text-foreground mb-4 tracking-wide">
                     Combat Specifications
                   </h3>
@@ -536,7 +536,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                 </div>
 
                 {/* MISSION RATES */}
-                <div className="bg-background/50 rounded-lg p-6 border border-border">
+                <div className="bg-[#0f1219] rounded-lg p-6 border border-border">
                   <h3 className="text-lg font-bold uppercase italic text-foreground mb-4 tracking-wide">
                     Mission Rates
                   </h3>
@@ -599,7 +599,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                 {/* TACTICAL FEATURES & GALLERY */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* TACTICAL FEATURES */}
-                  <div className="bg-background/50 rounded-lg p-6 border border-border">
+                  <div className="bg-[#0f1219] rounded-lg p-6 border border-border">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-bold uppercase italic text-foreground tracking-wide">
                         Tactical Features
@@ -646,7 +646,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                   </div>
 
                   {/* ASSET VISUAL GALLERY */}
-                  <div className="bg-background/50 rounded-lg p-6 border border-border">
+                  <div className="bg-[#0f1219] rounded-lg p-6 border border-border">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-bold uppercase italic text-foreground tracking-wide">
                         Asset Visual Gallery
