@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,15 +12,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { 
-  MapPin, 
-  Phone, 
-  Mail, 
-  Globe,
   Loader2,
-  Building2,
+  Flag,
   Clock,
-  Settings,
-  Image as ImageIcon
+  Camera,
+  Shield,
+  CheckCircle2
 } from 'lucide-react';
 import BusinessHoursEditor from '@/components/dashboard/BusinessHoursEditor';
 import ServiceAreaEditor from '@/components/dashboard/ServiceAreaEditor';
@@ -36,19 +33,16 @@ interface Photo {
 }
 
 const categories = [
-  'Car Rental',
-  'Equipment Rental',
-  'Event Rental',
-  'Storage',
-  'Bikes & Scooters',
-  'Party Supplies',
   'Trailer Rental',
+  'Equipment Rental',
   'RV Rental',
-  'Camper Rental'
+  'Camper Rental',
+  'Storage'
 ];
 
 const listingSchema = z.object({
   business_name: z.string().min(2, 'Business name must be at least 2 characters'),
+  owner_name: z.string().optional(),
   description: z.string().max(500, 'Description must be less than 500 characters').optional(),
   category: z.string().min(1, 'Please select a category'),
   address: z.string().min(5, 'Address must be at least 5 characters').optional(),
@@ -66,6 +60,7 @@ export default function BusinessInfo() {
   
   const [formData, setFormData] = useState({
     business_name: '',
+    owner_name: '',
     description: '',
     category: '',
     address: '',
@@ -101,6 +96,7 @@ export default function BusinessInfo() {
         setListing(listingData);
         setFormData({
           business_name: listingData.business_name || '',
+          owner_name: listingData.owner_name || '',
           description: listingData.description || '',
           category: listingData.category || '',
           address: listingData.address || '',
@@ -171,165 +167,149 @@ export default function BusinessInfo() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Business Information</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage your business details that appear on your public listing
-        </p>
-      </div>
+      {/* Tactical Tabs */}
+      <Tabs defaultValue="identity" className="space-y-6">
+        <div className="flex justify-center">
+          <TabsList className="bg-muted/30 rounded-full p-1 h-auto">
+            <TabsTrigger 
+              value="identity" 
+              className="gap-2 px-6 py-2.5 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            >
+              <Flag className="h-4 w-4" />
+              <span className="uppercase text-xs font-semibold tracking-wide">Identity</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="logistics" 
+              className="gap-2 px-6 py-2.5 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            >
+              <Clock className="h-4 w-4" />
+              <span className="uppercase text-xs font-semibold tracking-wide">Logistics & Hours</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="media" 
+              className="gap-2 px-6 py-2.5 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            >
+              <Camera className="h-4 w-4" />
+              <span className="uppercase text-xs font-semibold tracking-wide">Media & Brand</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="trust" 
+              className="gap-2 px-6 py-2.5 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            >
+              <Shield className="h-4 w-4" />
+              <span className="uppercase text-xs font-semibold tracking-wide">Trust Protocol</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-      <Tabs defaultValue="details" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="details" className="gap-2">
-            <Building2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Details</span>
-          </TabsTrigger>
-          <TabsTrigger value="photos" className="gap-2">
-            <ImageIcon className="h-4 w-4" />
-            <span className="hidden sm:inline">Photos</span>
-          </TabsTrigger>
-          <TabsTrigger value="hours" className="gap-2">
-            <Clock className="h-4 w-4" />
-            <span className="hidden sm:inline">Hours</span>
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="gap-2">
-            <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline">Settings</span>
-          </TabsTrigger>
-        </TabsList>
+        {/* Identity Tab */}
+        <TabsContent value="identity">
+          <Card className="bg-card border-0 shadow-md rounded-xl max-w-4xl mx-auto">
+            <CardContent className="p-8">
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="font-display text-2xl font-bold italic uppercase tracking-wide text-foreground">
+                  Identity Core
+                </h2>
+                {formData.is_published && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border border-green-500 text-green-600">
+                    <CheckCircle2 className="h-3 w-3" />
+                    Active Signal
+                  </span>
+                )}
+              </div>
 
-        {/* Details Tab */}
-        <TabsContent value="details">
-          <Card>
-            <CardHeader>
-              <CardTitle>Basic Details</CardTitle>
-              <CardDescription>
-                This information will be displayed on your public business profile
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="business_name">Business Name *</Label>
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Business Name
+                    </Label>
                     <Input
-                      id="business_name"
                       value={formData.business_name}
                       onChange={(e) => setFormData({ ...formData, business_name: e.target.value })}
+                      className="bg-muted/30 border-0 h-12"
+                      placeholder="Liberty Flatbeds & Hauling"
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="category">Category *</Label>
-                    <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Tell customers about your rental business..."
-                    rows={4}
-                  />
-                  <p className="text-xs text-muted-foreground">{formData.description.length}/500 characters</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Owner Full Name
+                    </Label>
                     <Input
-                      id="address"
-                      className="pl-10"
-                      value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      placeholder="123 Main St, City, State ZIP"
+                      value={formData.owner_name}
+                      onChange={(e) => setFormData({ ...formData, owner_name: e.target.value })}
+                      className="bg-muted/30 border-0 h-12"
+                      placeholder="James 'Big Jim' Carter"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="phone"
-                        type="tel"
-                        className="pl-10"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        placeholder="(555) 123-4567"
-                      />
-                    </div>
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Tactical Phone
+                    </Label>
+                    <Input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className="bg-muted/30 border-0 h-12"
+                      placeholder="555-0101"
+                    />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="email"
-                        type="email"
-                        className="pl-10"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        placeholder="contact@yourbusiness.com"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="website">Website</Label>
-                  <div className="relative">
-                    <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Business Email
+                    </Label>
                     <Input
-                      id="website"
-                      type="url"
-                      className="pl-10"
-                      value={formData.website}
-                      onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                      placeholder="https://yourbusiness.com"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="bg-muted/30 border-0 h-12"
+                      placeholder="jim@libertyhaul.com"
                     />
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Mission Briefing (Description)
+                  </Label>
+                  <Textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="bg-muted/30 border-0 min-h-[120px] resize-y"
+                    placeholder="We are a family-owned and operated hauling business serving the heart of Texas. Our mission is to provide rugged, reliable trailers for fellow Americans who need to get the job done right."
+                  />
+                  <p className="text-xs text-muted-foreground">{formData.description.length}/500 characters</p>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                   <div>
-                    <Label htmlFor="is_published" className="font-medium">Publish Listing</Label>
+                    <Label className="font-medium">Publish Listing</Label>
                     <p className="text-sm text-muted-foreground">Make your listing visible to the public</p>
                   </div>
                   <Switch
-                    id="is_published"
                     checked={formData.is_published}
                     onCheckedChange={(checked) => setFormData({ ...formData, is_published: checked })}
                   />
                 </div>
 
-                <Button type="submit" disabled={saving} className="w-full md:w-auto">
+                <Button 
+                  type="submit" 
+                  disabled={saving} 
+                  className="w-full h-14 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold uppercase tracking-widest"
+                >
                   {saving ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Saving...
+                      Syncing...
                     </>
                   ) : (
-                    'Save Changes'
+                    'Sync Core Identity'
                   )}
                 </Button>
               </form>
@@ -337,74 +317,154 @@ export default function BusinessInfo() {
           </Card>
         </TabsContent>
 
-        {/* Photos Tab */}
-        <TabsContent value="photos">
-          {listing ? (
-            <PhotoUpload
-              listingId={listing.id}
-              photos={photos}
-              onPhotosChange={() => fetchPhotos(listing.id)}
-            />
-          ) : (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <ImageIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Create Your Business First</h3>
-                <p className="text-muted-foreground">
-                  Save your business details to upload photos.
-                </p>
-              </CardContent>
-            </Card>
-          )}
+        {/* Logistics Tab */}
+        <TabsContent value="logistics">
+          <div className="max-w-5xl mx-auto">
+            {listing ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="bg-card border-0 shadow-md rounded-xl">
+                  <CardContent className="p-8">
+                    <h2 className="font-display text-2xl font-bold italic uppercase tracking-wide text-foreground mb-6">
+                      Operational Hours
+                    </h2>
+                    <BusinessHoursEditor listingId={listing.id} />
+                  </CardContent>
+                </Card>
+
+                <div className="space-y-6">
+                  <ServiceAreaEditor listingId={listing.id} />
+                </div>
+              </div>
+            ) : (
+              <Card className="bg-card border-0 shadow-md rounded-xl">
+                <CardContent className="py-12 text-center">
+                  <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Create Your Business First</h3>
+                  <p className="text-muted-foreground">
+                    Save your business details in the Identity tab to set up logistics.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
 
-        {/* Hours Tab */}
-        <TabsContent value="hours">
-          {listing ? (
-            <BusinessHoursEditor listingId={listing.id} />
-          ) : (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Create Your Business First</h3>
-                <p className="text-muted-foreground">
-                  Save your business details to set up hours of operation.
-                </p>
-              </CardContent>
-            </Card>
-          )}
+        {/* Media Tab */}
+        <TabsContent value="media">
+          <Card className="bg-card border-0 shadow-md rounded-xl max-w-4xl mx-auto">
+            <CardContent className="p-8">
+              <h2 className="font-display text-2xl font-bold italic uppercase tracking-wide text-foreground mb-6">
+                Brand & Media Asset Management
+              </h2>
+              
+              {listing ? (
+                <div className="space-y-8">
+                  <PhotoUpload
+                    listingId={listing.id}
+                    photos={photos}
+                    onPhotosChange={() => fetchPhotos(listing.id)}
+                  />
+                  
+                  <SocialLinksEditor
+                    listingId={listing.id}
+                    initialData={{
+                      facebook_url: listing.facebook_url,
+                      instagram_url: listing.instagram_url,
+                      twitter_url: listing.twitter_url,
+                      linkedin_url: listing.linkedin_url,
+                      youtube_url: listing.youtube_url
+                    }}
+                    onSave={() => {
+                      window.location.reload();
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="py-12 text-center">
+                  <Camera className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Create Your Business First</h3>
+                  <p className="text-muted-foreground">
+                    Save your business details in the Identity tab to upload media.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        {/* Settings Tab */}
-        <TabsContent value="settings" className="space-y-6">
-          {listing ? (
-            <>
-              <ServiceAreaEditor listingId={listing.id} />
-              <SocialLinksEditor
-                listingId={listing.id}
-                initialData={{
-                  facebook_url: listing.facebook_url,
-                  instagram_url: listing.instagram_url,
-                  twitter_url: listing.twitter_url,
-                  linkedin_url: listing.linkedin_url,
-                  youtube_url: listing.youtube_url
-                }}
-                onSave={() => {
-                  window.location.reload();
-                }}
-              />
-            </>
-          ) : (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Create Your Business First</h3>
-                <p className="text-muted-foreground">
-                  Save your business details to configure additional settings.
-                </p>
-              </CardContent>
-            </Card>
-          )}
+        {/* Trust Protocol Tab */}
+        <TabsContent value="trust">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Verified Patriot Card */}
+              <Card className="bg-card border-0 shadow-md rounded-xl text-center">
+                <CardContent className="p-8">
+                  <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Shield className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="font-display text-lg font-bold uppercase tracking-wide mb-1">
+                    Verified Patriot
+                  </h3>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-3">
+                    Real American. Real Equipment.
+                  </p>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    Requires ID Verification.
+                  </p>
+                  <Button className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold uppercase tracking-wider">
+                    Submit Protocol
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Worker-Approved Card */}
+              <Card className="bg-card border-0 shadow-md rounded-xl text-center">
+                <CardContent className="p-8">
+                  <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="h-8 w-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="font-display text-lg font-bold uppercase tracking-wide mb-1">
+                    Worker-Approved
+                  </h3>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-3">
+                    Maintained by a Pro.
+                  </p>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    Submit 50-Point Checklist.
+                  </p>
+                  <Button className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold uppercase tracking-wider">
+                    Submit Protocol
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Local Legend Card */}
+              <Card className="bg-card border-0 shadow-md rounded-xl text-center">
+                <CardContent className="p-8">
+                  <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="h-8 w-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                    </svg>
+                  </div>
+                  <h3 className="font-display text-lg font-bold uppercase tracking-wide mb-1">
+                    Local Legend
+                  </h3>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-3">
+                    Built This Community.
+                  </p>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    Requires 50 Successful Jobs.
+                  </p>
+                  <Button className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold uppercase tracking-wider">
+                    Submit Protocol
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
