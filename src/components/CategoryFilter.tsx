@@ -1,19 +1,12 @@
 import { Button } from "@/components/ui/button";
-import { Car, Hammer, Calendar, Box, Bike, PartyPopper } from "lucide-react";
-
-import { Truck, Caravan } from "lucide-react";
+import { Truck, Caravan, Hammer, Container } from "lucide-react";
 
 const categories = [
-  { id: "all", label: "All", icon: null },
-  { id: "trailer", label: "Trailer Rental", icon: Truck },
-  { id: "rv", label: "RV Rental", icon: Caravan },
-  { id: "camper", label: "Camper Rental", icon: Caravan },
-  { id: "car", label: "Car Rental", icon: Car },
+  { id: "all", label: "All Rentals", icon: null },
+  { id: "trailer", label: "Trailers", icon: Truck },
   { id: "equipment", label: "Equipment", icon: Hammer },
-  { id: "event", label: "Event Supplies", icon: Calendar },
-  { id: "storage", label: "Storage", icon: Box },
-  { id: "bike", label: "Bikes & Scooters", icon: Bike },
-  { id: "party", label: "Party Supplies", icon: PartyPopper },
+  { id: "rv", label: "RVs & Campers", icon: Caravan },
+  { id: "storage", label: "Storage", icon: Container },
 ];
 
 // Export categories for use in Hero dropdown
