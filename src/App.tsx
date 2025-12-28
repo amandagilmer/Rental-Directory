@@ -46,6 +46,7 @@ import AdminPages from "./pages/admin/AdminPages";
 import AdminFaqs from "./pages/admin/AdminFaqs";
 import AdminBlog from "./pages/admin/AdminBlog";
 import AdminContacts from "./pages/admin/AdminContacts";
+import AdminBadges from "./pages/admin/AdminBadges";
 
 const queryClient = new QueryClient();
 
@@ -99,6 +100,7 @@ const App = () => (
             <Route path="faqs" element={<AdminFaqs />} />
             <Route path="blog" element={<AdminBlog />} />
             <Route path="contacts" element={<AdminContacts />} />
+            <Route path="badges" element={<AdminBadges />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
