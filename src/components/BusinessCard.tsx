@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, Phone, Star } from "lucide-react";
+import { BadgeDisplay } from "@/components/BadgeDisplay";
 
 interface BusinessCardProps {
   slug: string;
@@ -13,6 +14,7 @@ interface BusinessCardProps {
   phone: string;
   rating: number;
   image: string;
+  listingId?: string;
 }
 
 export const BusinessCard = ({
@@ -24,32 +26,44 @@ export const BusinessCard = ({
   phone,
   rating,
   image,
+  listingId,
 }: BusinessCardProps) => {
   return (
     <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 bg-gradient-to-b from-card to-card/95">
       <Link to={`/business/${slug}`}>
-        <div className="aspect-video overflow-hidden">
+        <div className="aspect-video overflow-hidden relative">
           <img
             src={image}
             alt={name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
+          {/* Badges overlay */}
+          {listingId && (
+            <div className="absolute top-2 left-2">
+              <BadgeDisplay listingId={listingId} size="sm" maxDisplay={3} />
+            </div>
+          )}
         </div>
       </Link>
       
       <div className="p-6">
         <div className="flex items-start justify-between mb-3">
-          <div>
+          <div className="flex-1 min-w-0">
             <Link to={`/business/${slug}`}>
-              <h3 className="text-xl font-bold text-foreground mb-1 group-hover:text-primary transition-colors cursor-pointer">
+              <h3 className="text-xl font-bold text-foreground mb-1 group-hover:text-primary transition-colors cursor-pointer truncate">
                 {name}
               </h3>
             </Link>
-            <Badge variant="secondary" className="text-xs">
-              {category}
-            </Badge>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="secondary" className="text-xs">
+                {category}
+              </Badge>
+              {listingId && (
+                <BadgeDisplay listingId={listingId} size="sm" maxDisplay={2} />
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-1 bg-accent/10 px-2 py-1 rounded-md">
+          <div className="flex items-center gap-1 bg-accent/10 px-2 py-1 rounded-md flex-shrink-0 ml-2">
             <Star className="h-4 w-4 fill-accent text-accent" />
             <span className="text-sm font-semibold text-foreground">{rating}</span>
           </div>
@@ -61,11 +75,11 @@ export const BusinessCard = ({
         
         <div className="space-y-2 mb-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4 text-primary" />
-            <span>{address}</span>
+            <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+            <span className="truncate">{address}</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Phone className="h-4 w-4 text-primary" />
+            <Phone className="h-4 w-4 text-primary flex-shrink-0" />
             <span>{phone}</span>
           </div>
         </div>
