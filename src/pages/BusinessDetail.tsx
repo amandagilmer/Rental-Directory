@@ -61,6 +61,8 @@ interface DbService {
   price: number | null;
   price_unit: string;
   is_available: boolean;
+  daily_rate: number | null;
+  asset_class: string | null;
 }
 
 interface DbServiceArea {
@@ -210,16 +212,26 @@ const BusinessDetail = () => {
       }))
     : business?.hours || [];
 
-  // Format services for display
+  // Format services for display - keep full data for linking
   const displayServices = dbServices.length > 0
     ? dbServices.filter(s => s.is_available).map(s => ({
+        id: s.id,
         name: s.service_name,
         description: s.description || undefined,
         price: s.price_unit === 'contact for pricing' || s.price === null
           ? 'Contact for pricing'
-          : `$${s.price.toFixed(2)} ${s.price_unit}`
+          : `$${s.price.toFixed(2)} ${s.price_unit}`,
+        dailyRate: s.daily_rate,
+        assetClass: s.asset_class,
       }))
-    : business?.services || [];
+    : (business?.services?.map((s, i) => ({ 
+        id: `mock-${i}`, 
+        name: s.name, 
+        description: s.description, 
+        price: s.price,
+        dailyRate: null as number | null,
+        assetClass: null as string | null,
+      })) || []);
 
   // Format service areas
   const displayServiceAreas = dbServiceArea
@@ -372,35 +384,70 @@ const BusinessDetail = () => {
               </Card>
             )}
 
-            {/* Services */}
+            {/* Fleet Units / Services */}
             {displayServices.length > 0 && (
               <Card className="p-6 bg-card">
                 <h2 className="text-xl font-bold text-foreground mb-4">
-                  Services & Pricing
+                  Fleet Units
                 </h2>
                 <div className="space-y-4">
-                  {displayServices.map((service, index) => (
-                    <div
-                      key={index}
-                      className="flex justify-between items-start py-3 border-b border-border last:border-0"
-                    >
-                      <div>
-                        <h3 className="font-semibold text-foreground">
-                          {service.name}
-                        </h3>
-                        {service.description && (
-                          <p className="text-sm text-muted-foreground">
-                            {service.description}
-                          </p>
-                        )}
+                  {displayServices.map((service, index) => {
+                    const isRealUnit = !service.id.startsWith('mock-');
+                    const unitLink = isRealUnit ? `/business/${slug}/unit/${service.id}` : null;
+                    
+                    const content = (
+                      <div
+                        className={`flex justify-between items-start py-4 border-b border-border last:border-0 ${
+                          unitLink ? 'hover:bg-muted/50 -mx-4 px-4 rounded-lg transition-colors cursor-pointer' : ''
+                        }`}
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-foreground">
+                              {service.name}
+                            </h3>
+                            {service.assetClass && (
+                              <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded">
+                                {service.assetClass}
+                              </span>
+                            )}
+                          </div>
+                          {service.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-2">
+                              {service.description}
+                            </p>
+                          )}
+                          {unitLink && (
+                            <span className="text-xs text-primary mt-1 inline-block">
+                              View Details →
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-right ml-4">
+                          {service.dailyRate ? (
+                            <div>
+                              <span className="text-primary font-bold text-lg">
+                                ${service.dailyRate}
+                              </span>
+                              <span className="text-muted-foreground text-sm">/day</span>
+                            </div>
+                          ) : service.price ? (
+                            <span className="text-primary font-semibold whitespace-nowrap">
+                              {service.price}
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
-                      {service.price && (
-                        <span className="text-primary font-semibold whitespace-nowrap ml-4">
-                          {service.price}
-                        </span>
-                      )}
-                    </div>
-                  ))}
+                    );
+                    
+                    return unitLink ? (
+                      <Link key={index} to={unitLink}>
+                        {content}
+                      </Link>
+                    ) : (
+                      <div key={index}>{content}</div>
+                    );
+                  })}
                 </div>
               </Card>
             )}
