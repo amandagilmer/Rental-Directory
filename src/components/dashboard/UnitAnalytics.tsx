@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
-import { Eye, MessageSquare, TrendingUp, Loader2 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Eye, MessageSquare, TrendingUp, Loader2, DollarSign, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { format, subDays, eachDayOfInterval } from 'date-fns';
 
 interface UnitAnalyticsProps {
@@ -17,18 +16,29 @@ interface DailyStats {
   inquiries: number;
 }
 
+interface HourlyHeatmap {
+  hour: number;
+  count: number;
+}
+
 export default function UnitAnalytics({ serviceId, serviceName }: UnitAnalyticsProps) {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalViews: 0,
     totalInquiries: 0,
-    conversionRate: 0
+    conversionRate: 0,
+    thisWeekViews: 0,
+    lastWeekViews: 0,
+    weekChange: 0
   });
   const [dailyData, setDailyData] = useState<DailyStats[]>([]);
+  const [hourlyData, setHourlyData] = useState<HourlyHeatmap[]>([]);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
       const thirtyDaysAgo = subDays(new Date(), 30).toISOString();
+      const sevenDaysAgo = subDays(new Date(), 7).toISOString();
+      const fourteenDaysAgo = subDays(new Date(), 14).toISOString();
 
       // Fetch interactions for this unit
       const { data: interactions } = await supabase
@@ -42,11 +52,29 @@ export default function UnitAnalytics({ serviceId, serviceName }: UnitAnalyticsP
         const inquiries = interactions.filter(i => 
           i.interaction_type === 'unit_inquiry' || i.interaction_type === 'form_submit'
         ).length;
+
+        // Calculate week-over-week
+        const thisWeekViews = interactions.filter(i => 
+          i.interaction_type === 'unit_view' && new Date(i.created_at) >= new Date(sevenDaysAgo)
+        ).length;
+        const lastWeekViews = interactions.filter(i => {
+          const date = new Date(i.created_at);
+          return i.interaction_type === 'unit_view' && 
+                 date >= new Date(fourteenDaysAgo) && 
+                 date < new Date(sevenDaysAgo);
+        }).length;
+
+        const weekChange = lastWeekViews > 0 
+          ? ((thisWeekViews - lastWeekViews) / lastWeekViews) * 100 
+          : 0;
         
         setStats({
           totalViews: views,
           totalInquiries: inquiries,
-          conversionRate: views > 0 ? (inquiries / views) * 100 : 0
+          conversionRate: views > 0 ? (inquiries / views) * 100 : 0,
+          thisWeekViews,
+          lastWeekViews,
+          weekChange
         });
 
         // Build daily data
@@ -60,8 +88,16 @@ export default function UnitAnalytics({ serviceId, serviceName }: UnitAnalyticsP
           dailyMap.set(format(day, 'yyyy-MM-dd'), { views: 0, inquiries: 0 });
         });
 
+        // Build hourly heatmap
+        const hourlyMap = new Map<number, number>();
+        for (let i = 0; i < 24; i++) {
+          hourlyMap.set(i, 0);
+        }
+
         interactions.forEach(interaction => {
           const day = format(new Date(interaction.created_at), 'yyyy-MM-dd');
+          const hour = new Date(interaction.created_at).getHours();
+          
           const current = dailyMap.get(day);
           if (current) {
             if (interaction.interaction_type === 'unit_view') {
@@ -70,6 +106,8 @@ export default function UnitAnalytics({ serviceId, serviceName }: UnitAnalyticsP
               current.inquiries++;
             }
           }
+
+          hourlyMap.set(hour, (hourlyMap.get(hour) || 0) + 1);
         });
 
         const chartData = Array.from(dailyMap.entries()).map(([date, data]) => ({
@@ -78,7 +116,13 @@ export default function UnitAnalytics({ serviceId, serviceName }: UnitAnalyticsP
           inquiries: data.inquiries
         }));
 
+        const heatmapData = Array.from(hourlyMap.entries()).map(([hour, count]) => ({
+          hour,
+          count
+        }));
+
         setDailyData(chartData);
+        setHourlyData(heatmapData);
       }
 
       setLoading(false);
@@ -90,55 +134,74 @@ export default function UnitAnalytics({ serviceId, serviceName }: UnitAnalyticsP
   if (loading) {
     return (
       <div className="flex items-center justify-center py-4">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <Loader2 className="h-5 w-5 animate-spin text-white/50" />
       </div>
     );
   }
 
+  const formatHour = (hour: number) => {
+    if (hour === 0) return '12am';
+    if (hour === 12) return '12pm';
+    return hour > 12 ? `${hour - 12}pm` : `${hour}am`;
+  };
+
   return (
     <div className="space-y-4">
-      <h4 className="font-medium text-sm text-muted-foreground">Analytics for {serviceName}</h4>
+      <h4 className="font-medium text-sm text-white/70">Analytics for {serviceName}</h4>
       
       {/* Stats Grid */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-background rounded-lg p-3 border">
           <div className="flex items-center gap-2">
             <Eye className="h-4 w-4 text-primary" />
-            <span className="text-xs text-muted-foreground">Views</span>
+            <span className="text-xs text-white/70">Views</span>
           </div>
-          <p className="text-xl font-bold mt-1">{stats.totalViews}</p>
+          <p className="text-xl font-bold mt-1 text-foreground">{stats.totalViews}</p>
         </div>
         <div className="bg-background rounded-lg p-3 border">
           <div className="flex items-center gap-2">
             <MessageSquare className="h-4 w-4 text-primary" />
-            <span className="text-xs text-muted-foreground">Inquiries</span>
+            <span className="text-xs text-white/70">Inquiries</span>
           </div>
-          <p className="text-xl font-bold mt-1">{stats.totalInquiries}</p>
+          <p className="text-xl font-bold mt-1 text-foreground">{stats.totalInquiries}</p>
         </div>
         <div className="bg-background rounded-lg p-3 border">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-primary" />
-            <span className="text-xs text-muted-foreground">Conversion</span>
+            <span className="text-xs text-white/70">Conversion</span>
           </div>
-          <p className="text-xl font-bold mt-1">{stats.conversionRate.toFixed(1)}%</p>
+          <p className="text-xl font-bold mt-1 text-foreground">{stats.conversionRate.toFixed(1)}%</p>
+        </div>
+        <div className="bg-background rounded-lg p-3 border">
+          <div className="flex items-center gap-2">
+            {stats.weekChange >= 0 ? (
+              <ArrowUpRight className="h-4 w-4 text-green-500" />
+            ) : (
+              <ArrowDownRight className="h-4 w-4 text-red-500" />
+            )}
+            <span className="text-xs text-white/70">Week Trend</span>
+          </div>
+          <p className={`text-xl font-bold mt-1 ${stats.weekChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+            {stats.weekChange >= 0 ? '+' : ''}{stats.weekChange.toFixed(0)}%
+          </p>
         </div>
       </div>
 
       {/* Chart */}
       {dailyData.length > 0 && (stats.totalViews > 0 || stats.totalInquiries > 0) && (
         <div className="bg-background rounded-lg p-3 border">
-          <p className="text-xs text-muted-foreground mb-2">Last 30 Days</p>
+          <p className="text-xs text-white/70 mb-2">Last 30 Days</p>
           <div className="h-32">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={dailyData}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis 
                   dataKey="date" 
-                  tick={{ fontSize: 10 }} 
+                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} 
                   tickLine={false}
                   interval="preserveStartEnd"
                 />
-                <YAxis tick={{ fontSize: 10 }} tickLine={false} width={20} />
+                <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} width={20} />
                 <Tooltip 
                   contentStyle={{ 
                     fontSize: 12,
@@ -166,18 +229,51 @@ export default function UnitAnalytics({ serviceId, serviceName }: UnitAnalyticsP
           <div className="flex items-center justify-center gap-4 mt-2">
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 rounded-full bg-primary" />
-              <span className="text-xs text-muted-foreground">Views</span>
+              <span className="text-xs text-white/70">Views</span>
             </div>
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(var(--chart-2))' }} />
-              <span className="text-xs text-muted-foreground">Inquiries</span>
+              <span className="text-xs text-white/70">Inquiries</span>
             </div>
           </div>
         </div>
       )}
 
+      {/* Peak Hours Heatmap */}
+      {hourlyData.some(h => h.count > 0) && (
+        <div className="bg-background rounded-lg p-3 border">
+          <p className="text-xs text-white/70 mb-2">Peak Activity Hours</p>
+          <div className="h-20">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={hourlyData.filter((_, i) => i % 3 === 0)}>
+                <XAxis 
+                  dataKey="hour" 
+                  tickFormatter={formatHour}
+                  tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} 
+                  tickLine={false}
+                />
+                <Tooltip 
+                  formatter={(value: number) => [value, 'Interactions']}
+                  labelFormatter={(hour: number) => formatHour(hour)}
+                  contentStyle={{ 
+                    fontSize: 11,
+                    backgroundColor: 'hsl(var(--background))',
+                    border: '1px solid hsl(var(--border))'
+                  }}
+                />
+                <Bar 
+                  dataKey="count" 
+                  fill="hsl(var(--primary))" 
+                  radius={[2, 2, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
       {stats.totalViews === 0 && stats.totalInquiries === 0 && (
-        <p className="text-xs text-muted-foreground text-center py-2">
+        <p className="text-xs text-white/60 text-center py-2">
           No analytics data yet. Stats will appear once customers view this unit.
         </p>
       )}

@@ -241,40 +241,94 @@ export type Database = {
       }
       business_services: {
         Row: {
+          asset_class: string | null
+          axle_configuration: string | null
+          ball_size: string | null
           created_at: string
+          daily_rate: number | null
           description: string | null
+          dimensions: string | null
           display_order: number | null
+          electrical_plug: string | null
+          empty_weight: string | null
+          features: string[] | null
+          hitch_connection: string | null
           id: string
           is_available: boolean | null
+          length_ft: string | null
           listing_id: string
+          monthly_rate: number | null
+          payload_capacity: string | null
           price: number | null
           price_unit: string | null
           service_name: string
+          sub_category: string | null
+          three_day_rate: number | null
+          traction_type: string | null
           updated_at: string
+          weekly_rate: number | null
+          year_make_model: string | null
+          youtube_url: string | null
         }
         Insert: {
+          asset_class?: string | null
+          axle_configuration?: string | null
+          ball_size?: string | null
           created_at?: string
+          daily_rate?: number | null
           description?: string | null
+          dimensions?: string | null
           display_order?: number | null
+          electrical_plug?: string | null
+          empty_weight?: string | null
+          features?: string[] | null
+          hitch_connection?: string | null
           id?: string
           is_available?: boolean | null
+          length_ft?: string | null
           listing_id: string
+          monthly_rate?: number | null
+          payload_capacity?: string | null
           price?: number | null
           price_unit?: string | null
           service_name: string
+          sub_category?: string | null
+          three_day_rate?: number | null
+          traction_type?: string | null
           updated_at?: string
+          weekly_rate?: number | null
+          year_make_model?: string | null
+          youtube_url?: string | null
         }
         Update: {
+          asset_class?: string | null
+          axle_configuration?: string | null
+          ball_size?: string | null
           created_at?: string
+          daily_rate?: number | null
           description?: string | null
+          dimensions?: string | null
           display_order?: number | null
+          electrical_plug?: string | null
+          empty_weight?: string | null
+          features?: string[] | null
+          hitch_connection?: string | null
           id?: string
           is_available?: boolean | null
+          length_ft?: string | null
           listing_id?: string
+          monthly_rate?: number | null
+          payload_capacity?: string | null
           price?: number | null
           price_unit?: string | null
           service_name?: string
+          sub_category?: string | null
+          three_day_rate?: number | null
+          traction_type?: string | null
           updated_at?: string
+          weekly_rate?: number | null
+          year_make_model?: string | null
+          youtube_url?: string | null
         }
         Relationships: [
           {
