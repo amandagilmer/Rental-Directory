@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Eye, MousePointerClick, Phone, ShoppingCart } from 'lucide-react';
+import { Eye, MousePointerClick, Phone, ShoppingCart, TrendingUp, Trophy } from 'lucide-react';
 import { 
   AreaChart, 
   Area, 
@@ -10,9 +10,17 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer 
+  ResponsiveContainer,
+  BarChart,
+  Bar
 } from 'recharts';
 import { format, subDays } from 'date-fns';
+
+interface TopAsset {
+  name: string;
+  views: number;
+  inquiries: number;
+}
 
 export default function Overview() {
   const { user } = useAuth();
@@ -20,9 +28,11 @@ export default function Overview() {
     totalViews: 0,
     totalEngagements: 0,
     totalCalls: 0,
-    totalConversions: 0
+    totalConversions: 0,
+    weekOverWeekChange: 0
   });
   const [chartData, setChartData] = useState<any[]>([]);
+  const [topAssets, setTopAssets] = useState<TopAsset[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,8 +58,14 @@ export default function Overview() {
         // Fetch interactions
         const { data: interactionsData } = await supabase
           .from('interactions')
-          .select('interaction_type, created_at')
+          .select('interaction_type, created_at, service_id')
           .in('host_id', listingIds);
+
+        // Fetch services for top assets
+        const { data: servicesData } = await supabase
+          .from('business_services')
+          .select('id, service_name')
+          .in('listing_id', listingIds);
 
         if (analyticsData) {
           const totalViews = analyticsData.reduce((sum, a) => sum + (a.views || 0), 0);
@@ -60,14 +76,30 @@ export default function Overview() {
             i.interaction_type === 'call'
           ).length || 0;
           const totalConversions = interactionsData?.filter(i => 
-            i.interaction_type === 'conversion'
+            i.interaction_type === 'conversion' || i.interaction_type === 'form_submit'
           ).length || 0;
+
+          // Calculate week-over-week change
+          const thisWeekViews = analyticsData
+            .filter(a => new Date(a.date) >= subDays(new Date(), 7))
+            .reduce((sum, a) => sum + (a.views || 0), 0);
+          const lastWeekViews = analyticsData
+            .filter(a => {
+              const date = new Date(a.date);
+              return date >= subDays(new Date(), 14) && date < subDays(new Date(), 7);
+            })
+            .reduce((sum, a) => sum + (a.views || 0), 0);
+          
+          const weekOverWeekChange = lastWeekViews > 0 
+            ? ((thisWeekViews - lastWeekViews) / lastWeekViews) * 100 
+            : 0;
           
           setStats({
             totalViews,
             totalEngagements,
             totalCalls,
-            totalConversions
+            totalConversions,
+            weekOverWeekChange
           });
 
           // Generate chart data for last 7 days
@@ -84,6 +116,39 @@ export default function Overview() {
           });
           
           setChartData(last7Days);
+
+          // Calculate top assets
+          if (servicesData && interactionsData) {
+            const assetStats = new Map<string, { views: number; inquiries: number }>();
+            
+            servicesData.forEach(service => {
+              assetStats.set(service.id, { views: 0, inquiries: 0 });
+            });
+
+            interactionsData.forEach(interaction => {
+              if (interaction.service_id) {
+                const current = assetStats.get(interaction.service_id);
+                if (current) {
+                  if (interaction.interaction_type === 'unit_view') {
+                    current.views++;
+                  } else if (interaction.interaction_type === 'unit_inquiry' || interaction.interaction_type === 'form_submit') {
+                    current.inquiries++;
+                  }
+                }
+              }
+            });
+
+            const topAssetsData: TopAsset[] = servicesData
+              .map(service => ({
+                name: service.service_name,
+                views: assetStats.get(service.id)?.views || 0,
+                inquiries: assetStats.get(service.id)?.inquiries || 0
+              }))
+              .sort((a, b) => (b.views + b.inquiries) - (a.views + a.inquiries))
+              .slice(0, 5);
+
+            setTopAssets(topAssetsData);
+          }
         }
       }
 
@@ -154,6 +219,21 @@ export default function Overview() {
         ))}
       </div>
 
+      {/* Week over Week Change */}
+      {stats.weekOverWeekChange !== 0 && (
+        <Card className="bg-card border-0 shadow-md rounded-xl">
+          <CardContent className="p-4 flex items-center gap-3">
+            <TrendingUp className={`h-5 w-5 ${stats.weekOverWeekChange >= 0 ? 'text-green-500' : 'text-red-500'}`} />
+            <span className="text-sm text-foreground">
+              <span className={`font-bold ${stats.weekOverWeekChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                {stats.weekOverWeekChange >= 0 ? '+' : ''}{stats.weekOverWeekChange.toFixed(1)}%
+              </span>
+              {' '}week-over-week change in views
+            </span>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Signal Flow Analysis Chart */}
@@ -202,21 +282,37 @@ export default function Overview() {
           </CardContent>
         </Card>
 
-        {/* Asset Heatmap */}
+        {/* Top Performing Assets */}
         <Card className="bg-card border-0 shadow-md rounded-xl">
           <CardContent className="p-6">
-            <h3 className="font-display text-lg font-bold uppercase tracking-wide text-foreground mb-6">
-              Asset Heatmap
+            <h3 className="font-display text-lg font-bold uppercase tracking-wide text-foreground mb-6 flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-primary" />
+              Top Assets
             </h3>
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Top performing assets will appear here as you collect more data.
-              </p>
-              <div className="bg-muted/30 rounded-lg p-4 text-center">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                  No asset data yet
-                </p>
-              </div>
+            <div className="space-y-3">
+              {topAssets.length > 0 ? (
+                topAssets.map((asset, index) => (
+                  <div key={asset.name} className="flex items-center justify-between p-3 bg-background rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-bold text-muted-foreground w-5">#{index + 1}</span>
+                      <span className="text-sm font-medium text-foreground truncate max-w-[120px]">{asset.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>{asset.views} views</span>
+                      <span className="text-primary font-semibold">{asset.inquiries} leads</span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="bg-muted/30 rounded-lg p-4 text-center">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                    No asset data yet
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Deploy assets to see performance
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

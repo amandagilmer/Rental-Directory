@@ -183,15 +183,37 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
       // Use daily_rate as the main price
       const mainPrice = formData.daily_rate || formData.price;
 
+      const serviceData = {
+        service_name: formData.service_name,
+        description: formData.description,
+        price: mainPrice,
+        price_unit: 'per day',
+        is_available: formData.is_available,
+        asset_class: formData.asset_class || null,
+        sub_category: formData.sub_category || null,
+        year_make_model: formData.year_make_model || null,
+        length_ft: formData.length_ft || null,
+        payload_capacity: formData.payload_capacity || null,
+        empty_weight: formData.empty_weight || null,
+        dimensions: formData.dimensions || null,
+        hitch_connection: formData.hitch_connection || null,
+        ball_size: formData.ball_size || null,
+        electrical_plug: formData.electrical_plug || null,
+        traction_type: formData.traction_type || null,
+        axle_configuration: formData.axle_configuration || null,
+        daily_rate: formData.daily_rate || null,
+        three_day_rate: formData.three_day_rate || null,
+        weekly_rate: formData.weekly_rate || null,
+        monthly_rate: formData.monthly_rate || null,
+        features: formData.features && formData.features.length > 0 ? formData.features : null,
+        youtube_url: formData.youtube_url || null,
+      };
+
       if (editingService?.id) {
         const { error } = await supabase
           .from('business_services')
           .update({
-            service_name: formData.service_name,
-            description: formData.description,
-            price: mainPrice,
-            price_unit: 'per day',
-            is_available: formData.is_available,
+            ...serviceData,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingService.id);
@@ -203,11 +225,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
           .from('business_services')
           .insert({
             listing_id: listingId,
-            service_name: formData.service_name,
-            description: formData.description,
-            price: mainPrice,
-            price_unit: 'per day',
-            is_available: formData.is_available,
+            ...serviceData,
             display_order: services.length
           });
 
@@ -414,7 +432,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                   
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                      <Label className="text-xs uppercase tracking-widest text-white/80">
                         Year/Make/Model
                       </Label>
                       <Input
@@ -426,7 +444,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                      <Label className="text-xs uppercase tracking-widest text-white/80">
                         Length (FT)
                       </Label>
                       <Input
@@ -438,7 +456,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                      <Label className="text-xs uppercase tracking-widest text-white/80">
                         Payload Capacity (LBS)
                       </Label>
                       <Input
@@ -450,7 +468,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                      <Label className="text-xs uppercase tracking-widest text-white/80">
                         Empty Weight (LBS)
                       </Label>
                       <Input
@@ -462,7 +480,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                      <Label className="text-xs uppercase tracking-widest text-white/80">
                         Dimensions
                       </Label>
                       <Input
@@ -474,7 +492,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                      <Label className="text-xs uppercase tracking-widest text-white/80">
                         Hitch Connection
                       </Label>
                       <Input
@@ -486,7 +504,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                      <Label className="text-xs uppercase tracking-widest text-white/80">
                         Ball Size (IN)
                       </Label>
                       <Input
@@ -498,7 +516,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                      <Label className="text-xs uppercase tracking-widest text-white/80">
                         Electrical Plug
                       </Label>
                       <Input
@@ -510,7 +528,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                      <Label className="text-xs uppercase tracking-widest text-white/80">
                         Traction Type
                       </Label>
                       <Input
@@ -522,7 +540,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                      <Label className="text-xs uppercase tracking-widest text-white/80">
                         Axle Configuration
                       </Label>
                       <Input
@@ -543,7 +561,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                   
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                      <Label className="text-xs uppercase tracking-widest text-white/80">
                         Daily Signal ($)
                       </Label>
                       <Input
@@ -556,7 +574,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                      <Label className="text-xs uppercase tracking-widest text-white/80">
                         3-Day Block ($)
                       </Label>
                       <Input
@@ -569,7 +587,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                      <Label className="text-xs uppercase tracking-widest text-white/80">
                         Weekly Deployment ($)
                       </Label>
                       <Input
@@ -582,7 +600,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                      <Label className="text-xs uppercase tracking-widest text-white/80">
                         Monthly Garrison ($)
                       </Label>
                       <Input
@@ -638,7 +656,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                         </div>
                       ))}
                       {(!formData.features || formData.features.length === 0) && (
-                        <p className="text-sm text-muted-foreground text-center py-4">
+                        <p className="text-sm text-white/60 text-center py-4">
                           No features added yet
                         </p>
                       )}
@@ -661,21 +679,21 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                     
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                        <Label className="text-xs uppercase tracking-widest text-white/80">
                           Primary Asset Photo (Upload)
                         </Label>
                         <div className="flex items-center gap-4 p-4 bg-background rounded border border-dashed border-border">
                           <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
-                            <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                            <ImageIcon className="h-6 w-6 text-white/50" />
                           </div>
-                          <span className="text-sm text-muted-foreground">
+                          <span className="text-sm text-white/60">
                             Upload Tactical Profile Image
                           </span>
                         </div>
                       </div>
                       
                       <div className="space-y-2">
-                        <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                        <Label className="text-xs uppercase tracking-widest text-white/80">
                           Action Briefing (YouTube URL)
                         </Label>
                         <Input
@@ -724,7 +742,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
       </CardHeader>
       <CardContent>
         {services.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8 uppercase tracking-wide">
+          <p className="text-sm text-white/60 text-center py-8 uppercase tracking-wide">
             No assets deployed. Deploy your rental fleet to attract more customers.
           </p>
         ) : (
