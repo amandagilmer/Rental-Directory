@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import BusinessDetail from "./pages/BusinessDetail";
 import UnitDetail from "./pages/UnitDetail";
+import BadgeExplainer from "./pages/BadgeExplainer";
 import Pricing from "./pages/Pricing";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -59,6 +60,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/business/:slug" element={<BusinessDetail />} />
           <Route path="/business/:slug/unit/:unitId" element={<UnitDetail />} />
+          <Route path="/badges" element={<BadgeExplainer />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />

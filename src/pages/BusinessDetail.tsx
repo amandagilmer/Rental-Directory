@@ -8,6 +8,7 @@ import { LeadCaptureModal } from "@/components/LeadCaptureModal";
 import { Footer } from "@/components/Footer";
 import BusinessReviews from "@/components/BusinessReviews";
 import ReviewModal from "@/components/ReviewModal";
+import { BadgeDisplay } from "@/components/BadgeDisplay";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useInteractionTracking } from "@/hooks/useInteractionTracking";
@@ -312,6 +313,10 @@ const BusinessDetail = () => {
                 </div>
               )}
               <Badge variant="secondary">{displayData.category}</Badge>
+              {/* Operator Badges */}
+              {dbListing?.id && (
+                <BadgeDisplay listingId={dbListing.id} size="md" maxDisplay={5} />
+              )}
             </div>
           </div>
           <Link to="/" className="hidden md:block">

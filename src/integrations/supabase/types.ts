@@ -14,6 +14,95 @@ export type Database = {
   }
   public: {
     Tables: {
+      badge_definitions: {
+        Row: {
+          badge_key: string
+          color: string
+          created_at: string | null
+          description: string
+          display_order: number | null
+          earning_criteria: string
+          icon: string
+          id: string
+          is_auto_calculated: boolean | null
+          name: string
+          requires_verification: boolean | null
+        }
+        Insert: {
+          badge_key: string
+          color?: string
+          created_at?: string | null
+          description: string
+          display_order?: number | null
+          earning_criteria: string
+          icon?: string
+          id?: string
+          is_auto_calculated?: boolean | null
+          name: string
+          requires_verification?: boolean | null
+        }
+        Update: {
+          badge_key?: string
+          color?: string
+          created_at?: string | null
+          description?: string
+          display_order?: number | null
+          earning_criteria?: string
+          icon?: string
+          id?: string
+          is_auto_calculated?: boolean | null
+          name?: string
+          requires_verification?: boolean | null
+        }
+        Relationships: []
+      }
+      badge_verifications: {
+        Row: {
+          badge_key: string
+          document_path: string
+          document_type: string
+          id: string
+          listing_id: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          submitted_at: string | null
+        }
+        Insert: {
+          badge_key: string
+          document_path: string
+          document_type: string
+          id?: string
+          listing_id: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string | null
+        }
+        Update: {
+          badge_key?: string
+          document_path?: string
+          document_type?: string
+          id?: string
+          listing_id?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "badge_verifications_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "business_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blog_posts: {
         Row: {
           author_id: string | null
@@ -704,6 +793,51 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      operator_badges: {
+        Row: {
+          badge_key: string
+          earned_at: string | null
+          id: string
+          is_active: boolean | null
+          listing_id: string
+          verification_notes: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          badge_key: string
+          earned_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          listing_id: string
+          verification_notes?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          badge_key?: string
+          earned_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          listing_id?: string
+          verification_notes?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operator_badges_badge_key_fkey"
+            columns: ["badge_key"]
+            isOneToOne: false
+            referencedRelation: "badge_definitions"
+            referencedColumns: ["badge_key"]
+          },
+          {
+            foreignKeyName: "operator_badges_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "business_listings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pages: {
         Row: {

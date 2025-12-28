@@ -93,7 +93,7 @@ const Index = () => {
                 </div>
                 <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
                   {filteredBusinesses.map((business) => (
-                    <BusinessCard key={business.id} {...business} />
+                    <BusinessCard key={business.id} {...business} listingId={business.id} />
                   ))}
                   {filteredBusinesses.length === 0 && (
                     <div className="text-center py-20">
@@ -106,11 +106,11 @@ const Index = () => {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredBusinesses.map((business) => (
-                    <BusinessCard key={business.id} {...business} />
-                  ))}
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredBusinesses.map((business) => (
+                  <BusinessCard key={business.id} {...business} listingId={business.id} />
+                ))}
+              </div>
                 
                 {filteredBusinesses.length === 0 && (
                   <div className="text-center py-20">
