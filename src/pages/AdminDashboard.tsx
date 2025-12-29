@@ -14,7 +14,8 @@ import {
   Home,
   Shield,
   Star,
-  Upload
+  Upload,
+  FolderTree
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +27,7 @@ const navigation = [
   { name: 'Overview', href: '/admin', icon: LayoutDashboard },
   { name: 'Users', href: '/admin/users', icon: Users },
   { name: 'Listings', href: '/admin/listings', icon: Building2 },
+  { name: 'Categories', href: '/admin/categories', icon: FolderTree },
   { name: 'Badges', href: '/admin/badges', icon: Award },
   { name: 'Bulk Import', href: '/admin/import', icon: Upload },
   { name: 'Leads', href: '/admin/leads', icon: MessageSquare },

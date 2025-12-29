@@ -27,6 +27,7 @@ import SocialLinksEditor from '@/components/dashboard/SocialLinksEditor';
 import PhotoUpload from '@/components/dashboard/PhotoUpload';
 import BadgeSubmissionModal from '@/components/dashboard/BadgeSubmissionModal';
 import { AIDescriptionEnhancer } from '@/components/AIDescriptionEnhancer';
+import { useCategories } from '@/hooks/useCategories';
 
 interface Photo {
   id: string;
@@ -36,13 +37,7 @@ interface Photo {
   display_order: number;
 }
 
-const categories = [
-  'Trailer Rental',
-  'Equipment Rental',
-  'RV Rental',
-  'Camper Rental',
-  'Storage'
-];
+// Categories are now fetched from database via useCategories hook
 
 const listingSchema = z.object({
   business_name: z.string().min(2, 'Business name must be at least 2 characters'),
@@ -58,6 +53,7 @@ const listingSchema = z.object({
 
 export default function BusinessInfo() {
   const { user } = useAuth();
+  const { categories, loading: categoriesLoading } = useCategories();
   const [listing, setListing] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -342,7 +338,7 @@ export default function BusinessInfo() {
                       </SelectTrigger>
                       <SelectContent>
                         {categories.map((cat) => (
-                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                          <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -354,28 +350,28 @@ export default function BusinessInfo() {
                     </Label>
                     <div className="grid grid-cols-1 gap-2 p-4 bg-muted/30 rounded-lg">
                       {categories
-                        .filter(cat => cat !== formData.category)
+                        .filter(cat => cat.name !== formData.category)
                         .map((cat) => (
-                          <div key={cat} className="flex items-center space-x-2">
+                          <div key={cat.id} className="flex items-center space-x-2">
                             <Checkbox
-                              id={`cat-${cat}`}
-                              checked={formData.additional_categories.includes(cat)}
+                              id={`cat-${cat.id}`}
+                              checked={formData.additional_categories.includes(cat.name)}
                               onCheckedChange={(checked) => {
                                 if (checked) {
                                   setFormData({
                                     ...formData,
-                                    additional_categories: [...formData.additional_categories, cat]
+                                    additional_categories: [...formData.additional_categories, cat.name]
                                   });
                                 } else {
                                   setFormData({
                                     ...formData,
-                                    additional_categories: formData.additional_categories.filter(c => c !== cat)
+                                    additional_categories: formData.additional_categories.filter(c => c !== cat.name)
                                   });
                                 }
                               }}
                             />
-                            <label htmlFor={`cat-${cat}`} className="text-sm cursor-pointer">
-                              {cat}
+                            <label htmlFor={`cat-${cat.id}`} className="text-sm cursor-pointer">
+                              {cat.name}
                             </label>
                           </div>
                         ))}

@@ -50,6 +50,7 @@ import AdminContacts from "./pages/admin/AdminContacts";
 import AdminBadges from "./pages/admin/AdminBadges";
 import AdminMarketing from "./pages/admin/AdminMarketing";
 import AdminLiveChat from "./pages/admin/AdminLiveChat";
+import AdminCategories from "./pages/admin/AdminCategories";
 import MyTickets from "./pages/MyTickets";
 
 const queryClient = new QueryClient();
@@ -96,6 +97,7 @@ const App = () => (
             <Route index element={<AdminOverview />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="listings" element={<AdminListings />} />
+            <Route path="categories" element={<AdminCategories />} />
             <Route path="import" element={<AdminBulkImport />} />
             <Route path="leads" element={<AdminLeads />} />
             <Route path="marketing" element={<AdminMarketing />} />
