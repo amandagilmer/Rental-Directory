@@ -46,6 +46,7 @@ interface DbListing {
   linkedin_url: string | null;
   youtube_url: string | null;
   place_id: string | null;
+  booking_url: string | null;
 }
 
 interface DbHours {
@@ -94,8 +95,16 @@ const BusinessDetail = () => {
   const hasTrackedView = useRef(false);
 
   // Interaction tracking
-  const { trackProfileView, trackClickToCall, trackButtonClick, trackFormSubmit } = 
-    useInteractionTracking(dbListing?.id || null);
+  const { 
+    trackProfileView, 
+    trackClickToCall, 
+    trackClickToEmail,
+    trackClickWebsite,
+    trackClickBooking,
+    trackClickSocial,
+    trackButtonClick, 
+    trackFormSubmit 
+  } = useInteractionTracking(dbListing?.id || null);
 
   // Try to get mock business first
   const mockBusiness = getBusinessBySlug(slug || "");
@@ -182,6 +191,7 @@ const BusinessDetail = () => {
     phone: dbListing?.phone || business?.phone || '',
     email: dbListing?.email || business?.email || '',
     website: dbListing?.website || business?.website || '',
+    bookingUrl: dbListing?.booking_url || null,
     image: dbListing?.image_url || business?.image || '/placeholder.svg',
     verified: business?.verified || false,
     rating: business?.rating || 0,
@@ -489,7 +499,7 @@ const BusinessDetail = () => {
                   {displayData.email && (
                     <a
                       href={`mailto:${displayData.email}`}
-                      onClick={() => trackButtonClick('email')}
+                      onClick={() => trackClickToEmail()}
                       className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors"
                     >
                       <Mail className="h-5 w-5 text-primary" />
@@ -502,7 +512,7 @@ const BusinessDetail = () => {
                       href={displayData.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={() => trackButtonClick('website')}
+                      onClick={() => trackClickWebsite()}
                       className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors"
                     >
                       <Globe className="h-5 w-5 text-primary" />
@@ -534,6 +544,7 @@ const BusinessDetail = () => {
                             href={url}
                             target="_blank"
                             rel="noopener noreferrer"
+                            onClick={() => trackClickSocial(platform)}
                             className="p-2 rounded-lg bg-muted hover:bg-primary hover:text-primary-foreground transition-colors"
                           >
                             <Icon className="h-5 w-5" />
@@ -545,10 +556,27 @@ const BusinessDetail = () => {
                 )}
               </Card>
 
+              {/* Book Now CTA - if booking URL exists */}
+              {displayData.bookingUrl && (
+                <a
+                  href={displayData.bookingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => trackClickBooking()}
+                >
+                  <Button
+                    size="lg"
+                    className="w-full text-lg py-6 bg-primary hover:bg-primary/90"
+                  >
+                    Book Now
+                  </Button>
+                </a>
+              )}
+
               {/* Request Quote CTA */}
               <Button
                 size="lg"
-                className="w-full text-lg py-6"
+                className={`w-full text-lg py-6 ${displayData.bookingUrl ? 'bg-secondary hover:bg-secondary/90 text-secondary-foreground' : ''}`}
                 onClick={() => {
                   trackButtonClick('request_quote');
                   setLeadModalOpen(true);

@@ -51,6 +51,7 @@ const listingSchema = z.object({
   phone: z.string().min(10, 'Please enter a valid phone number').optional(),
   email: z.string().email('Invalid email address').optional().or(z.literal('')),
   website: z.string().url('Invalid website URL').optional().or(z.literal('')),
+  booking_url: z.string().url('Invalid booking URL').optional().or(z.literal('')),
 });
 
 export default function BusinessInfo() {
@@ -82,6 +83,7 @@ export default function BusinessInfo() {
     phone: '',
     email: '',
     website: '',
+    booking_url: '',
     is_published: false
   });
 
@@ -118,6 +120,7 @@ export default function BusinessInfo() {
           phone: listingData.phone || '',
           email: listingData.email || '',
           website: listingData.website || '',
+          booking_url: listingData.booking_url || '',
           is_published: listingData.is_published || false
         });
         fetchPhotos(listingData.id);
@@ -286,6 +289,35 @@ export default function BusinessInfo() {
                       className="bg-muted/30 border-0 h-12"
                       placeholder="jim@libertyhaul.com"
                     />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Website URL
+                    </Label>
+                    <Input
+                      type="url"
+                      value={formData.website}
+                      onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                      className="bg-muted/30 border-0 h-12"
+                      placeholder="https://yourwebsite.com"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      External Booking URL
+                    </Label>
+                    <Input
+                      type="url"
+                      value={formData.booking_url}
+                      onChange={(e) => setFormData({ ...formData, booking_url: e.target.value })}
+                      className="bg-muted/30 border-0 h-12"
+                      placeholder="https://booking.example.com"
+                    />
+                    <p className="text-xs text-muted-foreground">Link to your booking/scheduling system (Calendly, etc.)</p>
                   </div>
                 </div>
 
