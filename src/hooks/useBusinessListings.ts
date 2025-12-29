@@ -54,16 +54,9 @@ interface Review {
   rating: number;
 }
 
-// Map category names to category IDs for filtering
-const categoryIdMap: Record<string, string> = {
-  'Car Rental': 'car-rental',
-  'Equipment Rental': 'equipment-rental',
-  'Event Rental': 'event-rental',
-  'Storage Rental': 'storage-rental',
-  'Bike Rental': 'bike-rental',
-  'Party Rental': 'party-rental',
-  'Trailer Rental': 'trailer-rental',
-  'Tool Rental': 'tool-rental',
+// Helper to generate slug from category name
+const generateCategorySlug = (name: string): string => {
+  return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 };
 
 export function useBusinessListings() {
@@ -161,14 +154,12 @@ export function useBusinessListings() {
             ? ratings.reduce((a, b) => a + b, 0) / ratings.length 
             : 0;
 
-          const categoryId = categoryIdMap[listing.category] || listing.category.toLowerCase().replace(/\s+/g, '-');
+          const categoryId = generateCategorySlug(listing.category);
           const slug = listing.business_name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
           
           // Handle additional categories
           const additionalCategories = listing.additional_categories || [];
-          const additionalCategoryIds = additionalCategories.map(cat => 
-            categoryIdMap[cat] || cat.toLowerCase().replace(/\s+/g, '-')
-          );
+          const additionalCategoryIds = additionalCategories.map(cat => generateCategorySlug(cat));
           const allCategoryIds = [categoryId, ...additionalCategoryIds];
           
           const listingServices = servicesMap.get(listing.id) || [];
