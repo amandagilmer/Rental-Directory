@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 const navigation = [
   { name: "Find a Rental", href: "/" },
   { name: "Operator Badges", href: "/badges" },
-  { name: "Host Portal", href: "/dashboard" },
+  { name: "Command Center", href: "/dashboard" },
 ];
 
 export const Header = () => {

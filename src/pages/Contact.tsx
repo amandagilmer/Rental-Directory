@@ -73,12 +73,12 @@ export default function Contact() {
       
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="py-16 md:py-24 bg-gradient-to-br from-primary/5 to-accent/30">
+        <section className="py-16 md:py-24 bg-secondary text-secondary-foreground">
           <div className="container mx-auto px-4 text-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
+            <h1 className="font-display text-4xl md:text-5xl font-bold text-primary-foreground mb-6 uppercase tracking-wide">
               Contact Us
             </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-xl text-secondary-foreground/80 max-w-2xl mx-auto">
               Have a question or need assistance? We're here to help.
             </p>
           </div>
@@ -165,8 +165,8 @@ export default function Contact() {
                       <Mail className="h-5 w-5 text-primary mt-0.5" />
                       <div>
                         <p className="font-medium text-foreground">Email</p>
-                        <a href="mailto:support@localrentaldirectory.com" className="text-muted-foreground hover:text-primary transition-colors text-sm">
-                          support@localrentaldirectory.com
+                        <a href="mailto:support@patriothauls.com" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                          support@patriothauls.com
                         </a>
                       </div>
                     </div>

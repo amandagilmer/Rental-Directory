@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -147,57 +147,104 @@ export default function Auth() {
 
   if (showReset) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-accent/20 p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Reset Password</CardTitle>
-            <CardDescription>Enter your email to receive a password reset link</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleResetPassword} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="reset-email">Email</Label>
-                <Input
-                  id="reset-email"
-                  type="email"
-                  value={resetEmail}
-                  onChange={(e) => setResetEmail(e.target.value)}
-                  required
-                />
+      <div className="min-h-screen flex flex-col bg-background">
+        {/* Header */}
+        <header className="bg-secondary">
+          <div className="h-1 bg-primary" />
+          <div className="container mx-auto px-4 py-4">
+            <Link to="/" className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center shadow-md">
+                <span className="font-display font-bold text-lg text-primary-foreground">PH</span>
               </div>
-              <div className="flex gap-2">
-                <Button type="submit" className="flex-1" disabled={loading}>
-                  {loading ? 'Sending...' : 'Send Reset Link'}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setShowReset(false)}>
-                  Cancel
-                </Button>
+              <div className="hidden sm:block">
+                <span className="font-display font-bold text-xl tracking-wide text-primary-foreground">
+                  Patriot Hauls
+                </span>
+                <p className="text-xs text-secondary-foreground/70 uppercase tracking-widest -mt-0.5">
+                  Hauling the Heart of America
+                </p>
               </div>
-            </form>
-          </CardContent>
-        </Card>
+            </Link>
+          </div>
+        </header>
+
+        <div className="flex-1 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="font-display">Reset Password</CardTitle>
+              <CardDescription>Enter your email to receive a password reset link</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reset-email">Email</Label>
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button type="submit" className="flex-1" disabled={loading}>
+                    {loading ? 'Sending...' : 'Send Reset Link'}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setShowReset(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-accent/20 p-4">
-      <div className="w-full max-w-md space-y-4">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-foreground">Rental Directory</h1>
-          <p className="text-muted-foreground">Manage your business listings</p>
+    <div className="min-h-screen flex flex-col bg-background">
+      {/* Header */}
+      <header className="bg-secondary">
+        <div className="h-1 bg-primary" />
+        <div className="container mx-auto px-4 py-4">
+          <Link to="/" className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center shadow-md">
+              <span className="font-display font-bold text-lg text-primary-foreground">PH</span>
+            </div>
+            <div className="hidden sm:block">
+              <span className="font-display font-bold text-xl tracking-wide text-primary-foreground">
+                Patriot Hauls
+              </span>
+              <p className="text-xs text-secondary-foreground/70 uppercase tracking-widest -mt-0.5">
+                Hauling the Heart of America
+              </p>
+            </div>
+          </Link>
         </div>
+      </header>
+
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-4">
+          <div className="text-center space-y-2">
+            <h1 className="font-display text-3xl font-bold text-foreground uppercase tracking-wide">
+              {userType === 'host' ? 'Command Center' : 'Renter Access'}
+            </h1>
+            <p className="text-muted-foreground">
+              {userType === 'host' ? 'Manage your fleet and operations' : 'Find and rent equipment'}
+            </p>
+          </div>
         
-        <Tabs defaultValue="login" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Login</TabsTrigger>
-            <TabsTrigger value="register">Register</TabsTrigger>
-          </TabsList>
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="register">Register</TabsTrigger>
+            </TabsList>
           
           <TabsContent value="login">
             <Card>
               <CardHeader>
-                <CardTitle>Login</CardTitle>
+                <CardTitle className="font-display">Login</CardTitle>
                 <CardDescription>Enter your credentials to access your account</CardDescription>
               </CardHeader>
               <CardContent>
@@ -345,6 +392,7 @@ export default function Auth() {
         <Button variant="outline" className="w-full" onClick={() => navigate('/')}>
           Back to Directory
         </Button>
+        </div>
       </div>
     </div>
   );

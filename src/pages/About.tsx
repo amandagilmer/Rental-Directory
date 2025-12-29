@@ -52,13 +52,13 @@ export default function About() {
       
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="py-16 md:py-24 bg-gradient-to-br from-primary/5 to-accent/30">
+        <section className="py-16 md:py-24 bg-secondary text-secondary-foreground">
           <div className="container mx-auto px-4 text-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
-              About Local Rental Directory
+            <h1 className="font-display text-4xl md:text-5xl font-bold text-primary-foreground mb-6 uppercase tracking-wide">
+              About Patriot Hauls
             </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Connecting customers with trusted local rental businesses since 2024
+            <p className="text-xl text-secondary-foreground/80 max-w-2xl mx-auto">
+              Hauling the Heart of America since 2024
             </p>
           </div>
         </section>
@@ -67,11 +67,11 @@ export default function About() {
         <section className="py-16 md:py-20">
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto text-center">
-              <h2 className="text-3xl font-bold text-foreground mb-6">Our Mission</h2>
+              <h2 className="font-display text-3xl font-bold text-foreground mb-6 uppercase">Our Mission</h2>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                We are dedicated to connecting customers with the best local rental businesses in their area. 
-                Our platform makes it easy to discover, compare, and contact rental providers for all your needs—from 
-                trailers and RVs to equipment and party supplies.
+                We are dedicated to supporting American workers and businesses by connecting them with the 
+                equipment they need to get the job done. From flatbeds to dump trailers, our platform makes 
+                it easy to find trusted local rental providers who understand hard work.
               </p>
             </div>
           </div>
@@ -81,22 +81,21 @@ export default function About() {
         <section className="py-16 md:py-20 bg-card">
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto">
-              <h2 className="text-3xl font-bold text-foreground mb-6 text-center">Our Story</h2>
+              <h2 className="font-display text-3xl font-bold text-foreground mb-6 text-center uppercase">Our Story</h2>
               <div className="prose prose-lg mx-auto text-muted-foreground">
                 <p className="leading-relaxed">
-                  Founded with a vision to simplify the rental discovery process, Local Rental Directory 
-                  has grown to become a trusted resource for both customers seeking rental services and 
-                  businesses looking to expand their reach.
+                  Patriot Hauls was founded by blue-collar Americans who saw a need: hardworking people 
+                  struggling to find reliable trailer rentals in their area. Too many hours wasted on 
+                  phone calls, driving around, and dealing with unreliable providers.
                 </p>
                 <p className="leading-relaxed mt-4">
-                  We noticed that finding reliable local rental businesses was often difficult—searching 
-                  through outdated directories, making countless phone calls, and hoping for the best. 
-                  We built this platform to change that experience entirely.
+                  We built this platform to change that. By connecting operators with customers who need 
+                  their equipment, we're supporting the backbone of American infrastructure—the workers 
+                  who build, haul, and move our nation forward.
                 </p>
                 <p className="leading-relaxed mt-4">
-                  Today, we help thousands of customers find the perfect rental business for their needs, 
-                  while empowering local businesses to grow their customer base through our comprehensive 
-                  directory and marketing tools.
+                  Today, Patriot Hauls serves operators and renters across the country, helping local 
+                  businesses thrive while making it easy for customers to find exactly what they need.
                 </p>
               </div>
             </div>
