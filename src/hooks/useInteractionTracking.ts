@@ -1,6 +1,16 @@
 import { supabase } from "@/integrations/supabase/client";
 
-type InteractionType = 'profile_view' | 'click_to_call' | 'button_click' | 'form_submit' | 'unit_view' | 'unit_inquiry';
+type InteractionType = 
+  | 'profile_view' 
+  | 'click_to_call' 
+  | 'click_to_email'
+  | 'click_website'
+  | 'click_booking'
+  | 'click_social'
+  | 'button_click' 
+  | 'form_submit' 
+  | 'unit_view' 
+  | 'unit_inquiry';
 
 interface TrackInteractionParams {
   hostId: string;
@@ -50,6 +60,30 @@ export const useInteractionTracking = (hostId: string | null) => {
     }
   };
 
+  const trackClickToEmail = () => {
+    if (hostId) {
+      trackInteraction({ hostId, interactionType: 'click_to_email', source: 'profile' });
+    }
+  };
+
+  const trackClickWebsite = () => {
+    if (hostId) {
+      trackInteraction({ hostId, interactionType: 'click_website', source: 'profile' });
+    }
+  };
+
+  const trackClickBooking = () => {
+    if (hostId) {
+      trackInteraction({ hostId, interactionType: 'click_booking', source: 'profile' });
+    }
+  };
+
+  const trackClickSocial = (platform: string) => {
+    if (hostId) {
+      trackInteraction({ hostId, interactionType: 'click_social', source: platform });
+    }
+  };
+
   const trackButtonClick = (buttonName?: string) => {
     if (hostId) {
       trackInteraction({ 
@@ -96,6 +130,10 @@ export const useInteractionTracking = (hostId: string | null) => {
   return {
     trackProfileView,
     trackClickToCall,
+    trackClickToEmail,
+    trackClickWebsite,
+    trackClickBooking,
+    trackClickSocial,
     trackButtonClick,
     trackFormSubmit,
     trackUnitView,

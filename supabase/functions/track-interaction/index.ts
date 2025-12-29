@@ -28,7 +28,18 @@ serve(async (req) => {
     }
 
     // Validate interaction type
-    const validTypes = ['profile_view', 'click_to_call', 'button_click', 'form_submit', 'unit_view', 'unit_inquiry'];
+    const validTypes = [
+      'profile_view', 
+      'click_to_call', 
+      'click_to_email',
+      'click_website',
+      'click_booking',
+      'click_social',
+      'button_click', 
+      'form_submit', 
+      'unit_view', 
+      'unit_inquiry'
+    ];
     if (!validTypes.includes(interaction_type)) {
       return new Response(
         JSON.stringify({ error: 'Invalid interaction_type' }),

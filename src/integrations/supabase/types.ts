@@ -204,6 +204,7 @@ export type Database = {
       business_listings: {
         Row: {
           address: string | null
+          booking_url: string | null
           business_name: string
           category: string
           claim_token: string | null
@@ -229,6 +230,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          booking_url?: string | null
           business_name: string
           category: string
           claim_token?: string | null
@@ -254,6 +256,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          booking_url?: string | null
           business_name?: string
           category?: string
           claim_token?: string | null
