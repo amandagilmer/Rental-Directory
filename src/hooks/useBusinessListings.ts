@@ -17,6 +17,8 @@ export interface BusinessListing {
   name: string;
   category: string;
   categoryId: string;
+  additionalCategories: string[];
+  allCategoryIds: string[];
   description: string;
   address: string;
   phone: string;
@@ -37,6 +39,7 @@ interface RawListing {
   id: string;
   business_name: string;
   category: string;
+  additional_categories: string[] | null;
   description: string | null;
   address: string | null;
   phone: string | null;
@@ -74,7 +77,7 @@ export function useBusinessListings() {
         // Fetch published business listings
         const { data: listings, error: listingsError } = await supabase
           .from('business_listings')
-          .select('id, business_name, category, description, address, phone, image_url, email, website, latitude, longitude')
+          .select('id, business_name, category, additional_categories, description, address, phone, image_url, email, website, latitude, longitude')
           .eq('is_published', true)
           .order('created_at', { ascending: false });
 
@@ -161,6 +164,13 @@ export function useBusinessListings() {
           const categoryId = categoryIdMap[listing.category] || listing.category.toLowerCase().replace(/\s+/g, '-');
           const slug = listing.business_name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
           
+          // Handle additional categories
+          const additionalCategories = listing.additional_categories || [];
+          const additionalCategoryIds = additionalCategories.map(cat => 
+            categoryIdMap[cat] || cat.toLowerCase().replace(/\s+/g, '-')
+          );
+          const allCategoryIds = [categoryId, ...additionalCategoryIds];
+          
           const listingServices = servicesMap.get(listing.id) || [];
           const dailyRates = listingServices
             .map(s => s.dailyRate)
@@ -174,6 +184,8 @@ export function useBusinessListings() {
             name: listing.business_name,
             category: listing.category,
             categoryId,
+            additionalCategories,
+            allCategoryIds,
             description: listing.description || 'Quality rental services for your needs.',
             address: listing.address || 'Contact for location',
             phone: listing.phone || 'Contact for details',
