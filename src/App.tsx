@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { SupportChatWidget } from "@/components/SupportChatWidget";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import BusinessDetail from "./pages/BusinessDetail";
@@ -58,6 +59,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+        <SupportChatWidget />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/business/:slug" element={<BusinessDetail />} />
