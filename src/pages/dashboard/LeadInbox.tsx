@@ -51,6 +51,7 @@ const statusOptions = [
   { value: 'contacted', label: 'Contacted' },
   { value: 'qualified', label: 'Qualified' },
   { value: 'converted', label: 'Converted' },
+  { value: 'completed', label: 'Completed' },
   { value: 'closed', label: 'Closed' },
 ];
 
@@ -59,6 +60,7 @@ const statusColors: Record<string, string> = {
   contacted: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
   qualified: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
   converted: 'bg-green-500/10 text-green-500 border-green-500/20',
+  completed: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
   closed: 'bg-muted text-muted-foreground border-border',
 };
 
@@ -128,8 +130,10 @@ export default function LeadInbox() {
 
       if (error) throw error;
 
-      setLeads(leads.map(lead => 
-        lead.id === leadId ? { ...lead, status: newStatus } : lead
+      const lead = leads.find(l => l.id === leadId);
+      
+      setLeads(leads.map(l => 
+        l.id === leadId ? { ...l, status: newStatus } : l
       ));
 
       if (selectedLead?.id === leadId) {
@@ -140,6 +144,11 @@ export default function LeadInbox() {
         title: 'Status Updated',
         description: `Lead status changed to ${newStatus}`,
       });
+
+      // If marking as completed, check if we should send a review request
+      if (newStatus === 'completed' && lead) {
+        triggerCompletionReviewRequest(lead);
+      }
     } catch (error) {
       console.error('Error updating lead status:', error);
       toast({
@@ -147,6 +156,42 @@ export default function LeadInbox() {
         description: 'Failed to update lead status',
         variant: 'destructive',
       });
+    }
+  };
+
+  const triggerCompletionReviewRequest = async (lead: Lead) => {
+    try {
+      // Check if review settings have send_on_completion enabled
+      const { data: settings } = await supabase
+        .from('review_settings')
+        .select('send_on_completion')
+        .eq('listing_id', lead.business_id)
+        .maybeSingle();
+
+      // If settings exist and send_on_completion is enabled
+      if (settings?.send_on_completion) {
+        // Check if review email was already sent
+        const { data: leadData } = await supabase
+          .from('leads')
+          .select('review_email_sent')
+          .eq('id', lead.id)
+          .single();
+
+        if (leadData && !leadData.review_email_sent) {
+          // Send review request
+          await supabase.functions.invoke('send-review-request', {
+            body: { lead_id: lead.id },
+          });
+
+          toast({
+            title: 'Review Request Sent',
+            description: `A review request has been sent to ${lead.email}`,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error sending completion review request:', error);
+      // Don't show error toast - this is a background action
     }
   };
 

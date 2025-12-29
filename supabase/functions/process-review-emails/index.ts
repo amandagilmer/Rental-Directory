@@ -8,6 +8,20 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+interface ReviewSettings {
+  auto_send_enabled: boolean;
+  auto_send_delay_hours: number;
+  reminder_enabled: boolean;
+  reminder_delay_days: number;
+}
+
+const defaultSettings: ReviewSettings = {
+  auto_send_enabled: true,
+  auto_send_delay_hours: 48,
+  reminder_enabled: false,
+  reminder_delay_days: 7,
+};
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -20,15 +34,29 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Processing pending review email requests...");
 
-    // Find leads that are 48+ hours old and haven't had review email sent
-    const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-    
+    // Get all review settings for businesses
+    const { data: allSettings } = await supabase
+      .from("review_settings")
+      .select("listing_id, auto_send_enabled, auto_send_delay_hours, reminder_enabled, reminder_delay_days");
+
+    const settingsMap = new Map<string, ReviewSettings>();
+    if (allSettings) {
+      for (const s of allSettings) {
+        settingsMap.set(s.listing_id, {
+          auto_send_enabled: s.auto_send_enabled ?? true,
+          auto_send_delay_hours: s.auto_send_delay_hours ?? 48,
+          reminder_enabled: s.reminder_enabled ?? false,
+          reminder_delay_days: s.reminder_delay_days ?? 7,
+        });
+      }
+    }
+
+    // Find leads that haven't had review email sent
     const { data: leads, error: leadsError } = await supabase
       .from("leads")
-      .select("id, email, name, business_id, review_token")
+      .select("id, email, name, business_id, review_token, created_at")
       .eq("review_email_sent", false)
-      .lt("created_at", fortyEightHoursAgo)
-      .limit(50); // Process max 50 at a time
+      .limit(100);
 
     if (leadsError) {
       console.error("Error fetching leads:", leadsError);
@@ -43,13 +71,34 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log(`Found ${leads.length} leads to process`);
+    console.log(`Found ${leads.length} leads to evaluate`);
 
     let successCount = 0;
     let failCount = 0;
+    let skippedCount = 0;
 
     for (const lead of leads) {
       try {
+        // Get settings for this business (or use defaults)
+        const settings = settingsMap.get(lead.business_id) || defaultSettings;
+
+        // Skip if auto-send is disabled for this business
+        if (!settings.auto_send_enabled) {
+          console.log(`Skipping lead ${lead.id} - auto-send disabled for business`);
+          skippedCount++;
+          continue;
+        }
+
+        // Check if enough time has passed based on the business's settings
+        const leadAge = Date.now() - new Date(lead.created_at).getTime();
+        const delayMs = settings.auto_send_delay_hours * 60 * 60 * 1000;
+
+        if (leadAge < delayMs) {
+          console.log(`Skipping lead ${lead.id} - not enough time passed (${Math.round(leadAge / 3600000)}h < ${settings.auto_send_delay_hours}h)`);
+          skippedCount++;
+          continue;
+        }
+
         // Get business name
         const { data: business } = await supabase
           .from("business_listings")
@@ -134,14 +183,15 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    console.log(`Processed ${leads.length} leads: ${successCount} success, ${failCount} failed`);
+    console.log(`Processed ${leads.length} leads: ${successCount} success, ${failCount} failed, ${skippedCount} skipped`);
 
     return new Response(
       JSON.stringify({ 
         message: "Processing complete", 
         total: leads.length,
         success: successCount,
-        failed: failCount 
+        failed: failCount,
+        skipped: skippedCount
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
