@@ -4,7 +4,6 @@ import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import "leaflet.markercluster";
-import { Business } from "@/data/businesses";
 
 // Fix for default marker icons in Leaflet with Vite
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
@@ -19,8 +18,18 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
+interface MapBusiness {
+  id: string;
+  slug: string;
+  name: string;
+  category: string;
+  rating: number;
+  latitude?: number;
+  longitude?: number;
+}
+
 interface BusinessMapProps {
-  businesses: Business[];
+  businesses: MapBusiness[];
   userLocation?: { lat: number; lng: number } | null;
   className?: string;
 }
