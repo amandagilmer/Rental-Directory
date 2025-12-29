@@ -3,12 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Star, TrendingUp, MessageSquare, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Loader2, Star, TrendingUp, MessageSquare, ThumbsUp, ThumbsDown, Settings } from 'lucide-react';
 import ReviewsOverviewTab from '@/components/dashboard/reviews/ReviewsOverviewTab';
 import ReviewsListTab from '@/components/dashboard/reviews/ReviewsListTab';
 import ReviewsWidgetsTab from '@/components/dashboard/reviews/ReviewsWidgetsTab';
 import ReviewsRequestsTab from '@/components/dashboard/reviews/ReviewsRequestsTab';
-
+import ReviewSettingsTab from '@/components/dashboard/reviews/ReviewSettingsTab';
 interface Review {
   id: string;
   author_name: string;
@@ -102,11 +102,15 @@ export default function Reviews() {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="reviews">Reviews</TabsTrigger>
           <TabsTrigger value="widgets">Widgets</TabsTrigger>
           <TabsTrigger value="requests">Requests</TabsTrigger>
+          <TabsTrigger value="settings" className="flex items-center gap-1.5">
+            <Settings className="h-3.5 w-3.5" />
+            Settings
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -127,6 +131,10 @@ export default function Reviews() {
 
         <TabsContent value="requests">
           <ReviewsRequestsTab listingId={listing.id} />
+        </TabsContent>
+
+        <TabsContent value="settings">
+          <ReviewSettingsTab listingId={listing.id} />
         </TabsContent>
       </Tabs>
     </div>

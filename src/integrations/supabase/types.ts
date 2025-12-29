@@ -899,6 +899,50 @@ export type Database = {
         }
         Relationships: []
       }
+      review_settings: {
+        Row: {
+          auto_send_delay_hours: number | null
+          auto_send_enabled: boolean | null
+          created_at: string | null
+          id: string
+          listing_id: string
+          reminder_delay_days: number | null
+          reminder_enabled: boolean | null
+          send_on_completion: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          auto_send_delay_hours?: number | null
+          auto_send_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          listing_id: string
+          reminder_delay_days?: number | null
+          reminder_enabled?: boolean | null
+          send_on_completion?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          auto_send_delay_hours?: number | null
+          auto_send_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          listing_id?: string
+          reminder_delay_days?: number | null
+          reminder_enabled?: boolean | null
+          send_on_completion?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_settings_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "business_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_areas: {
         Row: {
           area_type: string
