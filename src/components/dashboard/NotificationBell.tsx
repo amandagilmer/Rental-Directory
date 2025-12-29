@@ -86,9 +86,22 @@ export default function NotificationBell() {
     }
 
     // Navigate based on notification type
-    if (notification.type === 'new_lead' && notification.related_id) {
+    if (notification.related_id) {
       setOpen(false);
-      navigate('/dashboard/leads');
+      switch (notification.type) {
+        case 'new_lead':
+          navigate('/dashboard/leads');
+          break;
+        case 'contact_message':
+          navigate('/admin/contacts');
+          break;
+        case 'support_ticket':
+          navigate('/admin/support');
+          break;
+        default:
+          // Just mark as read, no navigation
+          break;
+      }
     }
   };
 
