@@ -203,6 +203,7 @@ export type Database = {
       }
       business_listings: {
         Row: {
+          additional_categories: string[] | null
           address: string | null
           booking_url: string | null
           business_name: string
@@ -231,6 +232,7 @@ export type Database = {
           youtube_url: string | null
         }
         Insert: {
+          additional_categories?: string[] | null
           address?: string | null
           booking_url?: string | null
           business_name: string
@@ -259,6 +261,7 @@ export type Database = {
           youtube_url?: string | null
         }
         Update: {
+          additional_categories?: string[] | null
           address?: string | null
           booking_url?: string | null
           business_name?: string

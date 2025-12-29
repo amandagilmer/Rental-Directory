@@ -62,8 +62,11 @@ const Index = () => {
 
   const filteredBusinesses = useMemo(() => {
     return businesses.filter((business) => {
-      // Category filter
-      const matchesCategory = activeCategory === "all" || business.categoryId === activeCategory;
+      // Category filter - check primary and additional categories
+      const matchesCategory = activeCategory === "all" || 
+        (isDbListing(business) 
+          ? business.allCategoryIds.some(catId => catId.includes(activeCategory) || activeCategory.includes(catId))
+          : business.categoryId === activeCategory);
       
       // Search filter
       const matchesSearch = searchQuery === "" || 

@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -80,6 +81,7 @@ export default function BusinessInfo() {
     owner_name: '',
     description: '',
     category: '',
+    additional_categories: [] as string[],
     address: '',
     phone: '',
     email: '',
@@ -117,6 +119,7 @@ export default function BusinessInfo() {
           owner_name: listingData.owner_name || '',
           description: listingData.description || '',
           category: listingData.category || '',
+          additional_categories: listingData.additional_categories || [],
           address: listingData.address || '',
           phone: listingData.phone || '',
           email: listingData.email || '',
@@ -322,6 +325,63 @@ export default function BusinessInfo() {
                     placeholder="123 Main Street, Houston, TX 77001"
                   />
                   <p className="text-xs text-muted-foreground">Full address for map location. Will be auto-geocoded when saved.</p>
+                </div>
+
+                {/* Categories Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Primary Category
+                    </Label>
+                    <Select 
+                      value={formData.category} 
+                      onValueChange={(value) => setFormData({ ...formData, category: value })}
+                    >
+                      <SelectTrigger className="bg-muted/30 border-0 h-12">
+                        <SelectValue placeholder="Select primary category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((cat) => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Additional Categories
+                    </Label>
+                    <div className="grid grid-cols-1 gap-2 p-4 bg-muted/30 rounded-lg">
+                      {categories
+                        .filter(cat => cat !== formData.category)
+                        .map((cat) => (
+                          <div key={cat} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`cat-${cat}`}
+                              checked={formData.additional_categories.includes(cat)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setFormData({
+                                    ...formData,
+                                    additional_categories: [...formData.additional_categories, cat]
+                                  });
+                                } else {
+                                  setFormData({
+                                    ...formData,
+                                    additional_categories: formData.additional_categories.filter(c => c !== cat)
+                                  });
+                                }
+                              }}
+                            />
+                            <label htmlFor={`cat-${cat}`} className="text-sm cursor-pointer">
+                              {cat}
+                            </label>
+                          </div>
+                        ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Select all that apply. Your business will appear in these category filters.</p>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
