@@ -43,6 +43,8 @@ interface RawListing {
   image_url: string | null;
   email?: string | null;
   website?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 interface Review {
@@ -72,7 +74,7 @@ export function useBusinessListings() {
         // Fetch published business listings
         const { data: listings, error: listingsError } = await supabase
           .from('business_listings')
-          .select('id, business_name, category, description, address, phone, image_url, email, website')
+          .select('id, business_name, category, description, address, phone, image_url, email, website, latitude, longitude')
           .eq('is_published', true)
           .order('created_at', { ascending: false });
 
@@ -180,6 +182,8 @@ export function useBusinessListings() {
             image: photosMap.get(listing.id) || listing.image_url || '/placeholder.svg',
             email: listing.email || undefined,
             website: listing.website || undefined,
+            latitude: listing.latitude ?? undefined,
+            longitude: listing.longitude ?? undefined,
             badges: badgesMap.get(listing.id) || [],
             services: listingServices,
             lowestDailyRate,

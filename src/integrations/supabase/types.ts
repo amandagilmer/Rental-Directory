@@ -217,7 +217,9 @@ export type Database = {
           image_url: string | null
           instagram_url: string | null
           is_published: boolean | null
+          latitude: number | null
           linkedin_url: string | null
+          longitude: number | null
           owner_name: string | null
           phone: string | null
           place_id: string | null
@@ -243,7 +245,9 @@ export type Database = {
           image_url?: string | null
           instagram_url?: string | null
           is_published?: boolean | null
+          latitude?: number | null
           linkedin_url?: string | null
+          longitude?: number | null
           owner_name?: string | null
           phone?: string | null
           place_id?: string | null
@@ -269,7 +273,9 @@ export type Database = {
           image_url?: string | null
           instagram_url?: string | null
           is_published?: boolean | null
+          latitude?: number | null
           linkedin_url?: string | null
+          longitude?: number | null
           owner_name?: string | null
           phone?: string | null
           place_id?: string | null
