@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Star, MessageSquare, Reply, Send, Loader2, Sparkles, Tag, Filter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { AIReviewResponse } from '@/components/AIReviewResponse';
 
 interface Review {
   id: string;
@@ -24,10 +25,12 @@ interface Review {
 interface ReviewsListTabProps {
   reviews: Review[];
   listingId: string;
+  businessName: string;
+  isPro?: boolean;
   onReviewsUpdate: (reviews: Review[]) => void;
 }
 
-export default function ReviewsListTab({ reviews, listingId, onReviewsUpdate }: ReviewsListTabProps) {
+export default function ReviewsListTab({ reviews, listingId, businessName, isPro = false, onReviewsUpdate }: ReviewsListTabProps) {
   const { toast } = useToast();
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
   const [responseText, setResponseText] = useState('');
@@ -295,6 +298,16 @@ export default function ReviewsListTab({ reviews, listingId, onReviewsUpdate }: 
 
                   {!review.vendor_response && respondingTo === review.id ? (
                     <div className="space-y-3">
+                      {/* AI Review Response Helper */}
+                      <AIReviewResponse
+                        reviewText={review.review_text || ''}
+                        rating={review.rating}
+                        authorName={review.author_name}
+                        businessName={businessName}
+                        isPro={isPro}
+                        onUseResponse={(response) => setResponseText(response)}
+                      />
+
                       <Textarea
                         placeholder="Write your response..."
                         value={responseText}

@@ -10,6 +10,7 @@ import { useBusinessListings, BusinessListing } from "@/hooks/useBusinessListing
 import { businesses as mockBusinesses } from "@/data/businesses";
 import { calculateDistance } from "@/hooks/useGeolocation";
 import { Loader2 } from "lucide-react";
+import { TrailerChatbot } from "@/components/TrailerChatbot";
 
 const Index = () => {
   const { businesses: dbBusinesses, loading } = useBusinessListings();
@@ -241,6 +242,9 @@ const Index = () => {
       </main>
       
       <Footer />
+      
+      {/* AI Trailer Recommendation Chatbot */}
+      <TrailerChatbot />
     </div>
   );
 };
