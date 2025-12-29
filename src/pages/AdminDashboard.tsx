@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-import { FileText, HelpCircle, BookOpen, Mail } from 'lucide-react';
+import { FileText, HelpCircle, BookOpen, Mail, MessagesSquare } from 'lucide-react';
 
 import { Award } from 'lucide-react';
 
@@ -32,6 +32,7 @@ const navigation = [
   { name: 'Reviews', href: '/admin/reviews', icon: Star },
   { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
   { name: 'Support Tickets', href: '/admin/support', icon: Ticket },
+  { name: 'Live Chat', href: '/admin/live-chat', icon: MessagesSquare },
   { name: 'Pages', href: '/admin/pages', icon: FileText },
   { name: 'FAQs', href: '/admin/faqs', icon: HelpCircle },
   { name: 'Blog', href: '/admin/blog', icon: BookOpen },

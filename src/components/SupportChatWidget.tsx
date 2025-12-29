@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, Loader2, Headphones, FileText, ChevronLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { MessageCircle, X, Send, Loader2, Headphones, FileText, ChevronLeft, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,9 +19,19 @@ interface Message {
   timestamp: Date;
 }
 
+interface ChatMessage {
+  id: string;
+  ticket_id: string;
+  sender_id: string | null;
+  sender_type: 'user' | 'admin' | 'system';
+  message: string;
+  created_at: string;
+}
+
 type WidgetView = 'menu' | 'ticket' | 'chat';
 
 export function SupportChatWidget() {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [view, setView] = useState<WidgetView>('menu');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,6 +47,7 @@ export function SupportChatWidget() {
   });
 
   // Chat state
+  const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -49,6 +61,43 @@ export function SupportChatWidget() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Subscribe to admin responses when we have an active ticket
+  useEffect(() => {
+    if (!activeTicketId) return;
+
+    const channel = supabase
+      .channel(`widget-ticket-${activeTicketId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `ticket_id=eq.${activeTicketId}`,
+        },
+        (payload) => {
+          const newMsg = payload.new as ChatMessage;
+          // Only add admin messages (user messages are added locally)
+          if (newMsg.sender_type === 'admin') {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: newMsg.id,
+                content: newMsg.message,
+                isUser: false,
+                timestamp: new Date(newMsg.created_at),
+              },
+            ]);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeTicketId]);
 
   const handleSubmitTicket = async () => {
     if (!ticketForm.subject || !ticketForm.description) {
@@ -102,31 +151,71 @@ export function SupportChatWidget() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const messageContent = chatInput;
     setChatInput('');
     setIsSubmitting(true);
 
-    // Simulate a response (in a real app, this would hit an AI endpoint or support system)
-    setTimeout(() => {
-      const botResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        content: "Thanks for your message! A support team member will review this and get back to you soon. For faster assistance, you can submit a support ticket.",
-        isUser: false,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, botResponse]);
-      setIsSubmitting(false);
+    try {
+      // If we don't have an active ticket, create one
+      if (!activeTicketId) {
+        const { data: ticketData, error: ticketError } = await supabase
+          .from('support_tickets')
+          .insert({
+            user_id: user?.id || null,
+            subject: `Live Chat: ${messageContent.substring(0, 50)}${messageContent.length > 50 ? '...' : ''}`,
+            description: messageContent,
+            priority: 'medium',
+            status: 'open',
+          })
+          .select()
+          .single();
 
-      // Also create a support ticket from the chat message
-      supabase.from('support_tickets').insert({
-        user_id: user?.id || null,
-        subject: `Chat Support: ${userMessage.content.substring(0, 50)}${userMessage.content.length > 50 ? '...' : ''}`,
-        description: userMessage.content,
-        priority: 'medium',
-        status: 'open',
-      }).then(({ error }) => {
-        if (error) console.error('Error creating ticket from chat:', error);
+        if (ticketError) throw ticketError;
+
+        setActiveTicketId(ticketData.id);
+
+        // Add the first message to chat_messages
+        await supabase.from('chat_messages').insert({
+          ticket_id: ticketData.id,
+          sender_id: user?.id || null,
+          sender_type: 'user',
+          message: messageContent,
+        });
+
+        // Add a system message
+        const botResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          content: "Thanks for your message! A support team member will respond shortly. You'll see their replies here in real-time.",
+          isUser: false,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, botResponse]);
+      } else {
+        // Add message to existing ticket
+        const { error: msgError } = await supabase.from('chat_messages').insert({
+          ticket_id: activeTicketId,
+          sender_id: user?.id || null,
+          sender_type: 'user',
+          message: messageContent,
+        });
+
+        if (msgError) throw msgError;
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to send message. Please try again.',
+        variant: 'destructive',
       });
-    }, 1000);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleViewTickets = () => {
+    setIsOpen(false);
+    navigate('/my-tickets');
   };
 
   if (!isOpen) {
@@ -207,6 +296,21 @@ export function SupportChatWidget() {
                 </p>
               </div>
             </Button>
+            {user && (
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-3 h-auto py-4"
+                onClick={handleViewTickets}
+              >
+                <Ticket className="h-5 w-5 text-primary" />
+                <div className="text-left">
+                  <p className="font-medium">My Tickets</p>
+                  <p className="text-xs text-muted-foreground">
+                    View and track your support tickets
+                  </p>
+                </div>
+              </Button>
+            )}
           </div>
         )}
 
