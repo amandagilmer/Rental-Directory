@@ -871,6 +871,45 @@ export type Database = {
           },
         ]
       }
+      network_events: {
+        Row: {
+          color: string | null
+          created_at: string
+          event_type: string
+          expires_at: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          message: string
+          related_id: string | null
+          title: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          event_type: string
+          expires_at?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          message: string
+          related_id?: string | null
+          title: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          event_type?: string
+          expires_at?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          message?: string
+          related_id?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
