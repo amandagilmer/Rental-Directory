@@ -9,12 +9,13 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Package, Plus, Edit, Trash2, DollarSign, Image as ImageIcon, ChevronDown, ChevronUp, BarChart3, X } from 'lucide-react';
+import { Package, Plus, Edit, Trash2, DollarSign, Image as ImageIcon, ChevronDown, ChevronUp, BarChart3, X, MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ServicePhotoUpload from './ServicePhotoUpload';
 import UnitAnalytics from './UnitAnalytics';
+import ServiceLocationEditor from './ServiceLocationEditor';
 
 const ASSET_CLASSES = [
   { value: 'trailer', label: 'Trailer' },
@@ -820,10 +821,14 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                   <CollapsibleContent>
                     <div className="px-4 pb-4 border-t border-border pt-4">
                       <Tabs defaultValue="photos">
-                        <TabsList className="grid w-full grid-cols-2 mb-4 bg-muted/50">
+                        <TabsList className="grid w-full grid-cols-3 mb-4 bg-muted/50">
                           <TabsTrigger value="photos" className="text-xs uppercase tracking-wide">
                             <ImageIcon className="h-3 w-3 mr-1" />
                             Visual Intel
+                          </TabsTrigger>
+                          <TabsTrigger value="locations" className="text-xs uppercase tracking-wide">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            Locations
                           </TabsTrigger>
                           <TabsTrigger value="analytics" className="text-xs uppercase tracking-wide">
                             <BarChart3 className="h-3 w-3 mr-1" />
@@ -836,6 +841,12 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                             listingId={listingId}
                             photos={service.photos || []}
                             onPhotosChange={fetchServices}
+                          />
+                        </TabsContent>
+                        <TabsContent value="locations">
+                          <ServiceLocationEditor
+                            serviceId={service.id!}
+                            serviceName={service.service_name}
                           />
                         </TabsContent>
                         <TabsContent value="analytics">
