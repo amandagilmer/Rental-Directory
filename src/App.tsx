@@ -49,6 +49,8 @@ import AdminBlog from "./pages/admin/AdminBlog";
 import AdminContacts from "./pages/admin/AdminContacts";
 import AdminBadges from "./pages/admin/AdminBadges";
 import AdminMarketing from "./pages/admin/AdminMarketing";
+import AdminLiveChat from "./pages/admin/AdminLiveChat";
+import MyTickets from "./pages/MyTickets";
 
 const queryClient = new QueryClient();
 
@@ -100,12 +102,14 @@ const App = () => (
             <Route path="reviews" element={<AdminReviews />} />
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="support" element={<AdminSupport />} />
+            <Route path="live-chat" element={<AdminLiveChat />} />
             <Route path="pages" element={<AdminPages />} />
             <Route path="faqs" element={<AdminFaqs />} />
             <Route path="blog" element={<AdminBlog />} />
             <Route path="contacts" element={<AdminContacts />} />
             <Route path="badges" element={<AdminBadges />} />
           </Route>
+          <Route path="/my-tickets" element={<MyTickets />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         </AuthProvider>
