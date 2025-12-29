@@ -3,10 +3,12 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 
+type UserType = 'renter' | 'host' | 'both';
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  signUp: (email: string, password: string, businessName: string, location: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, businessName: string, location: string, userType?: UserType, signupSource?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
@@ -44,8 +46,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const signUp = async (email: string, password: string, businessName: string, location: string) => {
+  const signUp = async (email: string, password: string, businessName: string, location: string, userType: UserType = 'host', signupSource?: string) => {
     const redirectUrl = `${window.location.origin}/`;
+    
+    // Capture UTM params from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const capturedSource = signupSource || urlParams.get('utm_source') || urlParams.get('ref') || 'direct';
     
     const { error } = await supabase.auth.signUp({
       email,
@@ -54,7 +60,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailRedirectTo: redirectUrl,
         data: {
           business_name: businessName,
-          location: location
+          location: location,
+          user_type: userType,
+          signup_source: capturedSource
         }
       }
     });

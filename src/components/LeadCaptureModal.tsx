@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle2 } from "lucide-react";
@@ -29,6 +30,7 @@ interface FormData {
   dateNeeded: string;
   location: string;
   message: string;
+  marketingConsent: boolean;
 }
 
 interface FormErrors {
@@ -49,7 +51,19 @@ export const LeadCaptureModal = ({ open, onOpenChange, businessName, businessId,
     dateNeeded: "",
     location: "",
     message: "",
+    marketingConsent: false,
   });
+  
+  // Capture UTM parameters from URL
+  const getUtmParams = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return {
+      utm_source: urlParams.get('utm_source') || null,
+      utm_medium: urlParams.get('utm_medium') || null,
+      utm_campaign: urlParams.get('utm_campaign') || null,
+      referrer_url: document.referrer || null,
+    };
+  };
   const [errors, setErrors] = useState<FormErrors>({});
 
   const validateForm = (): boolean => {
@@ -83,6 +97,8 @@ export const LeadCaptureModal = ({ open, onOpenChange, businessName, businessId,
     setLoading(true);
 
     try {
+      const utmParams = getUtmParams();
+      
       const { error } = await supabase.from('leads').insert({
         business_id: businessId,
         name: formData.name.trim(),
@@ -93,6 +109,11 @@ export const LeadCaptureModal = ({ open, onOpenChange, businessName, businessId,
         location: formData.location.trim() || null,
         message: formData.message.trim() || null,
         status: 'new',
+        marketing_consent: formData.marketingConsent,
+        utm_source: utmParams.utm_source,
+        utm_medium: utmParams.utm_medium,
+        utm_campaign: utmParams.utm_campaign,
+        referrer_url: utmParams.referrer_url,
       });
 
       if (error) throw error;
@@ -136,6 +157,7 @@ export const LeadCaptureModal = ({ open, onOpenChange, businessName, businessId,
         dateNeeded: "",
         location: "",
         message: "",
+        marketingConsent: false,
       });
       setErrors({});
     }, 300);
@@ -258,6 +280,25 @@ export const LeadCaptureModal = ({ open, onOpenChange, businessName, businessId,
               placeholder="Tell us about your needs..."
               rows={4}
             />
+          </div>
+
+          {/* Marketing Consent */}
+          <div className="flex items-start space-x-3 p-3 bg-muted/30 rounded-lg">
+            <Checkbox
+              id="marketing-consent"
+              checked={formData.marketingConsent}
+              onCheckedChange={(checked) => 
+                setFormData(prev => ({ ...prev, marketingConsent: checked === true }))
+              }
+            />
+            <div className="grid gap-1.5 leading-none">
+              <Label htmlFor="marketing-consent" className="text-sm font-medium cursor-pointer">
+                Keep me updated on rental deals
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Receive occasional emails about new rentals and special offers in your area
+              </p>
+            </div>
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>

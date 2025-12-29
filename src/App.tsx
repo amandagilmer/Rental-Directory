@@ -47,6 +47,7 @@ import AdminFaqs from "./pages/admin/AdminFaqs";
 import AdminBlog from "./pages/admin/AdminBlog";
 import AdminContacts from "./pages/admin/AdminContacts";
 import AdminBadges from "./pages/admin/AdminBadges";
+import AdminMarketing from "./pages/admin/AdminMarketing";
 
 const queryClient = new QueryClient();
 
@@ -93,6 +94,7 @@ const App = () => (
             <Route path="listings" element={<AdminListings />} />
             <Route path="import" element={<AdminBulkImport />} />
             <Route path="leads" element={<AdminLeads />} />
+            <Route path="marketing" element={<AdminMarketing />} />
             <Route path="reviews" element={<AdminReviews />} />
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="support" element={<AdminSupport />} />
