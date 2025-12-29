@@ -133,6 +133,39 @@ export default function BusinessInfo() {
     fetchData();
   }, [user, fetchPhotos]);
 
+  // Geocode address using Google Places API
+  const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
+    if (!address || address.length < 5) return null;
+    
+    try {
+      // First get place predictions
+      const { data: autocompleteData, error: autocompleteError } = await supabase.functions.invoke('places-autocomplete', {
+        body: { input: address }
+      });
+      
+      if (autocompleteError || !autocompleteData?.predictions?.length) {
+        console.log('No autocomplete results for address:', address);
+        return null;
+      }
+      
+      // Use the first prediction to get coordinates
+      const placeId = autocompleteData.predictions[0].place_id;
+      const { data: geocodeData, error: geocodeError } = await supabase.functions.invoke('places-geocode', {
+        body: { placeId }
+      });
+      
+      if (geocodeError || !geocodeData?.lat || !geocodeData?.lng) {
+        console.log('Geocoding failed for place:', placeId);
+        return null;
+      }
+      
+      return { lat: geocodeData.lat, lng: geocodeData.lng };
+    } catch (error) {
+      console.error('Error geocoding address:', error);
+      return null;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -140,13 +173,25 @@ export default function BusinessInfo() {
       listingSchema.parse(formData);
       setSaving(true);
 
+      // Geocode address if provided
+      let coordinates: { lat: number; lng: number } | null = null;
+      if (formData.address && formData.address.length >= 5) {
+        coordinates = await geocodeAddress(formData.address);
+        if (coordinates) {
+          toast.info('Address geocoded for map display');
+        }
+      }
+
+      const updateData = {
+        ...formData,
+        updated_at: new Date().toISOString(),
+        ...(coordinates && { latitude: coordinates.lat, longitude: coordinates.lng })
+      };
+
       if (listing) {
         const { error } = await supabase
           .from('business_listings')
-          .update({
-            ...formData,
-            updated_at: new Date().toISOString()
-          })
+          .update(updateData)
           .eq('id', listing.id);
 
         if (error) throw error;
@@ -155,7 +200,7 @@ export default function BusinessInfo() {
         const { data, error } = await supabase
           .from('business_listings')
           .insert({
-            ...formData,
+            ...updateData,
             user_id: user?.id
           })
           .select()
@@ -263,6 +308,20 @@ export default function BusinessInfo() {
                       placeholder="James 'Big Jim' Carter"
                     />
                   </div>
+                </div>
+
+                {/* Business Address - Important for Map Display */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Business Address
+                  </Label>
+                  <Input
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    className="bg-muted/30 border-0 h-12"
+                    placeholder="123 Main Street, Houston, TX 77001"
+                  />
+                  <p className="text-xs text-muted-foreground">Full address for map location. Will be auto-geocoded when saved.</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
