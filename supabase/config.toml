@@ -26,3 +26,12 @@ verify_jwt = false
 
 [functions.places-geocode]
 verify_jwt = false
+
+[functions.ai-trailer-chat]
+verify_jwt = false
+
+[functions.ai-review-response]
+verify_jwt = true
+
+[functions.ai-description-enhancer]
+verify_jwt = true

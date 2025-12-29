@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ServicePhotoUpload from './ServicePhotoUpload';
 import UnitAnalytics from './UnitAnalytics';
 import ServiceLocationEditor from './ServiceLocationEditor';
+import { AIDescriptionEnhancer } from '@/components/AIDescriptionEnhancer';
 
 const ASSET_CLASSES = [
   { value: 'trailer', label: 'Trailer' },
@@ -421,6 +422,18 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                       placeholder="Provide an exhaustive tactical briefing on this equipment's capabilities, maintenance status, and specific use cases..."
                       rows={4}
                       className="bg-background border-border"
+                    />
+                    <AIDescriptionEnhancer
+                      currentDescription={formData.description}
+                      itemName={formData.service_name}
+                      itemType={formData.sub_category}
+                      features={formData.features}
+                      specs={{
+                        yearMakeModel: formData.year_make_model || '',
+                        length: formData.length_ft || '',
+                        payload: formData.payload_capacity || '',
+                      }}
+                      onUseDescription={(desc) => setFormData({ ...formData, description: desc })}
                     />
                   </div>
                 </div>

@@ -121,6 +121,8 @@ export default function Reviews() {
           <ReviewsListTab 
             reviews={reviews} 
             listingId={listing.id}
+            businessName={listing.business_name}
+            isPro={true}
             onReviewsUpdate={updateReviews}
           />
         </TabsContent>
