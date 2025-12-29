@@ -19,7 +19,7 @@ import Terms from "./pages/Terms";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import Dashboard from "./pages/Dashboard";
-import Overview from "./pages/dashboard/Overview";
+import CommandCenterOverview from "./pages/dashboard/CommandCenterOverview";
 import MyListing from "./pages/dashboard/MyListing";
 import BusinessInfo from "./pages/dashboard/BusinessInfo";
 import Analytics from "./pages/dashboard/Analytics";
@@ -35,7 +35,7 @@ import ReviewLanding from "./pages/ReviewLanding";
 import TriggerRedirect from "./pages/TriggerRedirect";
 import ClaimBusiness from "./pages/ClaimBusiness";
 import AdminDashboard from "./pages/AdminDashboard";
-import AdminOverview from "./pages/admin/AdminOverview";
+import AdminHQOverview from "./pages/admin/AdminHQOverview";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminListings from "./pages/admin/AdminListings";
 import AdminLeads from "./pages/admin/AdminLeads";
@@ -83,7 +83,7 @@ const App = () => (
           <Route path="/claim/:token" element={<ClaimBusiness />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />}>
-            <Route index element={<Overview />} />
+            <Route index element={<CommandCenterOverview />} />
             <Route path="business-info" element={<BusinessInfo />} />
             <Route path="listing" element={<MyListing />} />
             <Route path="trigger-links" element={<TriggerLinks />} />
@@ -94,7 +94,7 @@ const App = () => (
             <Route path="settings" element={<Settings />} />
           </Route>
           <Route path="/admin" element={<AdminDashboard />}>
-            <Route index element={<AdminOverview />} />
+            <Route index element={<AdminHQOverview />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="listings" element={<AdminListings />} />
             <Route path="categories" element={<AdminCategories />} />
