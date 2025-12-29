@@ -25,6 +25,7 @@ import ServiceAreaEditor from '@/components/dashboard/ServiceAreaEditor';
 import SocialLinksEditor from '@/components/dashboard/SocialLinksEditor';
 import PhotoUpload from '@/components/dashboard/PhotoUpload';
 import BadgeSubmissionModal from '@/components/dashboard/BadgeSubmissionModal';
+import { AIDescriptionEnhancer } from '@/components/AIDescriptionEnhancer';
 
 interface Photo {
   id: string;
@@ -331,7 +332,15 @@ export default function BusinessInfo() {
                     className="bg-muted/30 border-0 min-h-[120px] resize-y"
                     placeholder="We are a family-owned and operated hauling business serving the heart of Texas. Our mission is to provide rugged, reliable trailers for fellow Americans who need to get the job done right."
                   />
-                  <p className="text-xs text-muted-foreground">{formData.description.length}/500 characters</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">{formData.description.length}/500 characters</p>
+                    <AIDescriptionEnhancer
+                      currentDescription={formData.description}
+                      itemName={formData.business_name}
+                      itemType="business"
+                      onUseDescription={(desc) => setFormData({ ...formData, description: desc })}
+                    />
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
