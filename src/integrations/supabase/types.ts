@@ -937,6 +937,68 @@ export type Database = {
           },
         ]
       }
+      service_locations: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string
+          dropoff_available: boolean | null
+          id: string
+          is_primary: boolean | null
+          latitude: number | null
+          location_name: string
+          longitude: number | null
+          notes: string | null
+          pickup_available: boolean | null
+          service_id: string
+          state: string | null
+          updated_at: string
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          dropoff_available?: boolean | null
+          id?: string
+          is_primary?: boolean | null
+          latitude?: number | null
+          location_name: string
+          longitude?: number | null
+          notes?: string | null
+          pickup_available?: boolean | null
+          service_id: string
+          state?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          dropoff_available?: boolean | null
+          id?: string
+          is_primary?: boolean | null
+          latitude?: number | null
+          location_name?: string
+          longitude?: number | null
+          notes?: string | null
+          pickup_available?: boolean | null
+          service_id?: string
+          state?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_locations_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "business_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_photos: {
         Row: {
           created_at: string

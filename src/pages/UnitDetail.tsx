@@ -22,6 +22,7 @@ import {
   Package,
   Settings,
   Zap,
+  MapPin,
 } from "lucide-react";
 
 interface UnitData {
@@ -50,6 +51,19 @@ interface UnitData {
   listing_id: string;
 }
 
+interface ServiceLocation {
+  id: string;
+  location_name: string;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  zip_code: string | null;
+  is_primary: boolean;
+  pickup_available: boolean;
+  dropoff_available: boolean;
+  notes: string | null;
+}
+
 interface BusinessData {
   id: string;
   business_name: string;
@@ -70,6 +84,7 @@ const UnitDetail = () => {
   const [unit, setUnit] = useState<UnitData | null>(null);
   const [business, setBusiness] = useState<BusinessData | null>(null);
   const [photos, setPhotos] = useState<UnitPhoto[]>([]);
+  const [locations, setLocations] = useState<ServiceLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [leadModalOpen, setLeadModalOpen] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
@@ -123,6 +138,17 @@ const UnitDetail = () => {
 
         if (photoData) {
           setPhotos(photoData as UnitPhoto[]);
+        }
+
+        // Fetch unit locations
+        const { data: locationData } = await supabase
+          .from("service_locations")
+          .select("*")
+          .eq("service_id", unitId)
+          .order("is_primary", { ascending: false });
+
+        if (locationData) {
+          setLocations(locationData as ServiceLocation[]);
         }
       }
 
@@ -383,6 +409,79 @@ const UnitDetail = () => {
                     <div key={index} className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
                       <span className="text-foreground">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {/* Pickup/Dropoff Locations */}
+            {locations.length > 0 && (
+              <Card className="p-6 bg-card">
+                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  Pickup & Dropoff Locations
+                </h2>
+                <div className="space-y-3">
+                  {locations.map((location) => (
+                    <div
+                      key={location.id}
+                      className={`p-4 rounded-lg border ${
+                        location.is_primary
+                          ? "bg-primary/10 border-primary/30"
+                          : "bg-muted/50 border-border"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3">
+                          <MapPin
+                            className={`h-5 w-5 mt-0.5 flex-shrink-0 ${
+                              location.is_primary ? "text-primary" : "text-muted-foreground"
+                            }`}
+                          />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-foreground">
+                                {location.location_name}
+                              </span>
+                              {location.is_primary && (
+                                <Badge variant="default" className="text-xs">
+                                  Primary
+                                </Badge>
+                              )}
+                            </div>
+                            {(location.address || location.city) && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {[
+                                  location.address,
+                                  location.city,
+                                  location.state,
+                                  location.zip_code,
+                                ]
+                                  .filter(Boolean)
+                                  .join(", ")}
+                              </p>
+                            )}
+                            <div className="flex gap-2 mt-2">
+                              {location.pickup_available && (
+                                <Badge variant="outline" className="text-xs">
+                                  Pickup Available
+                                </Badge>
+                              )}
+                              {location.dropoff_available && (
+                                <Badge variant="outline" className="text-xs">
+                                  Dropoff Available
+                                </Badge>
+                              )}
+                            </div>
+                            {location.notes && (
+                              <p className="text-sm text-muted-foreground mt-2 italic">
+                                {location.notes}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
