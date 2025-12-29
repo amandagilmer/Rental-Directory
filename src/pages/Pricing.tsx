@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Check, ArrowLeft } from "lucide-react";
+import { Check } from "lucide-react";
 import { Footer } from "@/components/Footer";
 
 const pricingTiers = [
@@ -83,23 +83,39 @@ const Pricing = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Directory
-          </Link>
-          <Link to="/auth">
-            <Button variant="outline">Sign In</Button>
-          </Link>
+      {/* Branded Header */}
+      <header className="bg-secondary sticky top-0 z-50">
+        <div className="h-1 bg-primary" />
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <Link to="/" className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center shadow-md">
+                <span className="font-display font-bold text-base text-primary-foreground">PH</span>
+              </div>
+              <div className="hidden sm:block">
+                <span className="font-display font-bold text-lg tracking-wide text-primary-foreground">
+                  Patriot Hauls
+                </span>
+              </div>
+            </Link>
+            <div className="flex items-center gap-4">
+              <Link to="/" className="text-secondary-foreground/80 hover:text-secondary-foreground text-sm font-medium hidden sm:block">
+                Back to Directory
+              </Link>
+              <Link to="/auth">
+                <Button variant="outline" size="sm" className="border-secondary-foreground/30 text-secondary-foreground hover:bg-secondary-foreground/10">
+                  Sign In
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="py-16 md:py-24 text-center">
+      <section className="py-16 md:py-24 text-center bg-secondary/5">
         <div className="container mx-auto px-4">
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+          <h1 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-4 uppercase tracking-wide">
             Simple, Transparent Pricing
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">

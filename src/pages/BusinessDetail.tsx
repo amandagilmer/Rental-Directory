@@ -284,8 +284,33 @@ const BusinessDetail = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Branded Header */}
+      <header className="bg-secondary sticky top-0 z-50">
+        <div className="h-1 bg-primary" />
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <Link to="/" className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center shadow-md">
+                <span className="font-display font-bold text-base text-primary-foreground">PH</span>
+              </div>
+              <div className="hidden sm:block">
+                <span className="font-display font-bold text-lg tracking-wide text-primary-foreground">
+                  Patriot Hauls
+                </span>
+              </div>
+            </Link>
+            <Link to="/">
+              <Button variant="ghost" size="sm" className="text-secondary-foreground/80 hover:text-secondary-foreground hover:bg-secondary-foreground/10 gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">Back to Directory</span>
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </header>
+
       {/* Cover Photo Banner */}
-      <div className="relative h-64 md:h-80 overflow-hidden">
+      <div className="relative h-52 md:h-72 overflow-hidden">
         <img
           src={displayData.image}
           alt={displayData.name}
@@ -295,7 +320,7 @@ const BusinessDetail = () => {
       </div>
 
       {/* Header Section */}
-      <div className="container mx-auto px-4 -mt-20 relative z-10">
+      <div className="container mx-auto px-4 -mt-16 relative z-10">
         <div className="flex flex-col md:flex-row md:items-end gap-4 mb-8">
           <div className="w-24 h-24 md:w-32 md:h-32 rounded-xl overflow-hidden border-4 border-background shadow-lg bg-card">
             <img
@@ -306,7 +331,7 @@ const BusinessDetail = () => {
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+              <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground uppercase tracking-wide">
                 {displayData.name}
               </h1>
               {displayData.verified && (
@@ -329,12 +354,6 @@ const BusinessDetail = () => {
               )}
             </div>
           </div>
-          <Link to="/" className="hidden md:block">
-            <Button variant="outline">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
-            </Button>
-          </Link>
         </div>
 
         {/* Main Content */}
