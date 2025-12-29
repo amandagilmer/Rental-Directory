@@ -5,12 +5,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAdminCheck } from '@/hooks/useAdminCheck';
 import { supabase } from '@/integrations/supabase/client';
 import { 
-  BarChart3, 
   LogOut, 
-  Link as LinkIcon, 
   Sparkles, 
   Shield, 
-  MessageSquare, 
   Building2, 
   Truck,
   Users,
@@ -23,19 +20,12 @@ import {
 import NotificationBell from '@/components/dashboard/NotificationBell';
 import { cn } from '@/lib/utils';
 
-// Main navigation tabs using Patriot Hauls terminology
+// Main navigation tabs using Patriot Hauls terminology - unified nav bar
 const mainTabs = [
   { name: 'Command Center', href: '/dashboard', icon: Compass },
   { name: 'Contacts', href: '/dashboard/leads', icon: Users },
   { name: 'Fleet', href: '/dashboard/listing', icon: Truck },
   { name: 'Your Post', href: '/dashboard/business-info', icon: Building2 },
-];
-
-// Secondary navigation
-const secondaryNav = [
-  { name: 'Trigger Links', href: '/dashboard/trigger-links', icon: LinkIcon },
-  { name: 'Field Reports', href: '/dashboard/reviews', icon: MessageSquare },
-  { name: 'Your Numbers', href: '/dashboard/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
@@ -195,7 +185,7 @@ export default function Dashboard() {
       {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div className="md:hidden fixed inset-0 top-[88px] bg-background z-40 p-4 space-y-2 border-t border-border">
-          {[...mainTabs, ...secondaryNav].map((tab) => (
+          {mainTabs.map((tab) => (
             <Link
               key={tab.name}
               to={tab.href}
@@ -279,26 +269,8 @@ export default function Dashboard() {
             })}
           </nav>
           
-          {/* Secondary Nav & Upgrade */}
-          <div className="flex-1 flex justify-end items-center gap-4">
-            <nav className="hidden lg:flex items-center gap-1">
-              {secondaryNav.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-                    location.pathname === item.href
-                      ? 'text-primary'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  <item.icon className="h-3.5 w-3.5" />
-                  {item.name}
-                </Link>
-              ))}
-            </nav>
-            
+          {/* Upgrade Button */}
+          <div className="flex-1 flex justify-end items-center">
             <Link to="/pricing">
               <Button
                 variant="outline"
