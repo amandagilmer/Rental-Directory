@@ -679,53 +679,83 @@ export type Database = {
         Row: {
           business_id: string
           created_at: string
+          customer_segment:
+            | Database["public"]["Enums"]["customer_segment"]
+            | null
           date_needed: string | null
           email: string
           id: string
+          last_interaction_at: string | null
           location: string | null
+          marketing_consent: boolean | null
           message: string | null
           name: string
           phone: string
+          referrer_url: string | null
           review_email_sent: boolean | null
           review_email_sent_at: string | null
           review_token: string | null
           service_type: string | null
           status: string
+          total_inquiries: number | null
           updated_at: string
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
         }
         Insert: {
           business_id: string
           created_at?: string
+          customer_segment?:
+            | Database["public"]["Enums"]["customer_segment"]
+            | null
           date_needed?: string | null
           email: string
           id?: string
+          last_interaction_at?: string | null
           location?: string | null
+          marketing_consent?: boolean | null
           message?: string | null
           name: string
           phone: string
+          referrer_url?: string | null
           review_email_sent?: boolean | null
           review_email_sent_at?: string | null
           review_token?: string | null
           service_type?: string | null
           status?: string
+          total_inquiries?: number | null
           updated_at?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Update: {
           business_id?: string
           created_at?: string
+          customer_segment?:
+            | Database["public"]["Enums"]["customer_segment"]
+            | null
           date_needed?: string | null
           email?: string
           id?: string
+          last_interaction_at?: string | null
           location?: string | null
+          marketing_consent?: boolean | null
           message?: string | null
           name?: string
           phone?: string
+          referrer_url?: string | null
           review_email_sent?: boolean | null
           review_email_sent_at?: string | null
           review_token?: string | null
           service_type?: string | null
           status?: string
+          total_inquiries?: number | null
           updated_at?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Relationships: []
       }
@@ -882,7 +912,10 @@ export type Database = {
           email: string
           id: string
           location: string | null
+          marketing_consent: boolean | null
+          signup_source: string | null
           updated_at: string | null
+          user_type: Database["public"]["Enums"]["user_type"] | null
         }
         Insert: {
           business_name?: string | null
@@ -890,7 +923,10 @@ export type Database = {
           email: string
           id: string
           location?: string | null
+          marketing_consent?: boolean | null
+          signup_source?: string | null
           updated_at?: string | null
+          user_type?: Database["public"]["Enums"]["user_type"] | null
         }
         Update: {
           business_name?: string | null
@@ -898,7 +934,10 @@ export type Database = {
           email?: string
           id?: string
           location?: string | null
+          marketing_consent?: boolean | null
+          signup_source?: string | null
           updated_at?: string | null
+          user_type?: Database["public"]["Enums"]["user_type"] | null
         }
         Relationships: []
       }
@@ -1255,6 +1294,13 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      customer_segment:
+        | "new_inquiry"
+        | "repeat_customer"
+        | "high_value"
+        | "converted"
+        | "inactive"
+      user_type: "renter" | "host" | "both"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1383,6 +1429,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      customer_segment: [
+        "new_inquiry",
+        "repeat_customer",
+        "high_value",
+        "converted",
+        "inactive",
+      ],
+      user_type: ["renter", "host", "both"],
     },
   },
 } as const

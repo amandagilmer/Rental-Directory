@@ -1,13 +1,15 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { Truck, Users } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -25,7 +27,10 @@ const registerSchema = z.object({
   path: ["confirmPassword"],
 });
 
+type UserType = 'renter' | 'host';
+
 export default function Auth() {
+  const [searchParams] = useSearchParams();
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
@@ -33,12 +38,21 @@ export default function Auth() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [businessName, setBusinessName] = useState('');
   const [location, setLocation] = useState('');
+  const [userType, setUserType] = useState<UserType>('host');
   const [resetEmail, setResetEmail] = useState('');
   const [showReset, setShowReset] = useState(false);
   const [loading, setLoading] = useState(false);
   
   const { signIn, signUp, resetPassword } = useAuth();
   const navigate = useNavigate();
+
+  // Check for renter flow from URL params
+  useEffect(() => {
+    const type = searchParams.get('type');
+    if (type === 'renter') {
+      setUserType('renter');
+    }
+  }, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +97,10 @@ export default function Auth() {
       
       setLoading(true);
       
-      const { error } = await signUp(registerEmail, registerPassword, businessName, location);
+      // Capture signup source from URL
+      const signupSource = searchParams.get('utm_source') || searchParams.get('ref') || 'direct';
+      
+      const { error } = await signUp(registerEmail, registerPassword, businessName, location, userType, signupSource);
       
       if (error) {
         if (error.message.includes('User already registered')) {
@@ -225,10 +242,47 @@ export default function Auth() {
             <Card>
               <CardHeader>
                 <CardTitle>Create Account</CardTitle>
-                <CardDescription>Register to list your rental business</CardDescription>
+                <CardDescription>
+                  {userType === 'host' 
+                    ? 'Register to list your rental business' 
+                    : 'Create an account to save favorites and track inquiries'}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleRegister} className="space-y-4">
+                  {/* User Type Selection */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">I am a...</Label>
+                    <RadioGroup 
+                      value={userType} 
+                      onValueChange={(v) => setUserType(v as UserType)}
+                      className="grid grid-cols-2 gap-4"
+                    >
+                      <div>
+                        <RadioGroupItem value="host" id="host" className="peer sr-only" />
+                        <Label
+                          htmlFor="host"
+                          className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                        >
+                          <Truck className="mb-3 h-6 w-6" />
+                          <span className="font-semibold">Business Owner</span>
+                          <span className="text-xs text-muted-foreground">List my rentals</span>
+                        </Label>
+                      </div>
+                      <div>
+                        <RadioGroupItem value="renter" id="renter" className="peer sr-only" />
+                        <Label
+                          htmlFor="renter"
+                          className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                        >
+                          <Users className="mb-3 h-6 w-6" />
+                          <span className="font-semibold">Renter</span>
+                          <span className="text-xs text-muted-foreground">Looking to rent</span>
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="register-email">Email</Label>
                     <Input
