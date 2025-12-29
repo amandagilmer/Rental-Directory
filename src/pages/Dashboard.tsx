@@ -8,33 +8,34 @@ import {
   BarChart3, 
   LogOut, 
   Link as LinkIcon, 
-  Inbox, 
   Sparkles, 
   Shield, 
   MessageSquare, 
   Building2, 
-  Package,
   Truck,
   Users,
   Settings,
-  Home
+  Home,
+  Compass,
+  Menu,
+  X
 } from 'lucide-react';
 import NotificationBell from '@/components/dashboard/NotificationBell';
 import { cn } from '@/lib/utils';
 
-// Main navigation tabs (pill style at top)
+// Main navigation tabs using Patriot Hauls terminology
 const mainTabs = [
-  { name: 'Intel', href: '/dashboard', icon: BarChart3 },
+  { name: 'Command Center', href: '/dashboard', icon: Compass },
   { name: 'Contacts', href: '/dashboard/leads', icon: Users },
   { name: 'Fleet', href: '/dashboard/listing', icon: Truck },
-  { name: 'Business', href: '/dashboard/business-info', icon: Building2 },
+  { name: 'Your Post', href: '/dashboard/business-info', icon: Building2 },
 ];
 
-// Secondary navigation in sidebar
+// Secondary navigation
 const secondaryNav = [
   { name: 'Trigger Links', href: '/dashboard/trigger-links', icon: LinkIcon },
-  { name: 'Reviews', href: '/dashboard/reviews', icon: MessageSquare },
-  { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+  { name: 'Field Reports', href: '/dashboard/reviews', icon: MessageSquare },
+  { name: 'Your Numbers', href: '/dashboard/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
@@ -46,6 +47,7 @@ export default function Dashboard() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [newLeadsCount, setNewLeadsCount] = useState(0);
   const [businessName, setBusinessName] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -107,7 +109,6 @@ export default function Dashboard() {
     await signOut();
   };
 
-  // Check if a main tab is active
   const isMainTabActive = (href: string) => {
     if (href === '/dashboard') {
       return location.pathname === '/dashboard';
@@ -118,7 +119,9 @@ export default function Dashboard() {
   if (loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-secondary">
-        <div className="animate-pulse text-secondary-foreground">Loading...</div>
+        <div className="animate-pulse text-secondary-foreground font-display text-xl">
+          Loading Command Center...
+        </div>
       </div>
     );
   }
@@ -126,35 +129,44 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       {/* Dark Navy Header */}
-      <header className="bg-secondary text-secondary-foreground">
-        <div className="px-6 py-4">
+      <header className="bg-secondary text-secondary-foreground sticky top-0 z-50">
+        <div className="px-4 md:px-6 py-3 md:py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {/* Operational Dashboard Badge */}
-              <span className="bg-primary text-primary-foreground text-[10px] font-semibold uppercase tracking-widest px-2 py-1 rounded">
-                Operational Dashboard
-              </span>
+            {/* Left side - Logo & Badge */}
+            <div className="flex items-center gap-3">
+              <button
+                className="md:hidden p-2 -ml-2"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+              <div className="hidden md:flex items-center gap-3">
+                <span className="bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">
+                  Command Center
+                </span>
+              </div>
             </div>
             
-            <div className="flex items-center gap-4">
+            {/* Right side - Actions */}
+            <div className="flex items-center gap-2 md:gap-4">
               <NotificationBell />
               
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className="flex items-center gap-2 text-sm text-secondary-foreground/80 hover:text-secondary-foreground transition-colors"
+                  className="hidden md:flex items-center gap-2 text-sm text-secondary-foreground/80 hover:text-secondary-foreground transition-colors"
                 >
                   <Shield className="h-4 w-4" />
-                  Admin
+                  <span className="hidden lg:inline">HQ</span>
                 </Link>
               )}
               
               <Link
                 to="/"
-                className="flex items-center gap-2 text-sm text-secondary-foreground/80 hover:text-secondary-foreground transition-colors"
+                className="hidden md:flex items-center gap-2 text-sm text-secondary-foreground/80 hover:text-secondary-foreground transition-colors"
               >
                 <Home className="h-4 w-4" />
-                Directory
+                <span className="hidden lg:inline">Directory</span>
               </Link>
               
               <Button
@@ -164,15 +176,15 @@ export default function Dashboard() {
                 onClick={handleSignOut}
                 disabled={loggingOut}
               >
-                <LogOut className="h-4 w-4 mr-2" />
-                {loggingOut ? 'Logging out...' : 'Logout'}
+                <LogOut className="h-4 w-4" />
+                <span className="hidden md:inline ml-2">{loggingOut ? 'Exiting...' : 'Exit'}</span>
               </Button>
             </div>
           </div>
           
           {/* Business Name */}
-          <h1 className="font-display text-2xl md:text-3xl font-bold italic mt-3 tracking-wide uppercase">
-            {businessName || 'Your Business'}
+          <h1 className="font-display text-xl md:text-2xl lg:text-3xl font-bold italic mt-2 tracking-wide uppercase truncate">
+            {businessName || 'Your Outpost'}
           </h1>
         </div>
         
@@ -180,9 +192,57 @@ export default function Dashboard() {
         <div className="h-1 bg-primary" />
       </header>
 
-      {/* Main Navigation Tabs */}
-      <div className="bg-background border-b border-border">
-        <div className="px-6 py-4 flex items-center justify-between">
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 top-[88px] bg-background z-40 p-4 space-y-2 border-t border-border">
+          {[...mainTabs, ...secondaryNav].map((tab) => (
+            <Link
+              key={tab.name}
+              to={tab.href}
+              onClick={() => setMobileMenuOpen(false)}
+              className={cn(
+                'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
+                isMainTabActive(tab.href)
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-muted'
+              )}
+            >
+              <tab.icon className="h-5 w-5" />
+              {tab.name}
+              {tab.name === 'Contacts' && newLeadsCount > 0 && (
+                <span className="ml-auto px-2 py-0.5 text-xs font-bold bg-primary text-primary-foreground rounded-full">
+                  {newLeadsCount}
+                </span>
+              )}
+            </Link>
+          ))}
+          
+          <div className="pt-4 border-t border-border mt-4">
+            {isAdmin && (
+              <Link
+                to="/admin"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 text-sm text-muted-foreground hover:bg-muted rounded-lg"
+              >
+                <Shield className="h-5 w-5" />
+                Admin HQ
+              </Link>
+            )}
+            <Link
+              to="/"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-4 py-3 text-sm text-muted-foreground hover:bg-muted rounded-lg"
+            >
+              <Home className="h-5 w-5" />
+              Back to Directory
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Main Navigation Tabs - Desktop */}
+      <div className="hidden md:block bg-background border-b border-border sticky top-[89px] z-40">
+        <div className="px-6 py-3 flex items-center justify-between">
           <div className="flex-1" />
           
           {/* Pill Navigation */}
@@ -219,7 +279,26 @@ export default function Dashboard() {
             })}
           </nav>
           
-          <div className="flex-1 flex justify-end">
+          {/* Secondary Nav & Upgrade */}
+          <div className="flex-1 flex justify-end items-center gap-4">
+            <nav className="hidden lg:flex items-center gap-1">
+              {secondaryNav.map((item) => (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
+                    location.pathname === item.href
+                      ? 'text-primary'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <item.icon className="h-3.5 w-3.5" />
+                  {item.name}
+                </Link>
+              ))}
+            </nav>
+            
             <Link to="/pricing">
               <Button
                 variant="outline"
@@ -227,7 +306,7 @@ export default function Dashboard() {
                 className="gap-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
               >
                 <Sparkles className="h-4 w-4" />
-                Upgrade
+                <span className="hidden lg:inline">Upgrade</span>
               </Button>
             </Link>
           </div>
@@ -235,7 +314,7 @@ export default function Dashboard() {
       </div>
 
       {/* Main Content */}
-      <main className="p-6 md:p-8 max-w-7xl mx-auto">
+      <main className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
         <Outlet />
       </main>
     </div>

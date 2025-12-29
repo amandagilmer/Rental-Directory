@@ -35,3 +35,9 @@ verify_jwt = true
 
 [functions.ai-description-enhancer]
 verify_jwt = true
+
+[functions.generate-welcome-message]
+verify_jwt = false
+
+[functions.generate-network-message]
+verify_jwt = false
