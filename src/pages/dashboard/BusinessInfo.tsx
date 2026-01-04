@@ -12,7 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { 
+import {
   Loader2,
   Flag,
   Clock,
@@ -25,7 +25,9 @@ import BusinessHoursEditor from '@/components/dashboard/BusinessHoursEditor';
 import ServiceAreaEditor from '@/components/dashboard/ServiceAreaEditor';
 import SocialLinksEditor from '@/components/dashboard/SocialLinksEditor';
 import PhotoUpload from '@/components/dashboard/PhotoUpload';
+import LogoUpload from '@/components/dashboard/LogoUpload';
 import BadgeSubmissionModal from '@/components/dashboard/BadgeSubmissionModal';
+import { LocationPicker } from '@/components/dashboard/LocationPicker';
 import { AIDescriptionEnhancer } from '@/components/AIDescriptionEnhancer';
 import { useCategories } from '@/hooks/useCategories';
 
@@ -49,6 +51,7 @@ const listingSchema = z.object({
   email: z.string().email('Invalid email address').optional().or(z.literal('')),
   website: z.string().url('Invalid website URL').optional().or(z.literal('')),
   booking_url: z.string().url('Invalid booking URL').optional().or(z.literal('')),
+  show_exact_location: z.boolean().optional(),
 });
 
 export default function BusinessInfo() {
@@ -58,6 +61,7 @@ export default function BusinessInfo() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [badgeModal, setBadgeModal] = useState<{
     open: boolean;
     badgeKey: string;
@@ -71,7 +75,7 @@ export default function BusinessInfo() {
     badgeDescription: '',
     documentType: '',
   });
-  
+
   const [formData, setFormData] = useState({
     business_name: '',
     owner_name: '',
@@ -83,7 +87,10 @@ export default function BusinessInfo() {
     email: '',
     website: '',
     booking_url: '',
-    is_published: false
+    is_published: false,
+    show_exact_location: true,
+    latitude: 31.9686, // Default Texas
+    longitude: -99.9018
   });
 
   const fetchPhotos = useCallback(async (listingId: string) => {
@@ -92,7 +99,7 @@ export default function BusinessInfo() {
       .select('*')
       .eq('listing_id', listingId)
       .order('display_order', { ascending: true });
-    
+
     if (data) {
       setPhotos(data as Photo[]);
     }
@@ -110,6 +117,7 @@ export default function BusinessInfo() {
 
       if (listingData) {
         setListing(listingData);
+        setLogoUrl(listingData.logo_url);
         setFormData({
           business_name: listingData.business_name || '',
           owner_name: listingData.owner_name || '',
@@ -121,7 +129,10 @@ export default function BusinessInfo() {
           email: listingData.email || '',
           website: listingData.website || '',
           booking_url: listingData.booking_url || '',
-          is_published: listingData.is_published || false
+          is_published: listingData.is_published || false,
+          show_exact_location: listingData.show_exact_location ?? true,
+          latitude: listingData.latitude || 31.9686,
+          longitude: listingData.longitude || -99.9018
         });
         fetchPhotos(listingData.id);
       }
@@ -132,59 +143,20 @@ export default function BusinessInfo() {
     fetchData();
   }, [user, fetchPhotos]);
 
-  // Geocode address using Google Places API
-  const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
-    if (!address || address.length < 5) return null;
-    
-    try {
-      // First get place predictions
-      const { data: autocompleteData, error: autocompleteError } = await supabase.functions.invoke('places-autocomplete', {
-        body: { input: address }
-      });
-      
-      if (autocompleteError || !autocompleteData?.predictions?.length) {
-        console.log('No autocomplete results for address:', address);
-        return null;
-      }
-      
-      // Use the first prediction to get coordinates
-      const placeId = autocompleteData.predictions[0].place_id;
-      const { data: geocodeData, error: geocodeError } = await supabase.functions.invoke('places-geocode', {
-        body: { placeId }
-      });
-      
-      if (geocodeError || !geocodeData?.lat || !geocodeData?.lng) {
-        console.log('Geocoding failed for place:', placeId);
-        return null;
-      }
-      
-      return { lat: geocodeData.lat, lng: geocodeData.lng };
-    } catch (error) {
-      console.error('Error geocoding address:', error);
-      return null;
-    }
-  };
+
+  // Removed old geocodeAddress function in favor of LocationPicker logic
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       listingSchema.parse(formData);
       setSaving(true);
 
-      // Geocode address if provided
-      let coordinates: { lat: number; lng: number } | null = null;
-      if (formData.address && formData.address.length >= 5) {
-        coordinates = await geocodeAddress(formData.address);
-        if (coordinates) {
-          toast.info('Address geocoded for map display');
-        }
-      }
-
       const updateData = {
         ...formData,
-        updated_at: new Date().toISOString(),
-        ...(coordinates && { latitude: coordinates.lat, longitude: coordinates.lng })
+        updated_at: new Date().toISOString()
       };
 
       if (listing) {
@@ -234,29 +206,29 @@ export default function BusinessInfo() {
       <Tabs defaultValue="identity" className="space-y-6">
         <div className="flex justify-center">
           <TabsList className="bg-muted/30 rounded-full p-1 h-auto">
-            <TabsTrigger 
-              value="identity" 
+            <TabsTrigger
+              value="identity"
               className="gap-2 px-6 py-2.5 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm"
             >
               <Flag className="h-4 w-4" />
               <span className="uppercase text-xs font-semibold tracking-wide">Identity</span>
             </TabsTrigger>
-            <TabsTrigger 
-              value="logistics" 
+            <TabsTrigger
+              value="logistics"
               className="gap-2 px-6 py-2.5 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm"
             >
               <Clock className="h-4 w-4" />
               <span className="uppercase text-xs font-semibold tracking-wide">Logistics & Hours</span>
             </TabsTrigger>
-            <TabsTrigger 
-              value="media" 
+            <TabsTrigger
+              value="media"
               className="gap-2 px-6 py-2.5 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm"
             >
               <Camera className="h-4 w-4" />
               <span className="uppercase text-xs font-semibold tracking-wide">Media & Brand</span>
             </TabsTrigger>
-            <TabsTrigger 
-              value="trust" 
+            <TabsTrigger
+              value="trust"
               className="gap-2 px-6 py-2.5 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm"
             >
               <Shield className="h-4 w-4" />
@@ -311,16 +283,22 @@ export default function BusinessInfo() {
 
                 {/* Business Address - Important for Map Display */}
                 <div className="space-y-2">
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Business Address
-                  </Label>
-                  <Input
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className="bg-muted/30 border-0 h-12"
-                    placeholder="123 Main Street, Houston, TX 77001"
+                  <LocationPicker
+                    apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''}
+                    initialAddress={formData.address}
+                    initialLat={formData.latitude}
+                    initialLng={formData.longitude}
+                    initialExact={formData.show_exact_location}
+                    onLocationChange={(lat, lng, address, exact) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        latitude: lat,
+                        longitude: lng,
+                        address: address, // In a real app we might not want to overwrite address unless confirmed
+                        show_exact_location: exact
+                      }));
+                    }}
                   />
-                  <p className="text-xs text-muted-foreground">Full address for map location. Will be auto-geocoded when saved.</p>
                 </div>
 
                 {/* Categories Section */}
@@ -329,8 +307,8 @@ export default function BusinessInfo() {
                     <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Primary Category
                     </Label>
-                    <Select 
-                      value={formData.category} 
+                    <Select
+                      value={formData.category}
                       onValueChange={(value) => setFormData({ ...formData, category: value })}
                     >
                       <SelectTrigger className="bg-muted/30 border-0 h-12">
@@ -469,9 +447,9 @@ export default function BusinessInfo() {
                   />
                 </div>
 
-                <Button 
-                  type="submit" 
-                  disabled={saving} 
+                <Button
+                  type="submit"
+                  disabled={saving}
                   className="w-full h-14 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold uppercase tracking-widest"
                 >
                   {saving ? (
@@ -527,15 +505,23 @@ export default function BusinessInfo() {
               <h2 className="font-display text-2xl font-bold italic uppercase tracking-wide text-foreground mb-6">
                 Brand & Media Asset Management
               </h2>
-              
+
               {listing ? (
                 <div className="space-y-8">
+                  <LogoUpload
+                    listingId={listing.id}
+                    currentLogoUrl={logoUrl}
+                    onLogoChange={(url) => setLogoUrl(url)}
+                  />
+
+                  <div className="border-t border-border my-6"></div>
+
                   <PhotoUpload
                     listingId={listing.id}
                     photos={photos}
                     onPhotosChange={() => fetchPhotos(listing.id)}
                   />
-                  
+
                   <SocialLinksEditor
                     listingId={listing.id}
                     initialData={{
@@ -583,7 +569,7 @@ export default function BusinessInfo() {
                     <p className="text-sm text-muted-foreground mb-6">
                       Requires ID Verification.
                     </p>
-                    <Button 
+                    <Button
                       className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold uppercase tracking-wider"
                       onClick={() => setBadgeModal({
                         open: true,
@@ -616,7 +602,7 @@ export default function BusinessInfo() {
                     <p className="text-sm text-muted-foreground mb-6">
                       Submit 50-Point Checklist.
                     </p>
-                    <Button 
+                    <Button
                       className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold uppercase tracking-wider"
                       onClick={() => setBadgeModal({
                         open: true,
@@ -646,7 +632,7 @@ export default function BusinessInfo() {
                     <p className="text-sm text-muted-foreground mb-6">
                       Requires 50 Successful Jobs.
                     </p>
-                    <Button 
+                    <Button
                       className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold uppercase tracking-wider"
                       onClick={() => setBadgeModal({
                         open: true,

@@ -6,9 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { CategoryImageUpload } from '@/components/dashboard/CategoryImageUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Loader2, GripVertical } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, GripVertical, Check, ChevronsUpDown } from 'lucide-react';
+import { IconPicker } from '@/components/ui/icon-picker';
 
 interface Category {
   id: string;
@@ -17,6 +19,7 @@ interface Category {
   icon: string;
   display_order: number;
   is_active: boolean;
+  image_url: string | null;
 }
 
 export default function AdminCategories() {
@@ -29,7 +32,8 @@ export default function AdminCategories() {
     name: '',
     slug: '',
     icon: 'folder',
-    is_active: true
+    is_active: true,
+    image_url: null as string | null
   });
 
   const fetchCategories = async () => {
@@ -68,7 +72,8 @@ export default function AdminCategories() {
       name: category.name,
       slug: category.slug,
       icon: category.icon,
-      is_active: category.is_active
+      is_active: category.is_active,
+      image_url: category.image_url
     });
     setDialogOpen(true);
   };
@@ -79,7 +84,8 @@ export default function AdminCategories() {
       name: '',
       slug: '',
       icon: 'folder',
-      is_active: true
+      is_active: true,
+      image_url: null
     });
     setDialogOpen(true);
   };
@@ -96,7 +102,8 @@ export default function AdminCategories() {
             name: formData.name,
             slug: formData.slug,
             icon: formData.icon,
-            is_active: formData.is_active
+            is_active: formData.is_active,
+            image_url: formData.image_url
           })
           .eq('id', editingCategory.id);
 
@@ -204,13 +211,19 @@ export default function AdminCategories() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Icon Name</Label>
-                <Input
+                <Label>Icon</Label>
+                <IconPicker
                   value={formData.icon}
-                  onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                  placeholder="truck, hammer, caravan, container"
+                  onChange={(icon) => setFormData({ ...formData, icon })}
                 />
-                <p className="text-xs text-muted-foreground">Use Lucide icon names: truck, hammer, caravan, container, etc.</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Category Image</Label>
+                <CategoryImageUpload
+                  slug={formData.slug || 'new-category'}
+                  currentImageUrl={formData.image_url}
+                  onImageUpdate={(url) => setFormData({ ...formData, image_url: url })}
+                />
               </div>
               <div className="flex items-center justify-between">
                 <Label>Active</Label>

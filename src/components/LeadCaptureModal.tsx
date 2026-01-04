@@ -8,8 +8,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle2 } from "lucide-react";
-import { Service } from "@/data/businesses";
 import { supabase } from "@/integrations/supabase/client";
+
+export interface Service {
+  name: string;
+}
 
 interface LeadCaptureModalProps {
   open: boolean;
@@ -53,7 +56,7 @@ export const LeadCaptureModal = ({ open, onOpenChange, businessName, businessId,
     message: "",
     marketingConsent: false,
   });
-  
+
   // Capture UTM parameters from URL
   const getUtmParams = () => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -68,37 +71,37 @@ export const LeadCaptureModal = ({ open, onOpenChange, businessName, businessId,
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
-    
+
     if (!formData.name.trim()) {
       newErrors.name = "Name is required";
     }
-    
+
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "Please enter a valid email";
     }
-    
+
     if (!formData.phone.trim()) {
       newErrors.phone = "Phone is required";
     } else if (!/^[\d\s\-\(\)\+]+$/.test(formData.phone)) {
       newErrors.phone = "Please enter a valid phone number";
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setLoading(true);
 
     try {
       const utmParams = getUtmParams();
-      
+
       const { error } = await supabase.from('leads').insert({
         business_id: businessId,
         name: formData.name.trim(),
@@ -108,7 +111,7 @@ export const LeadCaptureModal = ({ open, onOpenChange, businessName, businessId,
         date_needed: formData.dateNeeded ? new Date(formData.dateNeeded).toISOString() : null,
         location: formData.location.trim() || null,
         message: formData.message.trim() || null,
-        status: 'new',
+        status: 'new_inquiry',
         marketing_consent: formData.marketingConsent,
         utm_source: utmParams.utm_source,
         utm_medium: utmParams.utm_medium,
@@ -119,7 +122,7 @@ export const LeadCaptureModal = ({ open, onOpenChange, businessName, businessId,
       if (error) throw error;
 
       setSubmitted(true);
-      
+
       // Trigger callbacks
       if (onLeadSubmitted) {
         onLeadSubmitted({ name: formData.name.trim(), email: formData.email.trim() });
@@ -127,7 +130,7 @@ export const LeadCaptureModal = ({ open, onOpenChange, businessName, businessId,
       if (onSuccess) {
         onSuccess();
       }
-      
+
       toast({
         title: "Request Submitted!",
         description: `${businessName} will contact you soon.`,
@@ -193,7 +196,7 @@ export const LeadCaptureModal = ({ open, onOpenChange, businessName, businessId,
         <DialogHeader>
           <DialogTitle className="text-foreground">Request a Quote from {businessName}</DialogTitle>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
             <Label htmlFor="name" className="text-foreground">Name *</Label>
@@ -287,7 +290,7 @@ export const LeadCaptureModal = ({ open, onOpenChange, businessName, businessId,
             <Checkbox
               id="marketing-consent"
               checked={formData.marketingConsent}
-              onCheckedChange={(checked) => 
+              onCheckedChange={(checked) =>
                 setFormData(prev => ({ ...prev, marketingConsent: checked === true }))
               }
             />

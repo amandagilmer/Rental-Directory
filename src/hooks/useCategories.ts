@@ -8,6 +8,7 @@ export interface Category {
   icon: string;
   display_order: number;
   is_active: boolean;
+  image_url: string | null;
 }
 
 export function useCategories() {

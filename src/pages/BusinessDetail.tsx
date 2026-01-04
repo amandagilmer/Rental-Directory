@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { getBusinessBySlug } from "@/data/businesses";
+import { useFavorites } from "@/hooks/useFavorites";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -26,6 +26,8 @@ import {
   Twitter,
   Linkedin,
   Youtube,
+  Shield,
+  Heart,
 } from "lucide-react";
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -40,6 +42,7 @@ interface DbListing {
   email: string | null;
   website: string | null;
   image_url: string | null;
+  logo_url: string | null;
   facebook_url: string | null;
   instagram_url: string | null;
   twitter_url: string | null;
@@ -47,6 +50,7 @@ interface DbListing {
   youtube_url: string | null;
   place_id: string | null;
   booking_url: string | null;
+  claimed: boolean;
 }
 
 interface DbHours {
@@ -95,33 +99,31 @@ const BusinessDetail = () => {
   const hasTrackedView = useRef(false);
 
   // Interaction tracking
-  const { 
-    trackProfileView, 
-    trackClickToCall, 
+  const {
+    trackProfileView,
+    trackClickToCall,
     trackClickToEmail,
     trackClickWebsite,
     trackClickBooking,
     trackClickSocial,
-    trackButtonClick, 
-    trackFormSubmit 
+    trackButtonClick,
+    trackFormSubmit
   } = useInteractionTracking(dbListing?.id || null);
 
-  // Try to get mock business first
-  const mockBusiness = getBusinessBySlug(slug || "");
+  const { isFavorite, toggleFavorite } = useFavorites(dbListing?.id);
+
+
 
   useEffect(() => {
     const fetchDbListing = async () => {
       if (!slug) return;
 
-      // Try to find by slug (lowercase business name with hyphens)
-      const { data: listings } = await supabase
+      // Find by slug directly
+      const { data: listing, error } = await supabase
         .from('business_listings')
         .select('*')
-        .eq('is_published', true);
-
-      const listing = listings?.find(l => 
-        l.business_name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') === slug
-      );
+        .eq('slug', slug)
+        .maybeSingle();
 
       if (listing) {
         setDbListing(listing as DbListing);
@@ -138,6 +140,8 @@ const BusinessDetail = () => {
         if (servicesRes.data) setDbServices(servicesRes.data as DbService[]);
         if (areaRes.data) setDbServiceArea(areaRes.data as DbServiceArea);
         if (photosRes.data) setDbPhotos(photosRes.data as DbPhoto[]);
+      } else {
+        console.log('No listing found for slug:', slug);
       }
 
       setLoading(false);
@@ -156,7 +160,7 @@ const BusinessDetail = () => {
 
   // Use DB data if available, otherwise use mock data
   const isDbListing = !!dbListing;
-  const business = mockBusiness;
+
 
   if (loading) {
     return (
@@ -166,7 +170,7 @@ const BusinessDetail = () => {
     );
   }
 
-  if (!business && !dbListing) {
+  if (!dbListing) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -184,23 +188,24 @@ const BusinessDetail = () => {
 
   // Merge data: prefer DB data when available
   const displayData = {
-    name: dbListing?.business_name || business?.name || '',
-    description: dbListing?.description || business?.fullDescription || business?.description || '',
-    category: dbListing?.category || business?.category || '',
-    address: dbListing?.address || business?.address || '',
-    phone: dbListing?.phone || business?.phone || '',
-    email: dbListing?.email || business?.email || '',
-    website: dbListing?.website || business?.website || '',
+    name: dbListing?.business_name || '',
+    description: dbListing?.description || '',
+    category: dbListing?.category || '',
+    address: dbListing?.address || '',
+    phone: dbListing?.phone || '',
+    email: dbListing?.email || '',
+    website: dbListing?.website || '',
     bookingUrl: dbListing?.booking_url || null,
-    image: dbListing?.image_url || business?.image || '/placeholder.svg',
-    verified: business?.verified || false,
-    rating: business?.rating || 0,
+    image: dbListing?.image_url || '/placeholder.svg',
+    logo: dbListing?.logo_url || dbListing?.image_url || '/placeholder.svg',
+    verified: dbListing?.claimed || false,
+    rating: 0, // Default rating if no mock data
     socialLinks: {
-      facebook: dbListing?.facebook_url || business?.socialLinks?.facebook,
-      instagram: dbListing?.instagram_url || business?.socialLinks?.instagram,
-      twitter: dbListing?.twitter_url || business?.socialLinks?.twitter,
-      linkedin: dbListing?.linkedin_url || business?.socialLinks?.linkedin,
-      youtube: dbListing?.youtube_url || business?.socialLinks?.youtube,
+      facebook: dbListing?.facebook_url,
+      instagram: dbListing?.instagram_url,
+      twitter: dbListing?.twitter_url,
+      linkedin: dbListing?.linkedin_url,
+      youtube: dbListing?.youtube_url,
     }
   };
 
@@ -216,40 +221,33 @@ const BusinessDetail = () => {
 
   const displayHours = dbHours.length > 0
     ? dbHours.map(h => ({
-        day: DAYS[h.day_of_week],
-        open: h.open_time ? formatTime(h.open_time) : '',
-        close: h.close_time ? formatTime(h.close_time) : '',
-        closed: h.is_closed
-      }))
-    : business?.hours || [];
+      day: DAYS[h.day_of_week],
+      open: h.open_time ? formatTime(h.open_time) : '',
+      close: h.close_time ? formatTime(h.close_time) : '',
+      closed: h.is_closed
+    }))
+    : [];
 
   // Format services for display - keep full data for linking
   const displayServices = dbServices.length > 0
     ? dbServices.filter(s => s.is_available).map(s => ({
-        id: s.id,
-        name: s.service_name,
-        description: s.description || undefined,
-        price: s.price_unit === 'contact for pricing' || s.price === null
-          ? 'Contact for pricing'
-          : `$${s.price.toFixed(2)} ${s.price_unit}`,
-        dailyRate: s.daily_rate,
-        assetClass: s.asset_class,
-      }))
-    : (business?.services?.map((s, i) => ({ 
-        id: `mock-${i}`, 
-        name: s.name, 
-        description: s.description, 
-        price: s.price,
-        dailyRate: null as number | null,
-        assetClass: null as string | null,
-      })) || []);
+      id: s.id,
+      name: s.service_name,
+      description: s.description || undefined,
+      price: s.price_unit === 'contact for pricing' || s.price === null
+        ? 'Contact for pricing'
+        : `$${s.price.toFixed(2)} ${s.price_unit}`,
+      dailyRate: s.daily_rate,
+      assetClass: s.asset_class,
+    }))
+    : [];
 
   // Format service areas
   const displayServiceAreas = dbServiceArea
     ? dbServiceArea.area_type === 'zip_code' && dbServiceArea.zip_codes
       ? dbServiceArea.zip_codes
       : [`Within ${dbServiceArea.radius_miles} miles`]
-    : business?.serviceArea || [];
+    : [];
 
   // Get photo URLs
   const getPhotoUrl = (photo: DbPhoto) => {
@@ -259,17 +257,16 @@ const BusinessDetail = () => {
 
   const displayPhotos = dbPhotos.length > 0
     ? dbPhotos.map(p => getPhotoUrl(p))
-    : business?.photos || [];
+    : [];
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }).map((_, i) => (
       <Star
         key={i}
-        className={`h-5 w-5 ${
-          i < Math.floor(rating)
-            ? "fill-accent text-accent"
-            : "fill-muted text-muted"
-        }`}
+        className={`h-5 w-5 ${i < Math.floor(rating)
+          ? "fill-accent text-accent"
+          : "fill-muted text-muted"
+          }`}
       />
     ));
   };
@@ -324,19 +321,29 @@ const BusinessDetail = () => {
         <div className="flex flex-col md:flex-row md:items-end gap-4 mb-8">
           <div className="w-24 h-24 md:w-32 md:h-32 rounded-xl overflow-hidden border-4 border-background shadow-lg bg-card">
             <img
-              src={displayData.image}
+              src={displayData.logo}
               alt={displayData.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain p-1"
             />
           </div>
           <div className="flex-1">
+            {/* Business Title - Anonymized */}
             <div className="flex items-center gap-2 mb-2">
               <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground uppercase tracking-wide">
-                {displayData.name}
+                Verified {displayData.category || "Rental"} Fleet
+                {/* Was: Verified {category} Partner */}
               </h1>
               {displayData.verified && (
                 <CheckCircle2 className="h-6 w-6 text-primary" />
               )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="ml-2 hover:bg-transparent"
+                onClick={toggleFavorite}
+              >
+                <Heart className={`h-6 w-6 transition-colors ${isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground hover:text-red-500"}`} />
+              </Button>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               {displayData.rating > 0 && (
@@ -373,8 +380,8 @@ const BusinessDetail = () => {
             {/* Photo Gallery */}
             {displayPhotos.length > 0 && (
               <Card className="p-6 bg-card">
-                <h2 className="text-xl font-bold text-foreground mb-4">Photos</h2>
-                <PhotoGallery photos={displayPhotos} businessName={displayData.name} />
+                <h2 className="text-xl font-bold text-foreground mb-4">Fleet Photos</h2>
+                <PhotoGallery photos={displayPhotos} businessName={`Verified ${displayData.category || 'Rental'} Fleet`} />
               </Card>
             )}
 
@@ -392,8 +399,15 @@ const BusinessDetail = () => {
                       className="flex justify-between py-2 border-b border-border last:border-0"
                     >
                       <span className="font-medium text-foreground">{hour.day}</span>
+                      <span className="font-medium text-foreground">
+                        {hour.day}
+                      </span>
                       <span className="text-muted-foreground">
-                        {hour.closed ? "Closed" : hour.open === "24 Hours" ? "24 Hours" : `${hour.open} - ${hour.close}`}
+                        {hour.closed
+                          ? "Closed"
+                          : hour.open === "24 Hours"
+                            ? "24 Hours"
+                            : `${hour.open} - ${hour.close}`}
                       </span>
                     </div>
                   ))}
@@ -426,14 +440,15 @@ const BusinessDetail = () => {
                 </h2>
                 <div className="space-y-4">
                   {displayServices.map((service, index) => {
-                    const isRealUnit = !service.id.startsWith('mock-');
-                    const unitLink = isRealUnit ? `/business/${slug}/unit/${service.id}` : null;
-                    
+                    const isRealUnit = !service.id.startsWith("mock-");
+                    const unitLink = isRealUnit
+                      ? `/business/${slug}/unit/${service.id}`
+                      : null;
+
                     const content = (
                       <div
-                        className={`flex justify-between items-start py-4 border-b border-border last:border-0 ${
-                          unitLink ? 'hover:bg-muted/50 -mx-4 px-4 rounded-lg transition-colors cursor-pointer' : ''
-                        }`}
+                        className={`flex justify-between items-start py-4 border-b border-border last:border-0 ${unitLink ? 'hover:bg-muted/50 -mx-4 px-4 rounded-lg transition-colors cursor-pointer' : ''
+                          }`}
                       >
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
@@ -473,7 +488,7 @@ const BusinessDetail = () => {
                         </div>
                       </div>
                     );
-                    
+
                     return unitLink ? (
                       <Link key={index} to={unitLink}>
                         {content}
@@ -488,121 +503,60 @@ const BusinessDetail = () => {
 
             {/* Reviews - New Component */}
             {dbListing?.id && (
-              <BusinessReviews 
-                businessId={dbListing.id} 
-                placeId={dbListing.place_id} 
+              <BusinessReviews
+                businessId={dbListing.id}
+                placeId={dbListing.place_id}
               />
             )}
           </div>
 
           {/* Right Column - Sticky Sidebar */}
           <div className="lg:col-span-1">
-            <div className="sticky top-4 space-y-6">
+            <div className="sticky top-24 space-y-6">
               {/* Contact Card */}
+              {/* Contact Card - STRIPPED for Lead Vending Model */}
               <Card className="p-6 bg-card">
                 <h2 className="text-lg font-bold text-foreground mb-4">
-                  Contact Information
+                  Rental Inquiry
                 </h2>
                 <div className="space-y-4">
-                  {displayData.phone && (
-                    <a
-                      href={`tel:${displayData.phone}`}
-                      onClick={() => trackClickToCall()}
-                      className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors"
-                    >
-                      <Phone className="h-5 w-5 text-primary" />
-                      <span>{displayData.phone}</span>
-                    </a>
-                  )}
+                  <p className="text-muted-foreground text-sm">
+                    Interested in this rental? Request a quote to check availability and get pricing directly from our verified fleet operator.
+                  </p>
 
-                  {displayData.email && (
-                    <a
-                      href={`mailto:${displayData.email}`}
-                      onClick={() => trackClickToEmail()}
-                      className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors"
-                    >
-                      <Mail className="h-5 w-5 text-primary" />
-                      <span className="truncate">{displayData.email}</span>
-                    </a>
-                  )}
-
-                  {displayData.website && (
-                    <a
-                      href={displayData.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => trackClickWebsite()}
-                      className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors"
-                    >
-                      <Globe className="h-5 w-5 text-primary" />
-                      <span className="truncate">Visit Website</span>
-                    </a>
-                  )}
-
-                  {displayData.address && (
-                    <div className="flex items-start gap-3 text-muted-foreground">
-                      <MapPin className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                      <span>{displayData.address}</span>
-                    </div>
-                  )}
+                  {/* Hidden Contact Info for Privacy/Lead Model
+                  {displayData.phone && (...)}
+                  {displayData.email && (...)}
+                  {displayData.website && (...)}
+                  {displayData.address && (...)}
+                  */}
                 </div>
 
-                {/* Social Links */}
-                {Object.values(displayData.socialLinks).some(Boolean) && (
-                  <div className="mt-6 pt-4 border-t border-border">
-                    <h3 className="text-sm font-semibold text-foreground mb-3">
-                      Follow Us
-                    </h3>
-                    <div className="flex gap-2">
-                      {Object.entries(displayData.socialLinks).map(([platform, url]) => {
-                        const Icon = socialIcons[platform as keyof typeof socialIcons];
-                        if (!Icon || !url) return null;
-                        return (
-                          <a
-                            key={platform}
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => trackClickSocial(platform)}
-                            className="p-2 rounded-lg bg-muted hover:bg-primary hover:text-primary-foreground transition-colors"
-                          >
-                            <Icon className="h-5 w-5" />
-                          </a>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </Card>
+                {/* Social Links Hidden 
+                {Object.values(displayData.socialLinks).some(Boolean) && (...)}
+                */}
 
-              {/* Book Now CTA - if booking URL exists */}
-              {displayData.bookingUrl && (
-                <a
-                  href={displayData.bookingUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => trackClickBooking()}
-                >
+                {/* Book Now Hidden (External Link) 
+                {displayData.bookingUrl && (...)}
+                */}
+
+                {/* Request Quote CTA - Primary Action */}
+                <div className="mt-6">
                   <Button
                     size="lg"
-                    className="w-full text-lg py-6 bg-primary hover:bg-primary/90"
+                    className="w-full text-lg py-6 bg-primary hover:bg-primary/90 shadow-lg animate-pulse hover:animate-none"
+                    onClick={() => {
+                      trackButtonClick('request_quote');
+                      setLeadModalOpen(true);
+                    }}
                   >
-                    Book Now
+                    Request Availability
                   </Button>
-                </a>
-              )}
-
-              {/* Request Quote CTA */}
-              <Button
-                size="lg"
-                className={`w-full text-lg py-6 ${displayData.bookingUrl ? 'bg-secondary hover:bg-secondary/90 text-secondary-foreground' : ''}`}
-                onClick={() => {
-                  trackButtonClick('request_quote');
-                  setLeadModalOpen(true);
-                }}
-              >
-                Request a Quote
-              </Button>
+                  <p className="text-xs text-center text-muted-foreground mt-2">
+                    Response time: Usually within 1 hour
+                  </p>
+                </div>
+              </Card>
 
               {/* Back to Directory (Mobile) */}
               <Link to="/" className="block md:hidden">
@@ -611,8 +565,37 @@ const BusinessDetail = () => {
                   Back to Directory
                 </Button>
               </Link>
+
+              {/* Claim Business Card */}
+              {!displayData.verified && (
+                <Card className="p-6 bg-primary/5 border-primary/20">
+                  <div className="flex items-start gap-4">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Shield className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-foreground">
+                        Own this business?
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Claim this listing to update your information, manage reviews, and receive leads directly.
+                      </p>
+                      <Button
+                        variant="outline"
+                        className="w-full mt-2 border-primary/20 hover:bg-primary/10 hover:text-primary"
+                        onClick={() => {
+                          window.location.href = `/claim/${slug}`;
+                        }}
+                      >
+                        Claim This Listing
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              )}
             </div>
           </div>
+
         </div>
       </div>
 
@@ -621,8 +604,8 @@ const BusinessDetail = () => {
       <LeadCaptureModal
         open={leadModalOpen}
         onOpenChange={setLeadModalOpen}
-        businessName={displayData.name}
-        businessId={dbListing?.id || business?.slug || ''}
+        businessName={`Verified ${displayData.category || 'Rental'} Fleet`}
+        businessId={dbListing?.id || ''}
         services={displayServices}
         onLeadSubmitted={(data) => {
           trackFormSubmit('lead_form');
@@ -635,20 +618,22 @@ const BusinessDetail = () => {
         }}
       />
 
-      {leadSubmitter && dbListing?.id && (
-        <ReviewModal
-          isOpen={reviewModalOpen}
-          onClose={() => {
-            setReviewModalOpen(false);
-            setLeadSubmitter(null);
-          }}
-          businessId={dbListing.id}
-          businessName={displayData.name}
-          authorName={leadSubmitter.name}
-          authorEmail={leadSubmitter.email}
-        />
-      )}
-    </div>
+      {
+        leadSubmitter && dbListing?.id && (
+          <ReviewModal
+            isOpen={reviewModalOpen}
+            onClose={() => {
+              setReviewModalOpen(false);
+              setLeadSubmitter(null);
+            }}
+            businessId={dbListing.id}
+            businessName={`Verified ${displayData.category || 'Rental'} Fleet`}
+            authorName={leadSubmitter.name}
+            authorEmail={leadSubmitter.email}
+          />
+        )
+      }
+    </div >
   );
 };
 

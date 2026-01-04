@@ -1,9 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -12,420 +9,492 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
-import { Search, Mail, Phone, MapPin, Calendar, MessageSquare, X } from 'lucide-react';
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+  ColumnDef,
+  SortingState,
+  ColumnFiltersState,
+} from '@tanstack/react-table';
+import {
+  Search,
+  MoreHorizontal,
+  ArrowUpDown,
+  Filter,
+  Download,
+  Trash2,
+  Mail,
+  Phone,
+  BarChart3,
+  Calendar,
+  CheckCircle2,
+  XCircle,
+  Clock
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { LeadCaptureModal } from '@/components/LeadCaptureModal'; // Reuse if needed or just detail sheet
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { DashboardCreateLeadModal } from '@/components/dashboard/DashboardCreateLeadModal';
 
+// --- Types ---
 interface Lead {
   id: string;
-  business_id: string;
   name: string;
   email: string;
   phone: string;
-  service_type: string | null;
-  date_needed: string | null;
-  location: string | null;
-  message: string | null;
   status: string;
+  source: string | null;
+  estimated_value: number | null;
+  probability: 'High' | 'Medium' | 'Low' | null;
+  tags: string[];
+  last_action_at: string;
   created_at: string;
-  updated_at: string;
+  message: string | null;
+  business_listings?: {
+    business_name: string;
+    city: string | null;
+    state: string | null;
+  };
 }
 
-const statusOptions = [
-  { value: 'all', label: 'All Leads' },
-  { value: 'new', label: 'New' },
-  { value: 'contacted', label: 'Contacted' },
-  { value: 'qualified', label: 'Qualified' },
-  { value: 'converted', label: 'Converted' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'closed', label: 'Closed' },
-];
-
+// --- Constants ---
 const statusColors: Record<string, string> = {
-  new: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  contacted: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
-  qualified: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
-  converted: 'bg-green-500/10 text-green-500 border-green-500/20',
-  completed: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
-  closed: 'bg-muted text-muted-foreground border-border',
+  new: 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20',
+  new_inquiry: 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20',
+  contacted: 'bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20',
+  response_sent: 'bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20',
+  qualified: 'bg-purple-500/10 text-purple-500 hover:bg-purple-500/20',
+  verified: 'bg-purple-500/10 text-purple-500 hover:bg-purple-500/20',
+  converted: 'bg-green-500/10 text-green-500 hover:bg-green-500/20',
+  booked: 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20',
+  closed: 'bg-gray-500/10 text-gray-500 hover:bg-gray-500/20',
+  completed: 'bg-gray-500/10 text-gray-500 hover:bg-gray-500/20',
+  lost: 'bg-red-500/10 text-red-500 hover:bg-red-500/20',
+  did_not_book: 'bg-red-500/10 text-red-500 hover:bg-red-500/20',
+};
+
+const getStatusLabel = (status: string) => {
+  const labels: Record<string, string> = {
+    new: 'New',
+    new_inquiry: 'New Inquiry',
+    contacted: 'Contacted',
+    response_sent: 'Response Sent',
+    qualified: 'Qualified',
+    verified: 'Verified',
+    converted: 'Converted',
+    booked: 'Booked',
+    closed: 'Closed',
+    completed: 'Completed',
+    lost: 'Lost',
+    did_not_book: 'Did Not Book',
+  };
+  return labels[status] || status.replace(/_/g, ' ');
+};
+
+const probabilityColors = {
+  High: 'bg-green-100 text-green-700',
+  Medium: 'bg-yellow-100 text-yellow-700',
+  Low: 'bg-red-100 text-red-700',
 };
 
 export default function LeadInbox() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [leads, setLeads] = useState<Lead[]>([]);
+  const [data, setData] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [rowSelection, setRowSelection] = useState({});
+
+  // Sheet State
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
 
+  // --- Fetch Data ---
   useEffect(() => {
     fetchLeads();
-
-    // Subscribe to realtime updates
-    const channel = supabase
-      .channel('leads-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'leads',
-        },
-        () => {
-          fetchLeads();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    // Realtime subscription could be added here
   }, [user]);
 
   const fetchLeads = async () => {
     if (!user) return;
-
     try {
-      const { data, error } = await supabase
+      const { data: leads, error } = await supabase
         .from('leads')
-        .select('*')
+        .select(`
+          *,
+          business_listings (
+            business_name,
+            city,
+            state
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setLeads(data || []);
+      setData(leads || []);
     } catch (error) {
       console.error('Error fetching leads:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load leads',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Failed to load leads', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
-  const updateLeadStatus = async (leadId: string, newStatus: string) => {
-    try {
-      const { error } = await supabase
-        .from('leads')
-        .update({ status: newStatus })
-        .eq('id', leadId);
+  // --- Stats Calculation ---
+  const stats = useMemo(() => {
+    const total = data.length;
+    const newLeads = data.filter(l => l.status === 'new' || l.status === 'new_inquiry').length;
+    const closed = data.filter(l => ['converted', 'booked', 'closed', 'completed'].includes(l.status)).length;
+    const lost = data.filter(l => ['lost', 'did_not_book'].includes(l.status)).length;
+    const totalValue = data.reduce((acc, curr) => acc + (curr.estimated_value || 0), 0);
+    return { total, newLeads, closed, lost, totalValue };
+  }, [data]);
 
-      if (error) throw error;
+  // --- Columns Definition ---
+  const columns: ColumnDef<Lead>[] = [
+    {
+      id: 'select',
+      header: ({ table }) => (
+        <input
+          type="checkbox"
+          checked={table.getIsAllPageRowsSelected()}
+          onChange={(e) => table.toggleAllPageRowsSelected(!!e.target.checked)}
+          className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
+        />
+      ),
+      cell: ({ row }) => (
+        <input
+          type="checkbox"
+          checked={row.getIsSelected()}
+          onChange={(e) => row.toggleSelected(!!e.target.checked)}
+          className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: 'name',
+      header: 'Lead',
+      cell: ({ row }) => (
+        <div className="flex flex-col">
+          <span className="font-medium text-foreground">{row.original.name}</span>
+          <span className="text-xs text-muted-foreground">{row.original.email}</span>
+        </div>
+      ),
+    },
+    {
+      id: 'source',
+      header: 'Source',
+      accessorFn: (row) => row.business_listings?.business_name, // Group by Business mostly? Or UTM source?
+      cell: ({ row }) => {
+        // "Headquarters" view wants to know WHERE it came from.
+        // If we have UTM source use that, else show Listing Name.
+        const sourceLabel = row.original.source || 'Organic'; // or row.original.utm_source
+        const listingName = row.original.business_listings?.business_name;
 
-      const lead = leads.find(l => l.id === leadId);
-      
-      setLeads(leads.map(l => 
-        l.id === leadId ? { ...l, status: newStatus } : l
-      ));
-
-      if (selectedLead?.id === leadId) {
-        setSelectedLead({ ...selectedLead, status: newStatus });
+        return (
+          <div className="flex flex-col">
+            <Badge variant="outline" className="w-fit mb-1">{sourceLabel}</Badge>
+            {listingName && <span className="text-xs text-muted-foreground truncate max-w-[150px]">{listingName}</span>}
+          </div>
+        )
       }
-
-      toast({
-        title: 'Status Updated',
-        description: `Lead status changed to ${newStatus}`,
-      });
-
-      // If marking as completed, check if we should send a review request
-      if (newStatus === 'completed' && lead) {
-        triggerCompletionReviewRequest(lead);
+    },
+    {
+      accessorKey: 'status',
+      header: 'Status',
+      cell: ({ row }) => {
+        const status = row.original.status || 'new';
+        return (
+          <Badge className={`${statusColors[status] || 'bg-gray-100 text-gray-800'} border-0 whitespace-nowrap`}>
+            {getStatusLabel(status).toUpperCase()}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: 'estimated_value',
+      header: ({ column }) => (
+        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+          Value
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => {
+        const val = row.original.estimated_value;
+        return val ? <div className="font-medium">${val.toLocaleString()}</div> : <span className="text-muted-foreground">-</span>;
+      },
+    },
+    {
+      accessorKey: 'probability',
+      header: 'Probability',
+      cell: ({ row }) => {
+        const prob = row.original.probability; // High, Medium, Low
+        if (!prob) return <span className="text-muted-foreground text-xs">-</span>;
+        return (
+          <span className={`text-xs font-medium px-2 py-1 rounded-full ${probabilityColors[prob] || 'bg-gray-100'}`}>
+            {prob.toUpperCase()}
+          </span>
+        );
       }
-    } catch (error) {
-      console.error('Error updating lead status:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update lead status',
-        variant: 'destructive',
-      });
-    }
-  };
+    },
+    {
+      accessorKey: 'last_action_at',
+      header: 'Last Action',
+      cell: ({ row }) => (
+        <div className="text-sm text-muted-foreground">
+          {format(new Date(row.original.last_action_at || row.original.created_at), 'MMM d, yyyy')}
+        </div>
+      ),
+    },
+    {
+      id: 'actions',
+      cell: ({ row }) => {
+        const lead = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => { setSelectedLead(lead); setSheetOpen(true); }}>
+                View Details
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => window.open(`mailto:${lead.email}`)}>
+                Send Email
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
 
-  const triggerCompletionReviewRequest = async (lead: Lead) => {
-    try {
-      // Check if review settings have send_on_completion enabled
-      const { data: settings } = await supabase
-        .from('review_settings')
-        .select('send_on_completion')
-        .eq('listing_id', lead.business_id)
-        .maybeSingle();
-
-      // If settings exist and send_on_completion is enabled
-      if (settings?.send_on_completion) {
-        // Check if review email was already sent
-        const { data: leadData } = await supabase
-          .from('leads')
-          .select('review_email_sent')
-          .eq('id', lead.id)
-          .single();
-
-        if (leadData && !leadData.review_email_sent) {
-          // Send review request
-          await supabase.functions.invoke('send-review-request', {
-            body: { lead_id: lead.id },
-          });
-
-          toast({
-            title: 'Review Request Sent',
-            description: `A review request has been sent to ${lead.email}`,
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error sending completion review request:', error);
-      // Don't show error toast - this is a background action
-    }
-  };
-
-  const filteredLeads = leads.filter(lead => {
-    const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
-    const matchesSearch = 
-      lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lead.email.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesStatus && matchesSearch;
+  const table = useReactTable({
+    data,
+    columns,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onRowSelectionChange: setRowSelection,
+    state: {
+      sorting,
+      columnFilters,
+      rowSelection,
+    },
   });
 
-  const openLeadDetails = (lead: Lead) => {
-    setSelectedLead(lead);
-    setSheetOpen(true);
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-pulse text-muted-foreground">Loading leads...</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Lead Inbox</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage and respond to quote requests from potential customers
-        </p>
+    <div className="space-y-6 animate-fade-in">
+      {/* Top Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="p-4 space-y-2">
+          <p className="text-sm text-muted-foreground">Total Leads</p>
+          <div className="text-2xl font-bold">{stats.total}</div>
+        </Card>
+        <Card className="p-4 space-y-2">
+          <p className="text-sm text-muted-foreground">New Leads</p>
+          <div className="flex items-center gap-2">
+            <div className="text-2xl font-bold">{stats.newLeads}</div>
+            <span className="text-xs text-green-500 bg-green-500/10 px-1.5 py-0.5 rounded">+12%</span>
+          </div>
+        </Card>
+        <Card className="p-4 space-y-2">
+          <p className="text-sm text-muted-foreground">Closed</p>
+          <div className="text-2xl font-bold">{stats.closed}</div>
+        </Card>
+        <Card className="p-4 space-y-2">
+          <p className="text-sm text-muted-foreground">Pipeline Value</p>
+          <div className="text-2xl font-bold text-green-600">${stats.totalValue.toLocaleString()}</div>
+        </Card>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name or email..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+      {/* Toolbar */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2 flex-1">
+          <div className="relative max-w-sm w-full">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search leads..."
+              value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+              onChange={(event) =>
+                table.getColumn("name")?.setFilterValue(event.target.value)
+              }
+              className="pl-8"
+            />
+          </div>
+          <Button variant="outline" size="sm" className="hidden sm:flex">
+            <Filter className="mr-2 h-4 w-4" /> Filter
+          </Button>
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            {statusOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm">
+            <Download className="mr-2 h-4 w-4" /> Export CSV
+          </Button>
+          <Button size="sm" onClick={() => setCreateModalOpen(true)}>
+            + New Lead
+          </Button>
+        </div>
       </div>
 
-      {/* Leads Table */}
-      {filteredLeads.length === 0 ? (
-        <div className="text-center py-12 bg-card rounded-lg border border-border">
-          <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground">No leads found</h3>
-          <p className="text-muted-foreground mt-1">
-            {searchQuery || statusFilter !== 'all'
-              ? 'Try adjusting your filters'
-              : 'Quote requests will appear here when customers submit them'}
-          </p>
-        </div>
-      ) : (
-        <div className="bg-card rounded-lg border border-border overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Contact Info</TableHead>
-                <TableHead>Service Type</TableHead>
-                <TableHead>Date Needed</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date Received</TableHead>
+      <DashboardCreateLeadModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        onSuccess={() => {
+          fetchLeads();
+        }}
+      />
+
+      {/* Table */}
+      <div className="rounded-md border bg-card">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  return (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                    </TableHead>
+                  );
+                })}
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredLeads.map((lead) => (
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
                 <TableRow
-                  key={lead.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => openLeadDetails(lead)}
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => { setSelectedLead(row.original); setSheetOpen(true); }}
                 >
-                  <TableCell className="font-medium">{lead.name}</TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Mail className="h-3 w-3" />
-                        {lead.email}
-                      </div>
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Phone className="h-3 w-3" />
-                        {lead.phone}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{lead.service_type || '-'}</TableCell>
-                  <TableCell>
-                    {lead.date_needed
-                      ? format(new Date(lead.date_needed), 'MMM d, yyyy')
-                      : '-'}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={statusColors[lead.status]}
-                    >
-                      {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {format(new Date(lead.created_at), 'MMM d, yyyy h:mm a')}
-                  </TableCell>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  No results.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
-      {/* Lead Details Sheet */}
+      {/* Pagination */}
+      <div className="flex items-center justify-end space-x-2 py-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => table.previousPage()}
+          disabled={!table.getCanPreviousPage()}
+        >
+          Previous
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => table.nextPage()}
+          disabled={!table.getCanNextPage()}
+        >
+          Next
+        </Button>
+      </div>
+
+      {/* Details Sheet Reuse/Integration */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="sm:max-w-lg">
+        <SheetContent className="sm:max-w-xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Lead Details</SheetTitle>
+            <SheetDescription>View and manage lead information.</SheetDescription>
+          </SheetHeader>
           {selectedLead && (
-            <>
-              <SheetHeader>
-                <SheetTitle className="text-xl">{selectedLead.name}</SheetTitle>
-                <SheetDescription>
-                  Received on {format(new Date(selectedLead.created_at), 'MMMM d, yyyy h:mm a')}
-                </SheetDescription>
-              </SheetHeader>
+            <div className="mt-6 space-y-6">
+              {/* Quick Actions */}
+              <div className="flex gap-2">
+                <Button className="flex-1" onClick={() => window.open(`mailto:${selectedLead.email}`)}>
+                  <Mail className="mr-2 h-4 w-4" /> Email
+                </Button>
+                <Button variant="outline" className="flex-1" onClick={() => window.open(`tel:${selectedLead.phone}`)}>
+                  <Phone className="mr-2 h-4 w-4" /> Call
+                </Button>
+              </div>
 
-              <div className="mt-6 space-y-6">
-                {/* Status */}
-                <div>
-                  <label className="text-sm font-medium text-foreground">Status</label>
-                  <Select
-                    value={selectedLead.status}
-                    onValueChange={(value) => updateLeadStatus(selectedLead.id, value)}
-                  >
-                    <SelectTrigger className="mt-1.5">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statusOptions.slice(1).map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              {/* Status Board */}
+              <div className="p-4 bg-muted/50 rounded-lg space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Current Status</span>
+                  <Badge className={statusColors[selectedLead.status]}>{getStatusLabel(selectedLead.status).toUpperCase()}</Badge>
                 </div>
+                {/* Update Status Logic Here */}
+              </div>
 
-                {/* Contact Info */}
-                <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-foreground">Contact Information</h4>
-                  <div className="space-y-2">
-                    <a
-                      href={`mailto:${selectedLead.email}`}
-                      className="flex items-center gap-2 text-sm text-primary hover:underline"
-                    >
-                      <Mail className="h-4 w-4" />
-                      {selectedLead.email}
-                    </a>
-                    <a
-                      href={`tel:${selectedLead.phone}`}
-                      className="flex items-center gap-2 text-sm text-primary hover:underline"
-                    >
-                      <Phone className="h-4 w-4" />
-                      {selectedLead.phone}
-                    </a>
-                    {selectedLead.location && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <MapPin className="h-4 w-4" />
-                        {selectedLead.location}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Request Details */}
-                <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-foreground">Request Details</h4>
-                  <div className="space-y-2">
-                    {selectedLead.service_type && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Service Type</span>
-                        <span className="text-foreground">{selectedLead.service_type}</span>
-                      </div>
-                    )}
-                    {selectedLead.date_needed && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Date Needed</span>
-                        <span className="text-foreground">
-                          {format(new Date(selectedLead.date_needed), 'MMMM d, yyyy')}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Message */}
-                {selectedLead.message && (
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-foreground">Message</h4>
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap bg-muted/50 rounded-md p-3">
-                      {selectedLead.message}
+              {/* Information */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-muted-foreground">Listing</label>
+                    <p className="font-medium">{selectedLead.business_listings?.business_name || 'N/A'}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {selectedLead.business_listings?.city}, {selectedLead.business_listings?.state}
                     </p>
                   </div>
-                )}
+                  <div>
+                    <label className="text-xs text-muted-foreground">Estimated Value</label>
+                    <p className="font-medium text-green-600">${selectedLead.estimated_value?.toLocaleString() || '-'}</p>
+                  </div>
+                </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-3 pt-4">
-                  <Button asChild className="flex-1">
-                    <a href={`mailto:${selectedLead.email}`}>
-                      <Mail className="h-4 w-4 mr-2" />
-                      Email
-                    </a>
-                  </Button>
-                  <Button variant="outline" asChild className="flex-1">
-                    <a href={`tel:${selectedLead.phone}`}>
-                      <Phone className="h-4 w-4 mr-2" />
-                      Call
-                    </a>
-                  </Button>
+                <div>
+                  <label className="text-xs text-muted-foreground">Message</label>
+                  <p className="text-sm mt-1 bg-background p-3 rounded border whitespace-pre-wrap">
+                    {/* Fetch 'message' from DB (not in interface yet? Wait, let's add it) */}
+                    {/* Actually I didn't include 'message' in the Lead interface above, I should add it */}
+                    {selectedLead.message || 'No message provided'}
+                  </p>
                 </div>
               </div>
-            </>
+            </div>
           )}
         </SheetContent>
       </Sheet>

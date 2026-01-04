@@ -2,7 +2,8 @@ import { Search, MapPin, Map, List, Locate } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
+// import { supabase } from "@/integrations/supabase/client"; // Removed
+import { useMapsLibrary } from "@vis.gl/react-google-maps";
 import heroBg from "@/assets/hero-bg.jpg";
 
 interface HeroProps {
@@ -21,10 +22,10 @@ interface PlacePrediction {
   description: string;
 }
 
-export const Hero = ({ 
-  onSearch, 
-  onLocationChange, 
-  onRadiusChange, 
+export const Hero = ({
+  onSearch,
+  onLocationChange,
+  onRadiusChange,
   radius,
   isMapView,
   onToggleMapView,
@@ -37,39 +38,50 @@ export const Hero = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
+
   const inputRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
+
+  // Use Maps Library hooks
+  const placesLib = useMapsLibrary("places");
+  const geocodingLib = useMapsLibrary("geocoding");
+
+  const [autocompleteService, setAutocompleteService] = useState<google.maps.places.AutocompleteService | null>(null);
+  const [geocoder, setGeocoder] = useState<google.maps.Geocoder | null>(null);
+
+  useEffect(() => {
+    if (!placesLib || !geocodingLib) return;
+
+    setAutocompleteService(new placesLib.AutocompleteService());
+    setGeocoder(new geocodingLib.Geocoder());
+  }, [placesLib, geocodingLib]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     onSearch(searchQuery);
   };
 
-  const fetchSuggestions = async (input: string) => {
-    if (input.length < 2) {
+  const fetchSuggestions = (input: string) => {
+    if (input.length < 2 || !autocompleteService) {
       setSuggestions([]);
       return;
     }
 
     setIsLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('places-autocomplete', {
-        body: { input }
-      });
 
-      if (error) {
-        console.error('Error fetching suggestions:', error);
-        setSuggestions([]);
-        return;
-      }
+    const request = { input };
 
-      setSuggestions(data.predictions || []);
-    } catch (error) {
-      console.error('Error fetching suggestions:', error);
-      setSuggestions([]);
-    } finally {
+    autocompleteService.getPlacePredictions(request, (predictions, status) => {
       setIsLoading(false);
-    }
+      if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+        setSuggestions(predictions.map(p => ({
+          place_id: p.place_id,
+          description: p.description
+        })));
+      } else {
+        setSuggestions([]);
+      }
+    });
   };
 
   const handleLocationInputChange = (value: string) => {
@@ -91,29 +103,25 @@ export const Hero = ({
     }, 300);
   };
 
-  const handleSuggestionClick = async (suggestion: PlacePrediction) => {
+  const handleSuggestionClick = (suggestion: PlacePrediction) => {
     setLocationInput(suggestion.description);
     setShowSuggestions(false);
     setSuggestions([]);
 
-    try {
-      const { data, error } = await supabase.functions.invoke('places-geocode', {
-        body: { placeId: suggestion.place_id }
-      });
+    if (!geocoder) return;
 
-      if (error) {
-        console.error('Error geocoding place:', error);
-        return;
+    geocoder.geocode({ placeId: suggestion.place_id }, (results, status) => {
+      if (status === google.maps.GeocoderStatus.OK && results && results[0]) {
+        const { location } = results[0].geometry;
+        onLocationChange({
+          lat: location.lat(),
+          lng: location.lng(),
+          address: results[0].formatted_address
+        });
+      } else {
+        console.error("Geocode was not successful for the following reason: " + status);
       }
-
-      onLocationChange({
-        lat: data.lat,
-        lng: data.lng,
-        address: data.address || suggestion.description
-      });
-    } catch (error) {
-      console.error('Error geocoding place:', error);
-    }
+    });
   };
 
   const handleUseMyLocation = () => {
@@ -127,8 +135,23 @@ export const Hero = ({
       (position) => {
         const { latitude, longitude } = position.coords;
         setLocationInput("Current Location");
-        onLocationChange({ lat: latitude, lng: longitude, address: "Current Location" });
-        setIsLocating(false);
+
+        // Reverse geocode to get address if possible
+        if (geocoder) {
+          geocoder.geocode({ location: { lat: latitude, lng: longitude } }, (results, status) => {
+            let address = "Current Location";
+            if (status === google.maps.GeocoderStatus.OK && results && results[0]) {
+              address = results[0].formatted_address;
+              setLocationInput(address);
+            }
+            onLocationChange({ lat: latitude, lng: longitude, address });
+            setIsLocating(false);
+          });
+        } else {
+          // Fallback if geocoder not loaded
+          onLocationChange({ lat: latitude, lng: longitude, address: "Current Location" });
+          setIsLocating(false);
+        }
       },
       (error) => {
         console.error("Error getting location:", error);
@@ -157,13 +180,13 @@ export const Hero = ({
   return (
     <section className="relative min-h-[550px] flex items-center justify-center overflow-hidden">
       {/* Background Image with Overlay */}
-      <div 
+      <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${heroBg})` }}
       >
         <div className="absolute inset-0 bg-secondary/85" />
       </div>
-      
+
       <div className="relative z-10 max-w-4xl mx-auto px-4 py-16 text-center">
         {/* Badge */}
         <div className="inline-block bg-primary rounded px-4 py-1.5 mb-6">
@@ -171,7 +194,7 @@ export const Hero = ({
             Built for Blue-Collar America
           </span>
         </div>
-        
+
         {/* Main headline */}
         <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight leading-tight">
           <span className="text-primary-foreground italic">FIND LOCAL</span>
@@ -180,11 +203,11 @@ export const Hero = ({
           <br />
           <span className="text-primary-foreground italic">NEAR YOU</span>
         </h1>
-        
+
         <p className="text-base md:text-lg text-secondary-foreground/80 mb-10 max-w-xl mx-auto">
           From flatbeds to dump trailers, connect with trusted local hosts who understand hard work.
         </p>
-        
+
         {/* Unified Search Bar */}
         <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
           <div className="bg-background/95 backdrop-blur-sm rounded-lg p-2 shadow-2xl border border-border/50">
@@ -200,10 +223,10 @@ export const Hero = ({
                   className="pl-9 h-11 bg-transparent border-0 focus-visible:ring-0 text-foreground placeholder:text-muted-foreground"
                 />
               </div>
-              
+
               {/* Divider */}
               <div className="hidden sm:block w-px bg-border/50 my-2" />
-              
+
               {/* Location Input */}
               <div className="relative flex-1" ref={inputRef}>
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -225,7 +248,7 @@ export const Hero = ({
                 >
                   <Locate className={`h-3.5 w-3.5 ${isLocating ? 'animate-pulse text-primary' : 'text-muted-foreground'}`} />
                 </Button>
-                
+
                 {/* Location Suggestions Dropdown */}
                 {showSuggestions && (suggestions.length > 0 || isLoading) && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-popover border border-border rounded-lg shadow-xl z-50 max-h-48 overflow-auto">
@@ -249,10 +272,10 @@ export const Hero = ({
                   </div>
                 )}
               </div>
-              
+
               {/* Search Button */}
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="h-11 px-6 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shrink-0"
               >
                 <Search className="h-4 w-4 sm:mr-2" />

@@ -2,10 +2,10 @@ import { Link } from "react-router-dom";
 
 export const Footer = () => {
   return (
-    <footer className="bg-secondary text-secondary-foreground">
+    <footer className="bg-[#0A0F1C] border-t border-white/5 text-gray-400">
       {/* Red accent bar at top */}
       <div className="h-1 bg-primary" />
-      
+
       {/* Main Footer Content */}
       <div className="container mx-auto px-4 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
@@ -19,27 +19,27 @@ export const Footer = () => {
             </p>
             {/* Social Icons */}
             <div className="flex items-center gap-3 pt-2">
-              <a 
-                href="https://facebook.com" 
-                target="_blank" 
+              <a
+                href="https://facebook.com"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 rounded-full bg-secondary-foreground/10 hover:bg-secondary-foreground/20 transition-colors flex items-center justify-center"
                 aria-label="Facebook"
               >
                 <span className="text-xs font-bold text-secondary-foreground">FB</span>
               </a>
-              <a 
-                href="https://instagram.com" 
-                target="_blank" 
+              <a
+                href="https://instagram.com"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 rounded-full bg-secondary-foreground/10 hover:bg-secondary-foreground/20 transition-colors flex items-center justify-center"
                 aria-label="Instagram"
               >
                 <span className="text-xs font-bold text-secondary-foreground">IG</span>
               </a>
-              <a 
-                href="https://twitter.com" 
-                target="_blank" 
+              <a
+                href="https://twitter.com"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 rounded-full bg-secondary-foreground/10 hover:bg-secondary-foreground/20 transition-colors flex items-center justify-center"
                 aria-label="Twitter"

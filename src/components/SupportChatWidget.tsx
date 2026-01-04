@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { MessageCircle, X, Send, Loader2, Headphones, FileText, ChevronLeft, Ticket } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { MessageCircle, X, Send, Loader2, Headphones, FileText, ChevronLeft, Ticket, GripHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,9 +11,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useDraggable } from '@/hooks/useDraggable';
 
 interface Message {
   id: string;
+  role: 'user' | 'assistant';
   content: string;
   isUser: boolean;
   timestamp: Date;
@@ -32,12 +34,14 @@ type WidgetView = 'menu' | 'ticket' | 'chat';
 
 export function SupportChatWidget() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [view, setView] = useState<WidgetView>('menu');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { position, handleMouseDown, isDragging } = useDraggable({ x: 0, y: 0 });
 
   // Ticket form state
   const [ticketForm, setTicketForm] = useState({
@@ -51,12 +55,19 @@ export function SupportChatWidget() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
+      role: 'assistant',
       content: "Hi there! 👋 I'm here to help. How can I assist you today?",
       isUser: false,
       timestamp: new Date(),
     },
   ]);
   const [chatInput, setChatInput] = useState('');
+
+  // Visibility Check - Only show on Dashboard/Admin/Tickets pages
+  const isDashboard = location.pathname.startsWith('/dashboard') ||
+    location.pathname.startsWith('/admin') ||
+    location.pathname.startsWith('/my-tickets');
+
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -145,62 +156,94 @@ export function SupportChatWidget() {
 
     const userMessage: Message = {
       id: Date.now().toString(),
+      role: 'user',
       content: chatInput,
       isUser: true,
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
     const messageContent = chatInput;
     setChatInput('');
     setIsSubmitting(true);
 
     try {
-      // If we don't have an active ticket, create one
-      if (!activeTicketId) {
-        const { data: ticketData, error: ticketError } = await supabase
-          .from('support_tickets')
-          .insert({
-            user_id: user?.id || null,
-            subject: `Live Chat: ${messageContent.substring(0, 50)}${messageContent.length > 50 ? '...' : ''}`,
-            description: messageContent,
-            priority: 'medium',
-            status: 'open',
+      // Create a temporary placeholder for the AI response
+      const aiPlaceholderId = (Date.now() + 1).toString();
+      setMessages(prev => [...prev, {
+        id: aiPlaceholderId,
+        role: 'assistant',
+        content: '',
+        isUser: false,
+        timestamp: new Date()
+      }]);
+
+      const response = await supabase.functions.invoke('ai-support-chat', {
+        body: {
+          message: messageContent,
+          history: newMessages.map(m => ({
+            isUser: m.isUser,
+            content: m.content
+          }))
+        }
+      });
+
+      if (response.error) throw response.error;
+
+      // Handle streaming response manually if needed, or if invoked returns JSON
+      // For simplicity with supabase-js invoke, let's assume valid JSON or text stream handling
+      // Note: invoke returns a JSON object by default unless we handle the response body stream manually.
+      // To get streaming text, we need to access the underlying response body or handle the stream locally.
+      // However, supabase-js `invoke` simplifies this. If we return a stream from the server, 
+      // we might need to use basic fetch instead of supabase.functions.invoke to handle the readable stream easily 
+      // OR handle the blob.
+
+      // Let's use direct fetch for simpler streaming support if invoke doesn't auto-handle it well in this context
+      // Actually, let's use the standard fetch pattern we used in TrailerChatbot for reliable streaming.
+
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      const streamResponse = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-support-chat`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            message: messageContent,
+            history: newMessages.map(m => ({
+              isUser: m.isUser,
+              content: m.content
+            }))
           })
-          .select()
-          .single();
+        }
+      );
 
-        if (ticketError) throw ticketError;
+      if (!streamResponse.body) throw new Error('No response body');
 
-        setActiveTicketId(ticketData.id);
+      const reader = streamResponse.body.getReader();
+      const decoder = new TextDecoder();
+      let aiContent = '';
 
-        // Add the first message to chat_messages
-        await supabase.from('chat_messages').insert({
-          ticket_id: ticketData.id,
-          sender_id: user?.id || null,
-          sender_type: 'user',
-          message: messageContent,
-        });
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-        // Add a system message
-        const botResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          content: "Thanks for your message! A support team member will respond shortly. You'll see their replies here in real-time.",
-          isUser: false,
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, botResponse]);
-      } else {
-        // Add message to existing ticket
-        const { error: msgError } = await supabase.from('chat_messages').insert({
-          ticket_id: activeTicketId,
-          sender_id: user?.id || null,
-          sender_type: 'user',
-          message: messageContent,
-        });
+        const text = decoder.decode(value, { stream: true });
+        aiContent += text;
 
-        if (msgError) throw msgError;
+        // Update the placeholder message with new content
+        setMessages(prev => prev.map(msg =>
+          msg.id === aiPlaceholderId
+            ? { ...msg, content: aiContent }
+            : msg
+        ));
       }
+
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -208,38 +251,70 @@ export function SupportChatWidget() {
         description: 'Failed to send message. Please try again.',
         variant: 'destructive',
       });
+      // Remove the user message on error? Or just leave it.
     } finally {
       setIsSubmitting(false);
     }
   };
+
 
   const handleViewTickets = () => {
     setIsOpen(false);
     navigate('/my-tickets');
   };
 
+  // Visibility Check - Only show on Dashboard/Admin/Tickets pages
+  // Moved here to prevent "Rendered fewer hooks" error
+  if (!isDashboard) return null;
+
+  const style = {
+    transform: `translate(${position.x}px, ${position.y}px)`,
+    transition: isDragging ? 'none' : 'transform 0.1s',
+  };
+
   if (!isOpen) {
     return (
-      <Button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 left-6 h-14 w-14 rounded-full shadow-lg z-50 bg-primary hover:bg-primary/90"
-        size="icon"
-      >
-        <Headphones className="h-6 w-6" />
-      </Button>
+      <div style={style} className="fixed bottom-6 right-6 z-50 flex items-end gap-2 flex-row-reverse">
+        <div
+          className="bg-primary/80 hover:bg-primary text-white p-1 rounded-md cursor-move transition-opacity"
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleMouseDown}
+        >
+          <GripHorizontal className="h-4 w-4" />
+        </div>
+        <Button
+          onClick={() => setIsOpen(true)}
+          className="h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90"
+          size="icon"
+        >
+          <Headphones className="h-6 w-6" />
+        </Button>
+      </div>
     );
   }
 
   return (
-    <Card className="fixed bottom-6 left-6 w-96 h-[500px] shadow-xl z-50 flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between py-3 px-4 border-b bg-primary text-primary-foreground rounded-t-lg">
+    <Card
+      style={style}
+      className="fixed bottom-6 right-6 w-96 h-[500px] shadow-xl z-50 flex flex-col"
+    >
+      <CardHeader
+        className="flex flex-row items-center justify-between py-3 px-4 border-b bg-primary text-primary-foreground rounded-t-lg cursor-move"
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleMouseDown}
+      >
         <div className="flex items-center gap-2">
+          <GripHorizontal className="h-4 w-4 opacity-50 mr-1" />
           {view !== 'menu' && (
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/10"
-              onClick={() => setView('menu')}
+              onClick={(e) => {
+                e.stopPropagation();
+                setView('menu');
+              }}
+              onMouseDown={(e) => e.stopPropagation()} // Prevent drag on button click
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
@@ -255,16 +330,18 @@ export function SupportChatWidget() {
           variant="ghost"
           size="icon"
           className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/10"
-          onClick={() => {
+          onClick={(e) => {
+            e.stopPropagation();
             setIsOpen(false);
             setView('menu');
           }}
+          onMouseDown={(e) => e.stopPropagation()}
         >
           <X className="h-5 w-5" />
         </Button>
       </CardHeader>
 
-      <CardContent className="flex-1 p-0 overflow-hidden">
+      <CardContent className="flex-1 p-0 overflow-hidden bg-background">
         {view === 'menu' && (
           <div className="p-4 space-y-4">
             <p className="text-muted-foreground text-sm">
@@ -385,11 +462,10 @@ export function SupportChatWidget() {
                     className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                        message.isUser
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                      }`}
+                      className={`max-w-[80%] rounded-lg px-4 py-2 ${message.isUser
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted'
+                        }`}
                     >
                       <p className="text-sm">{message.content}</p>
                       <p className="text-xs opacity-70 mt-1">

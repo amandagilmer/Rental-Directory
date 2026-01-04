@@ -46,6 +46,7 @@ import AdminBulkImport from "./pages/admin/AdminBulkImport";
 import AdminPages from "./pages/admin/AdminPages";
 import AdminFaqs from "./pages/admin/AdminFaqs";
 import AdminBlog from "./pages/admin/AdminBlog";
+import AdminClaims from "./pages/admin/AdminClaims";
 import AdminContacts from "./pages/admin/AdminContacts";
 import AdminBadges from "./pages/admin/AdminBadges";
 import AdminMarketing from "./pages/admin/AdminMarketing";
@@ -62,58 +63,59 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-        <SupportChatWidget />
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/business/:slug" element={<BusinessDetail />} />
-          <Route path="/business/:slug/unit/:unitId" element={<UnitDetail />} />
-          <Route path="/badges" element={<BadgeExplainer />} />
-          <Route path="/pricing" element={<Pricing />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/faq" element={<FAQ />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/blog" element={<Blog />} />
-          <Route path="/blog/:slug" element={<BlogPost />} />
-          <Route path="/review/:token" element={<SubmitReview />} />
-          <Route path="/widget/reviews/:businessId" element={<ReviewWidget />} />
-          <Route path="/review-landing/:businessId" element={<ReviewLanding />} />
-          <Route path="/go/:code" element={<TriggerRedirect />} />
-          <Route path="/claim/:token" element={<ClaimBusiness />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/dashboard" element={<Dashboard />}>
-            <Route index element={<CommandCenterOverview />} />
-            <Route path="business-info" element={<BusinessInfo />} />
-            <Route path="listing" element={<MyListing />} />
-            <Route path="trigger-links" element={<TriggerLinks />} />
-            <Route path="leads" element={<LeadInbox />} />
-            <Route path="reviews" element={<Reviews />} />
-            <Route path="analytics" element={<Analytics />} />
-            <Route path="gmb" element={<GmbSettings />} />
-            <Route path="settings" element={<Settings />} />
-          </Route>
-          <Route path="/admin" element={<AdminDashboard />}>
-            <Route index element={<AdminHQOverview />} />
-            <Route path="users" element={<AdminUsers />} />
-            <Route path="listings" element={<AdminListings />} />
-            <Route path="categories" element={<AdminCategories />} />
-            <Route path="import" element={<AdminBulkImport />} />
-            <Route path="leads" element={<AdminLeads />} />
-            <Route path="marketing" element={<AdminMarketing />} />
-            <Route path="reviews" element={<AdminReviews />} />
-            <Route path="analytics" element={<AdminAnalytics />} />
-            <Route path="support" element={<AdminSupport />} />
-            <Route path="live-chat" element={<AdminLiveChat />} />
-            <Route path="pages" element={<AdminPages />} />
-            <Route path="faqs" element={<AdminFaqs />} />
-            <Route path="blog" element={<AdminBlog />} />
-            <Route path="contacts" element={<AdminContacts />} />
-            <Route path="badges" element={<AdminBadges />} />
-          </Route>
-          <Route path="/my-tickets" element={<MyTickets />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+          <SupportChatWidget />
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/business/:slug" element={<BusinessDetail />} />
+            <Route path="/business/:slug/unit/:unitId" element={<UnitDetail />} />
+            <Route path="/badges" element={<BadgeExplainer />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
+            <Route path="/review/:token" element={<SubmitReview />} />
+            <Route path="/widget/reviews/:businessId" element={<ReviewWidget />} />
+            <Route path="/review-landing/:businessId" element={<ReviewLanding />} />
+            <Route path="/go/:code" element={<TriggerRedirect />} />
+            <Route path="/claim/:slug" element={<ClaimBusiness />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/dashboard" element={<Dashboard />}>
+              <Route index element={<CommandCenterOverview />} />
+              <Route path="business-info" element={<BusinessInfo />} />
+              <Route path="listing" element={<MyListing />} />
+              <Route path="trigger-links" element={<TriggerLinks />} />
+              <Route path="leads" element={<LeadInbox />} />
+              <Route path="reviews" element={<Reviews />} />
+              <Route path="analytics" element={<Analytics />} />
+              <Route path="gmb" element={<GmbSettings />} />
+              <Route path="settings" element={<Settings />} />
+            </Route>
+            <Route path="/admin" element={<AdminDashboard />}>
+              <Route index element={<AdminHQOverview />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="listings" element={<AdminListings />} />
+              <Route path="claims" element={<AdminClaims />} />
+              <Route path="categories" element={<AdminCategories />} />
+              <Route path="import" element={<AdminBulkImport />} />
+              <Route path="leads" element={<AdminLeads />} />
+              <Route path="marketing" element={<AdminMarketing />} />
+              <Route path="reviews" element={<AdminReviews />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
+              <Route path="support" element={<AdminSupport />} />
+              <Route path="live-chat" element={<AdminLiveChat />} />
+              <Route path="pages" element={<AdminPages />} />
+              <Route path="faqs" element={<AdminFaqs />} />
+              <Route path="blog" element={<AdminBlog />} />
+              <Route path="contacts" element={<AdminContacts />} />
+              <Route path="badges" element={<AdminBadges />} />
+            </Route>
+            <Route path="/my-tickets" element={<MyTickets />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

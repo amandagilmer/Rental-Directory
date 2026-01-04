@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 const navigation = [
   { name: "Find a Rental", href: "/" },
-  { name: "Operator Badges", href: "/badges" },
+  { name: "Fleet Verification", href: "/badges" },
   { name: "Command Center", href: "/dashboard" },
 ];
 
@@ -22,24 +22,17 @@ export const Header = () => {
   return (
     <header className="sticky top-0 z-50">
       {/* Red accent bar */}
-      <div className="h-1 bg-primary" />
-      
-      <nav className="bg-secondary" aria-label="Global">
+      <div className="h-1 bg-red-600" />
+
+      <nav className="bg-[#0A0F1C] border-b border-white/5" aria-label="Global">
         <div className="container mx-auto px-4">
-          <div className="flex h-16 items-center justify-between">
+          <div className="flex h-20 items-center justify-between">
             {/* Logo */}
             <div className="flex lg:flex-1">
               <Link to="/" className="-m-1.5 p-1.5 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center shadow-md">
-                  <span className="font-display font-bold text-lg text-primary-foreground">PH</span>
-                </div>
-                <div className="hidden sm:block">
-                  <span className="font-display font-bold text-xl tracking-wide text-primary-foreground">
-                    Patriot Hauls
-                  </span>
-                  <p className="text-xs text-secondary-foreground/70 uppercase tracking-widest -mt-0.5">
-                    Hauling the Heart of America
-                  </p>
+                <div className="flex flex-col items-start pt-[2px]">
+                  <span className="font-display font-black text-white text-2xl tracking-tighter uppercase italic leading-none">PATRIOT HAULS</span>
+                  <div className="h-1.5 w-full bg-red-600 mt-1 -skew-x-12 origin-left" />
                 </div>
               </Link>
             </div>
@@ -48,7 +41,7 @@ export const Header = () => {
             <div className="flex lg:hidden">
               <button
                 type="button"
-                className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-secondary-foreground"
+                className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-white"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
                 <span className="sr-only">Toggle menu</span>
@@ -67,17 +60,17 @@ export const Header = () => {
                   key={item.name}
                   to={item.href}
                   className={cn(
-                    "text-sm font-semibold uppercase tracking-wide transition-colors hover:text-primary-foreground",
+                    "text-sm font-bold uppercase tracking-wider transition-colors",
                     isActive(item.href)
-                      ? "text-primary-foreground"
-                      : "text-secondary-foreground/80"
+                      ? "text-red-500"
+                      : "text-gray-300 hover:text-white"
                   )}
                 >
                   {item.name}
                 </Link>
               ))}
-              <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md font-semibold uppercase tracking-wide px-6">
-                <Link to="/auth?mode=signup">List Your Trailer</Link>
+              <Button asChild className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/20 font-bold uppercase tracking-wide px-6 border-0">
+                <Link to="/auth?mode=signup">List Your Rigs</Link>
               </Button>
             </div>
           </div>
@@ -85,17 +78,17 @@ export const Header = () => {
 
         {/* Mobile menu */}
         {mobileMenuOpen && (
-          <div className="lg:hidden py-4 border-t border-secondary-foreground/20">
+          <div className="lg:hidden py-4 border-t border-white/10 bg-[#0A0F1C]">
             <div className="container mx-auto px-4 space-y-2">
               {navigation.map((item) => (
                 <Link
                   key={item.name}
                   to={item.href}
                   className={cn(
-                    "block px-3 py-2 rounded-md text-base font-semibold uppercase tracking-wide transition-colors",
+                    "block px-3 py-3 rounded-md text-base font-bold uppercase tracking-wider transition-colors",
                     isActive(item.href)
-                      ? "bg-primary/20 text-primary-foreground"
-                      : "text-secondary-foreground/80 hover:bg-secondary-foreground/10 hover:text-primary-foreground"
+                      ? "bg-white/10 text-red-500"
+                      : "text-gray-300 hover:bg-white/5 hover:text-white"
                   )}
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -103,9 +96,9 @@ export const Header = () => {
                 </Link>
               ))}
               <div className="pt-4 space-y-2">
-                <Button asChild className="w-full bg-primary hover:bg-primary/90 font-semibold uppercase tracking-wide">
+                <Button asChild className="w-full bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wide">
                   <Link to="/auth?mode=signup" onClick={() => setMobileMenuOpen(false)}>
-                    List Your Trailer
+                    List Your Rigs
                   </Link>
                 </Button>
               </div>
@@ -116,3 +109,4 @@ export const Header = () => {
     </header>
   );
 };
+

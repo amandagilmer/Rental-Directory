@@ -1,92 +1,124 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { CheckCircle2, Shield, Loader2 } from 'lucide-react';
+import { CheckCircle2, Shield, Loader2, Upload, FileText, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface BusinessListing {
   id: string;
   business_name: string;
-  email: string | null;
-  phone: string | null;
-  claimed: boolean;
+  // properties needed for display
+  slug: string;
 }
 
 export default function ClaimBusiness() {
-  const { token } = useParams<{ token: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+
   const [business, setBusiness] = useState<BusinessListing | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    phone: ''
-  });
+  // Form State
+  const [notes, setNotes] = useState('');
+  const [proofFile, setProofFile] = useState<File | null>(null);
 
   useEffect(() => {
-    const fetchBusiness = async () => {
-      if (!token) {
-        setError('Invalid claim link');
-        setLoading(false);
-        return;
-      }
+    // specific check for access without slug
+    if (!slug) {
+      setError('Invalid claim link');
+      setLoading(false);
+      return;
+    }
 
-      const { data, error: fetchError } = await supabase
+    const checkAuthAndFetchBusiness = async () => {
+      // 1. Check Auth
+      const { data: { session } } = await supabase.auth.getSession();
+      setUserId(session?.user?.id || null);
+
+      // 2. Fetch Business
+      const { data: listing, error: listingError } = await supabase
         .from('business_listings')
-        .select('id, business_name, email, phone, claimed')
-        .eq('claim_token', token)
+        .select('id, business_name, slug, claimed')
+        .eq('slug', slug)
         .maybeSingle();
 
-      if (fetchError || !data) {
-        setError('This claim link is invalid or has expired');
+      if (listingError || !listing) {
+        console.error('Error fetching business:', listingError);
+        setError('Business not found or invalid link.');
         setLoading(false);
         return;
       }
 
-      if (data.claimed) {
-        setError('This business has already been claimed');
+      if (listing.claimed) {
+        setError('This business has already been claimed.');
         setLoading(false);
         return;
       }
 
-      setBusiness(data);
-      setFormData(prev => ({
-        ...prev,
-        email: data.email || '',
-        phone: data.phone || ''
-      }));
+      // Check if user already has a pending claim for this business
+      if (session?.user?.id) {
+        const { data: existingClaim } = await supabase
+          .from('business_claims')
+          .select('status')
+          .eq('business_id', listing.id)
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+
+        if (existingClaim) {
+          setError(`You already have a ${existingClaim.status} claim for this business.`);
+          setLoading(false);
+          return;
+        }
+      }
+
+      setBusiness(listing as BusinessListing);
       setLoading(false);
     };
 
-    fetchBusiness();
-  }, [token]);
+    checkAuthAndFetchBusiness();
+  }, [slug]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setProofFile(e.target.files[0]);
+    }
+  };
+
+  const handleLoginRedirect = () => {
+    // Redirect to auth page with return URL
+    navigate(`/auth?returnUrl=${encodeURIComponent(location.pathname)}`);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (formData.password !== formData.confirmPassword) {
+
+    if (!userId || !business) {
       toast({
-        title: 'Passwords do not match',
-        variant: 'destructive'
+        title: "Authentication Required",
+        description: "You must be logged in to submit a claim.",
+        variant: "destructive"
       });
       return;
     }
 
-    if (formData.password.length < 6) {
+    if (!proofFile && notes.length < 10) {
       toast({
-        title: 'Password must be at least 6 characters',
-        variant: 'destructive'
+        title: "Information Required",
+        description: "Please provide either a proof document or detailed notes explaining your ownership.",
+        variant: "destructive"
       });
       return;
     }
@@ -94,62 +126,53 @@ export default function ClaimBusiness() {
     setSubmitting(true);
 
     try {
-      // Create the user account
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`
-        }
-      });
+      let proofUrl = null;
 
-      if (authError) {
-        // Check if user already exists
-        if (authError.message.includes('already registered')) {
-          toast({
-            title: 'Email already registered',
-            description: 'Please log in with your existing account to claim this business.',
-            variant: 'destructive'
-          });
-          setSubmitting(false);
-          return;
-        }
-        throw authError;
+      // 1. Upload Proof File if exists
+      if (proofFile) {
+        const fileExt = proofFile.name.split('.').pop();
+        const fileName = `${userId}/${business.id}-${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('claim-documents')
+          .upload(fileName, proofFile);
+
+        if (uploadError) throw uploadError;
+
+        // Get the URL (it will be private, but we store the path or signed url logic usually handled by policy/download)
+        // Storing the path is safer for private buckets.
+        proofUrl = fileName;
       }
 
-      if (!authData.user) {
-        throw new Error('Failed to create account');
-      }
+      // 2. Create Claim Record
+      const { error: insertError } = await supabase
+        .from('business_claims')
+        .insert({
+          business_id: business.id,
+          user_id: userId,
+          status: 'pending',
+          notes: notes,
+          proof_doc_url: proofUrl
+        });
 
-      // Update the business listing
-      const { error: updateError } = await supabase
-        .from('business_listings')
-        .update({
-          claimed: true,
-          user_id: authData.user.id,
-          email: formData.email,
-          phone: formData.phone
-        })
-        .eq('claim_token', token);
-
-      if (updateError) {
-        throw updateError;
-      }
+      if (insertError) throw insertError;
 
       toast({
-        title: 'Business claimed successfully!',
-        description: 'Welcome to Patriot Hauls. Redirecting to your dashboard...'
+        title: "Claim Submitted Successfully",
+        description: "Our team will review your request and get back to you shortly.",
       });
 
+      // Redirect after delay
       setTimeout(() => {
         navigate('/dashboard');
       }, 2000);
+
     } catch (err: any) {
-      console.error('Claim error:', err);
+      console.error('Claim submission error:', err);
       toast({
-        title: 'Failed to claim business',
-        description: err.message || 'Please try again later',
-        variant: 'destructive'
+        title: "Submission Failed",
+        description: err.message || "An error occurred while submitting your claim.",
+        variant: "destructive"
       });
       setSubmitting(false);
     }
@@ -157,9 +180,9 @@ export default function ClaimBusiness() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background flex flex-col">
         <Header />
-        <div className="container mx-auto px-4 py-20 flex items-center justify-center">
+        <div className="flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
         <Footer />
@@ -167,19 +190,21 @@ export default function ClaimBusiness() {
     );
   }
 
-  if (error) {
+  // Error State / Already Claimed / Business Not Found
+  if (error || !business) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background flex flex-col">
         <Header />
-        <div className="container mx-auto px-4 py-20">
-          <Card className="max-w-md mx-auto">
+        <div className="flex-1 container mx-auto px-4 py-20 flex justify-center">
+          <Card className="max-w-md w-full h-fit">
             <CardHeader className="text-center">
-              <CardTitle className="text-destructive">Unable to Claim Business</CardTitle>
+              <AlertCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
+              <CardTitle>Unable to Process Claim</CardTitle>
               <CardDescription>{error}</CardDescription>
             </CardHeader>
-            <CardContent className="text-center">
+            <CardContent className="flex justify-center">
               <Button onClick={() => navigate('/')}>
-                Return to Homepage
+                Return to Directory
               </Button>
             </CardContent>
           </Card>
@@ -190,105 +215,107 @@ export default function ClaimBusiness() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-lg mx-auto">
+
+      <div className="flex-1 container mx-auto px-4 py-12">
+        <div className="max-w-2xl mx-auto">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
               <Shield className="h-8 w-8 text-primary" />
             </div>
             <h1 className="text-3xl font-bold text-foreground mb-2">
-              Claim Your Business
+              Claim Business Listing
             </h1>
             <p className="text-muted-foreground">
-              Take control of your listing on Patriot Hauls
+              Verify your ownership of <strong>{business.business_name}</strong> to manage this profile.
             </p>
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-primary" />
-                {business?.business_name}
-              </CardTitle>
+              <CardTitle>Verification Details</CardTitle>
               <CardDescription>
-                Create your account to manage this business listing
+                To prevent unauthorized access, we require proof of business ownership.
+                This can be a business license, utility bill, or official registration document.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    required
-                    placeholder="your@email.com"
-                  />
+              {!userId ? (
+                <div className="text-center py-8 space-y-4">
+                  <p className="text-muted-foreground">
+                    You must be signed in to your Patriot Hauls user account to claim a business.
+                  </p>
+                  <Button onClick={handleLoginRedirect} size="lg">
+                    Sign In or Create Account
+                  </Button>
                 </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Authenticated as User</AlertTitle>
+                    <AlertDescription>
+                      You are submitting this claim as the currently logged-in user.
+                    </AlertDescription>
+                  </Alert>
 
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="(555) 123-4567"
-                  />
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="proof">Upload Proof of Ownership (Optional but Recommended)</Label>
+                    <div className="border-2 border-dashed border-input rounded-lg p-6 hover:bg-muted/50 transition-colors text-center cursor-pointer relative">
+                      <Input
+                        id="proof"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        onChange={handleFileChange}
+                      />
+                      <div className="flex flex-col items-center gap-2 pointer-events-none">
+                        {proofFile ? (
+                          <>
+                            <FileText className="h-8 w-8 text-primary" />
+                            <span className="font-medium text-foreground">{proofFile.name}</span>
+                            <span className="text-xs text-muted-foreground">Click to change file</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-8 w-8 text-muted-foreground" />
+                            <span className="font-medium text-muted-foreground">Click to upload document</span>
+                            <span className="text-xs text-muted-foreground">Accepted formats: PDF, JPG, PNG</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password">Create Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                    required
-                    placeholder="At least 6 characters"
-                  />
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">Additional Information / Notes</Label>
+                    <Textarea
+                      id="notes"
+                      placeholder="Please provide any other details that can help us verify your ownership (e.g., your role at the company, best time to call)."
+                      className="min-h-[120px]"
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    value={formData.confirmPassword}
-                    onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                    required
-                    placeholder="Confirm your password"
-                  />
-                </div>
-
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  size="lg"
-                  disabled={submitting}
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Claiming Business...
-                    </>
-                  ) : (
-                    'Claim My Business'
-                  )}
-                </Button>
-              </form>
-
-              <p className="text-sm text-muted-foreground text-center mt-6">
-                Already have an account?{' '}
-                <a href="/auth" className="text-primary hover:underline">
-                  Log in here
-                </a>
-              </p>
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    size="lg"
+                    disabled={submitting}
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Submitting Claim...
+                      </>
+                    ) : (
+                      'Submit Claim for Review'
+                    )}
+                  </Button>
+                </form>
+              )}
             </CardContent>
           </Card>
         </div>

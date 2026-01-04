@@ -4,40 +4,16 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminCheck } from '@/hooks/useAdminCheck';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  LogOut, 
-  Sparkles, 
-  Shield, 
-  Building2, 
-  Truck,
-  Users,
-  Settings,
-  Home,
-  Compass,
-  Menu,
-  X
-} from 'lucide-react';
+import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
+import { Menu, X } from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import NotificationBell from '@/components/dashboard/NotificationBell';
-import { cn } from '@/lib/utils';
-
-// Main navigation tabs using Patriot Hauls terminology - unified nav bar
-const mainTabs = [
-  { name: 'Command Center', href: '/dashboard', icon: Compass },
-  { name: 'Contacts', href: '/dashboard/leads', icon: Users },
-  { name: 'Fleet', href: '/dashboard/listing', icon: Truck },
-  { name: 'Your Post', href: '/dashboard/business-info', icon: Building2 },
-  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
-];
 
 export default function Dashboard() {
-  const { user, signOut, loading } = useAuth();
-  const { isAdmin } = useAdminCheck();
-  const location = useLocation();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [loggingOut, setLoggingOut] = useState(false);
-  const [newLeadsCount, setNewLeadsCount] = useState(0);
   const [businessName, setBusinessName] = useState('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -59,57 +35,14 @@ export default function Dashboard() {
       if (listingData?.business_name) {
         setBusinessName(listingData.business_name);
       }
-
-      // Fetch new leads count
-      const { count, error } = await supabase
-        .from('leads')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'new');
-
-      if (!error && count !== null) {
-        setNewLeadsCount(count);
-      }
     };
-
     fetchData();
-
-    // Subscribe to realtime changes
-    const channel = supabase
-      .channel('leads-count')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'leads',
-        },
-        () => {
-          fetchData();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [user]);
-
-  const handleSignOut = async () => {
-    setLoggingOut(true);
-    await signOut();
-  };
-
-  const isMainTabActive = (href: string) => {
-    if (href === '/dashboard') {
-      return location.pathname === '/dashboard';
-    }
-    return location.pathname.startsWith(href);
-  };
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-secondary">
-        <div className="animate-pulse text-secondary-foreground font-display text-xl">
+      <div className="min-h-screen flex items-center justify-center bg-[#0A0F1C]">
+        <div className="animate-pulse text-white font-display text-xl">
           Loading Command Center...
         </div>
       </div>
@@ -117,178 +50,60 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Dark Navy Header */}
-      <header className="bg-secondary text-secondary-foreground sticky top-0 z-50">
-        <div className="px-4 md:px-6 py-3 md:py-4">
-          <div className="flex items-center justify-between">
-            {/* Left side - Logo & Badge */}
-            <div className="flex items-center gap-3">
-              <button
-                className="md:hidden p-2 -ml-2"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              >
-                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </button>
-              <div className="hidden md:flex items-center gap-3">
-                <span className="bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">
-                  Command Center
-                </span>
+    <div className="min-h-screen bg-background flex">
+      {/* Desktop Sidebar */}
+      <DashboardSidebar />
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 bg-background">
+
+        {/* Mobile Header */}
+        <header className="md:hidden bg-[#0A0F1C] border-b border-white/5 p-4 flex items-center justify-between sticky top-0 z-50">
+          <div className="flex items-center gap-3">
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="p-0 bg-[#0A0F1C] border-r border-white/10 w-80">
+                <div className="h-full overflow-y-auto">
+                  <div className="flex flex-col h-full">
+                    {/* Force flex layout for the sidebar items inside mobile drawer */}
+                    <div className="h-full [&>div]:flex [&>div]:w-full [&>div]:border-none">
+                      <DashboardSidebar />
+                    </div>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+            <div className="flex flex-col items-start pt-[2px]">
+              <span className="font-display font-black text-white text-lg tracking-tighter uppercase italic leading-none">PATRIOT HAULS</span>
+              <div className="h-1 w-full bg-red-600 -skew-x-12 origin-left" />
+            </div>
+          </div>
+          <NotificationBell />
+        </header>
+
+        {/* Content */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12 relative animate-fade-in">
+          {/* Top Right Actions (Desktop) */}
+          <div className="hidden md:flex absolute top-6 right-8 items-center gap-4 z-10">
+            <NotificationBell />
+            <div className="flex items-center gap-3 pl-4 border-l border-border/50">
+              <div className="text-right hidden lg:block">
+                <p className="text-sm font-bold text-foreground">{businessName || 'Your Outpost'}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Operator</p>
+              </div>
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 text-primary font-bold">
+                {user.email?.charAt(0).toUpperCase()}
               </div>
             </div>
-            
-            {/* Right side - Actions */}
-            <div className="flex items-center gap-2 md:gap-4">
-              <NotificationBell />
-              
-              {isAdmin && (
-                <Link
-                  to="/admin"
-                  className="hidden md:flex items-center gap-2 text-sm text-secondary-foreground/80 hover:text-secondary-foreground transition-colors"
-                >
-                  <Shield className="h-4 w-4" />
-                  <span className="hidden lg:inline">HQ</span>
-                </Link>
-              )}
-              
-              <Link
-                to="/"
-                className="hidden md:flex items-center gap-2 text-sm text-secondary-foreground/80 hover:text-secondary-foreground transition-colors"
-              >
-                <Home className="h-4 w-4" />
-                <span className="hidden lg:inline">Directory</span>
-              </Link>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-secondary-foreground/80 hover:text-secondary-foreground hover:bg-secondary-foreground/10"
-                onClick={handleSignOut}
-                disabled={loggingOut}
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden md:inline ml-2">{loggingOut ? 'Exiting...' : 'Exit'}</span>
-              </Button>
-            </div>
           </div>
-          
-          {/* Business Name */}
-          <h1 className="font-display text-xl md:text-2xl lg:text-3xl font-bold italic mt-2 tracking-wide uppercase truncate">
-            {businessName || 'Your Outpost'}
-          </h1>
-        </div>
-        
-        {/* Red Accent Bar */}
-        <div className="h-1 bg-primary" />
-      </header>
 
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 top-[88px] bg-background z-40 p-4 space-y-2 border-t border-border">
-          {mainTabs.map((tab) => (
-            <Link
-              key={tab.name}
-              to={tab.href}
-              onClick={() => setMobileMenuOpen(false)}
-              className={cn(
-                'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
-                isMainTabActive(tab.href)
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-muted'
-              )}
-            >
-              <tab.icon className="h-5 w-5" />
-              {tab.name}
-              {tab.name === 'Contacts' && newLeadsCount > 0 && (
-                <span className="ml-auto px-2 py-0.5 text-xs font-bold bg-primary text-primary-foreground rounded-full">
-                  {newLeadsCount}
-                </span>
-              )}
-            </Link>
-          ))}
-          
-          <div className="pt-4 border-t border-border mt-4">
-            {isAdmin && (
-              <Link
-                to="/admin"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 text-sm text-muted-foreground hover:bg-muted rounded-lg"
-              >
-                <Shield className="h-5 w-5" />
-                Admin HQ
-              </Link>
-            )}
-            <Link
-              to="/"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 text-sm text-muted-foreground hover:bg-muted rounded-lg"
-            >
-              <Home className="h-5 w-5" />
-              Back to Directory
-            </Link>
-          </div>
-        </div>
-      )}
-
-      {/* Main Navigation Tabs - Desktop */}
-      <div className="hidden md:block bg-background border-b border-border sticky top-[89px] z-40">
-        <div className="px-6 py-3 flex items-center justify-between">
-          <div className="flex-1" />
-          
-          {/* Pill Navigation */}
-          <nav className="flex items-center gap-1 bg-muted/30 rounded-full p-1">
-            {mainTabs.map((tab) => {
-              const isActive = isMainTabActive(tab.href);
-              const showBadge = tab.name === 'Contacts' && newLeadsCount > 0;
-              
-              return (
-                <Link
-                  key={tab.name}
-                  to={tab.href}
-                  className={cn(
-                    'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all',
-                    isActive
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                  )}
-                >
-                  <tab.icon className="h-4 w-4" />
-                  <span className="uppercase tracking-wide text-xs font-semibold">{tab.name}</span>
-                  {showBadge && (
-                    <span className={cn(
-                      'px-1.5 py-0.5 text-[10px] font-bold rounded-full',
-                      isActive 
-                        ? 'bg-primary-foreground text-primary' 
-                        : 'bg-primary text-primary-foreground'
-                    )}>
-                      {newLeadsCount}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </nav>
-          
-          {/* Upgrade Button */}
-          <div className="flex-1 flex justify-end items-center">
-            <Link to="/pricing">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-              >
-                <Sparkles className="h-4 w-4" />
-                <span className="hidden lg:inline">Upgrade</span>
-              </Button>
-            </Link>
-          </div>
-        </div>
+          <Outlet />
+        </main>
       </div>
-
-      {/* Main Content */}
-      <main className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
-        <Outlet />
-      </main>
     </div>
   );
 }

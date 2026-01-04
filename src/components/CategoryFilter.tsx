@@ -29,36 +29,74 @@ export const CategoryFilter = ({ activeCategory, onCategoryChange }: CategoryFil
     );
   }
 
+  // Filter for specific categories requested by user
+  const targetCategories = ['trailer', 'dumpster', 'equipment'];
+  const displayedCategories = categories.filter(cat =>
+    targetCategories.some(target => cat.name.toLowerCase().includes(target) || cat.slug.toLowerCase().includes(target))
+  );
+
   return (
-    <div className="bg-card py-6 border-b border-border">
+    <div className="bg-background py-10 border-b border-border">
       <div className="container mx-auto px-4">
-        <div className="flex flex-wrap gap-3 justify-center">
-          {/* All Rentals button */}
-          <Button
-            variant={activeCategory === "all" ? "default" : "outline"}
-            size="lg"
+        <h2 className="text-2xl font-bold mb-6 text-center font-display uppercase tracking-wide">Select Your Rental Type</h2>
+        <div className="flex flex-wrap justify-center gap-6">
+          {/* All Rentals Tile */}
+          <button
             onClick={() => onCategoryChange("all")}
-            className="gap-2"
+            className={`
+              relative w-48 h-36 rounded-xl overflow-hidden transition-all duration-300 shadow-sm
+              ${activeCategory === "all"
+                ? "ring-4 ring-red-600 ring-offset-2 scale-105 shadow-xl"
+                : "hover:scale-105 hover:shadow-lg opacity-90 hover:opacity-100"
+              }
+            `}
           >
-            All Rentals
-          </Button>
-          
-          {/* Dynamic category buttons */}
-          {categories.map((category) => {
-            const Icon = iconMap[category.icon] || Folder;
+            <div className="absolute inset-0 bg-gradient-to-br from-[#0A0F1C] to-gray-900" />
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center border-2 border-white/5">
+              <span className="font-display font-bold text-white text-xl uppercase tracking-wider">All Rentals</span>
+            </div>
+          </button>
+
+          {/* Dynamic Category Tiles */}
+          {displayedCategories.map((category) => {
             const isActive = activeCategory === category.slug;
-            
+            const Icon = iconMap[category.icon] || Folder;
+
             return (
-              <Button
+              <button
                 key={category.id}
-                variant={isActive ? "default" : "outline"}
-                size="lg"
                 onClick={() => onCategoryChange(category.slug)}
-                className="gap-2"
+                className={`
+                  relative w-48 h-36 rounded-xl overflow-hidden transition-all duration-300 group shadow-sm
+                  ${isActive
+                    ? "ring-4 ring-red-600 ring-offset-2 scale-105 shadow-xl"
+                    : "hover:scale-105 hover:shadow-lg"
+                  }
+                `}
               >
-                <Icon className="h-4 w-4" />
-                {category.name.replace(' Rental', '')}
-              </Button>
+                {/* Background Image or Fallback */}
+                {category.image_url ? (
+                  <img
+                    src={category.image_url}
+                    alt={category.name}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-[#0A0F1C] flex items-center justify-center">
+                    <Icon className="h-12 w-12 text-gray-600" />
+                  </div>
+                )}
+
+                {/* Overlay */}
+                <div className={`absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent ${isActive ? 'opacity-90' : 'opacity-80 group-hover:opacity-90'}`} />
+
+                {/* Content */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 text-center">
+                  <span className="font-display font-bold text-white text-lg uppercase tracking-wider leading-none block shadow-black drop-shadow-md">
+                    {category.name}
+                  </span>
+                </div>
+              </button>
             );
           })}
         </div>

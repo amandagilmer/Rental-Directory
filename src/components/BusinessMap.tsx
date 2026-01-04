@@ -1,22 +1,7 @@
-import { useEffect, useRef } from "react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import "leaflet.markercluster/dist/MarkerCluster.css";
-import "leaflet.markercluster/dist/MarkerCluster.Default.css";
-import "leaflet.markercluster";
 
-// Fix for default marker icons in Leaflet with Vite
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
-
-// @ts-ignore
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconUrl: markerIcon,
-  iconRetinaUrl: markerIcon2x,
-  shadowUrl: markerShadow,
-});
+import { useEffect, useState, useRef } from "react";
+import { Map, AdvancedMarker, Pin, InfoWindow, useMap, MapCameraChangedEvent } from "@vis.gl/react-google-maps";
+import { Link } from "react-router-dom";
 
 interface MapBusiness {
   id: string;
@@ -26,117 +11,149 @@ interface MapBusiness {
   rating: number;
   latitude?: number;
   longitude?: number;
+  show_exact_location?: boolean;
+  lowestDailyRate?: number | null;
 }
 
 interface BusinessMapProps {
   businesses: MapBusiness[];
   userLocation?: { lat: number; lng: number } | null;
   className?: string;
+  onBoundsChanged?: (bounds: google.maps.LatLngBoundsLiteral) => void;
 }
 
-export const BusinessMap = ({ businesses, userLocation, className = "" }: BusinessMapProps) => {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<L.Map | null>(null);
-  const markersRef = useRef<any>(null);
+// Custom Circle Component
+function Circle(props: google.maps.CircleOptions & { onClick?: () => void }) {
+  const map = useMap();
+  const circleRef = useRef<google.maps.Circle | null>(null);
 
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!map) return;
 
-    // Initialize map if it doesn't exist
-    if (!mapInstanceRef.current) {
-      const defaultCenter: [number, number] = userLocation 
-        ? [userLocation.lat, userLocation.lng] 
-        : [40.7128, -74.0060]; // NYC as default
+    circleRef.current = new google.maps.Circle(props);
+    circleRef.current.setMap(map);
 
-      mapInstanceRef.current = L.map(mapRef.current).setView(defaultCenter, 11);
-
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      }).addTo(mapInstanceRef.current);
-
-      // Create marker cluster group
-      // @ts-ignore - markerClusterGroup is added by leaflet.markercluster
-      markersRef.current = L.markerClusterGroup({
-        chunkedLoading: true,
-        spiderfyOnMaxZoom: true,
-        showCoverageOnHover: false,
-        maxClusterRadius: 50,
-      });
-
-      mapInstanceRef.current.addLayer(markersRef.current);
-    }
-
-    // Clear existing markers
-    if (markersRef.current) {
-      markersRef.current.clearLayers();
-    }
-
-    // Add user location marker if available
-    if (userLocation && mapInstanceRef.current) {
-      const userIcon = L.divIcon({
-        className: "user-location-marker",
-        html: `<div style="background-color: hsl(243, 75%, 58%); width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>`,
-        iconSize: [16, 16],
-        iconAnchor: [8, 8],
-      });
-
-      L.marker([userLocation.lat, userLocation.lng], { icon: userIcon })
-        .addTo(mapInstanceRef.current)
-        .bindPopup("Your Location");
-    }
-
-    // Add business markers
-    businesses.forEach((business) => {
-      if (!business.latitude || !business.longitude || !markersRef.current) return;
-
-      const marker = L.marker([business.latitude, business.longitude]);
-
-      const stars = "★".repeat(Math.floor(business.rating)) + "☆".repeat(5 - Math.floor(business.rating));
-      
-      const popupContent = `
-        <div style="min-width: 200px; font-family: system-ui, sans-serif;">
-          <h3 style="font-weight: 600; font-size: 14px; margin-bottom: 4px; color: #1a1a1a;">${business.name}</h3>
-          <p style="color: #666; font-size: 12px; margin-bottom: 4px;">${business.category}</p>
-          <div style="color: #f59e0b; font-size: 12px; margin-bottom: 8px;">${stars} (${business.rating})</div>
-          <a href="/business/${business.slug}" style="color: hsl(243, 75%, 58%); font-size: 12px; text-decoration: none; font-weight: 500;">View Details →</a>
-        </div>
-      `;
-
-      marker.bindPopup(popupContent);
-      markersRef.current.addLayer(marker);
-    });
-
-    // Fit bounds to show all markers
-    if (markersRef.current && markersRef.current.getLayers().length > 0 && mapInstanceRef.current) {
-      const bounds = markersRef.current.getBounds();
-      if (bounds.isValid()) {
-        mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
-      }
-    } else if (userLocation && mapInstanceRef.current) {
-      mapInstanceRef.current.setView([userLocation.lat, userLocation.lng], 11);
+    if (props.onClick) {
+      circleRef.current.addListener("click", props.onClick);
     }
 
     return () => {
-      // Don't destroy map on cleanup to prevent re-initialization issues
+      circleRef.current?.setMap(null);
     };
-  }, [businesses, userLocation]);
+  }, [map]);
 
-  // Cleanup on unmount
   useEffect(() => {
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-        markersRef.current = null;
-      }
-    };
-  }, []);
+    if (circleRef.current) {
+      circleRef.current.setOptions(props);
+    }
+  }, [props]);
+
+  return null;
+}
+
+export const BusinessMap = ({ businesses, userLocation, className = "", onBoundsChanged }: BusinessMapProps) => {
+  const [selectedBusiness, setSelectedBusiness] = useState<MapBusiness | null>(null);
+  const defaultCenter = { lat: 31.9686, lng: -99.9018 }; // Center of Texas
+
+  const handleCameraChange = (ev: MapCameraChangedEvent) => {
+    if (onBoundsChanged) {
+      onBoundsChanged(ev.detail.bounds);
+    }
+  };
 
   return (
-    <div 
-      ref={mapRef} 
-      className={`w-full h-full min-h-[400px] rounded-lg ${className}`}
-      style={{ zIndex: 0 }}
-    />
+    <div className={`w-full h-full min-h-[400px] rounded-lg overflow-hidden ${className}`}>
+      <Map
+        defaultCenter={userLocation || defaultCenter}
+        defaultZoom={userLocation ? 10 : 6}
+        mapId="bf51a910020fa25a"
+        disableDefaultUI={false}
+        clickableIcons={false}
+        onCameraChanged={handleCameraChange}
+      >
+        {/* User Location Marker */}
+        {userLocation && (
+          <AdvancedMarker position={userLocation}>
+            <div className="w-4 h-4 rounded-full bg-blue-600 border-2 border-white shadow-lg animate-pulse" />
+          </AdvancedMarker>
+        )}
+
+        {/* Business Markers */}
+        {businesses.map((business) => {
+          if (!business.latitude || !business.longitude) return null;
+
+          const position = { lat: business.latitude, lng: business.longitude };
+          const isExact = business.show_exact_location !== false; // Default true
+          const isSelected = selectedBusiness?.id === business.id;
+
+          if (!isExact) {
+            return (
+              <Circle
+                key={business.id}
+                radius={2000} // 2km radius
+                center={position}
+                strokeColor={"#F59E0B"}
+                strokeOpacity={0.8}
+                strokeWeight={2}
+                fillColor={"#F59E0B"}
+                fillOpacity={0.35}
+                onClick={() => setSelectedBusiness(business)}
+              />
+            );
+          }
+
+          // Price Pill Marker
+          return (
+            <AdvancedMarker
+              key={business.id}
+              position={position}
+              onClick={() => setSelectedBusiness(business)}
+              zIndex={isSelected ? 50 : 1}
+            >
+              <div
+                className={`
+                  px-2.5 py-1 rounded-full shadow-sm border transition-all duration-200 cursor-pointer text-xs font-bold
+                  ${isSelected
+                    ? "bg-black text-white border-black scale-110"
+                    : "bg-white text-gray-900 border-gray-200 hover:scale-110 hover:shadow-md hover:z-10"
+                  }
+                `}
+              >
+                {business.lowestDailyRate ? `$${business.lowestDailyRate}` : "$"}
+              </div>
+            </AdvancedMarker>
+          );
+        })}
+
+        {/* Info Window */}
+        {selectedBusiness && selectedBusiness.latitude && selectedBusiness.longitude && (
+          <InfoWindow
+            position={{ lat: selectedBusiness.latitude, lng: selectedBusiness.longitude }}
+            onCloseClick={() => setSelectedBusiness(null)}
+            headerContent={<span className="font-bold text-sm">{selectedBusiness.name}</span>}
+            pixelOffset={[0, -10]}
+          >
+            <div className="min-w-[200px] p-1">
+              <p className="text-xs text-gray-600 mb-2">{selectedBusiness.category}</p>
+              <div className="flex items-center gap-1 mb-2 text-yellow-500 text-xs">
+                {"★".repeat(Math.round(selectedBusiness.rating))}
+                <span className="text-gray-400">({selectedBusiness.rating})</span>
+              </div>
+              {!selectedBusiness.show_exact_location && (
+                <p className="text-[10px] text-orange-600 mb-2 font-medium bg-orange-50 px-1 rounded">
+                  Approximate Location
+                </p>
+              )}
+              <Link
+                to={`/business/${selectedBusiness.slug}`}
+                className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white text-xs py-1.5 rounded transition-colors"
+              >
+                View Details
+              </Link>
+            </div>
+          </InfoWindow>
+        )}
+      </Map>
+    </div>
   );
 };
