@@ -10,13 +10,18 @@ import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 
-import OpenAI from 'openai';
+// OpenAI will be imported dynamically to avoid evaluation-time crashes
+// import OpenAI from 'openai';
 
-const getOpenAI = () => {
+const getOpenAI = async () => {
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
     if (!apiKey) {
         throw new Error('OpenAI API key is missing. Please add VITE_OPENAI_API_KEY to your environment variables.');
     }
+
+    // Dynamic import to prevent top-level module evaluation issues
+    const { default: OpenAI } = await import('openai');
+
     return new OpenAI({
         apiKey,
         dangerouslyAllowBrowser: true
@@ -67,7 +72,7 @@ export default function KnowledgeBase() {
 
         setAdding(true);
         try {
-            const openai = getOpenAI();
+            const openai = await getOpenAI();
             // Generate embedding client-side
             const embeddingResponse = await openai.embeddings.create({
                 model: 'text-embedding-3-small',

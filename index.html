@@ -23,11 +23,32 @@
 <body>
   <div id="root">
     <div
-      style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; color: #666;">
-      Loading Patriot Hauls...
+      style="height: 100vh; display: flex; align-items: center; justify-content: center; background: #0A0F1C; color: white;">
+      <div style="text-align: center;">
+        <h1 style="font-size: 2rem; margin-bottom: 1rem;">Loading Patriot Hauls...</h1>
+        <p style="opacity: 0.6;">Evaluating application modules...</p>
+      </div>
     </div>
   </div>
-  <script>console.log("INDEX_HTML_SCRIPT_ALIVE");</script>
+  <script>
+    window.onerror = function (msg, url, lineNo, columnNo, error) {
+      console.error('GLOBAL_ERROR_TRAP:', msg, url, lineNo, columnNo, error);
+      const root = document.getElementById('root');
+      if (root) {
+        root.innerHTML = '<div style="background: #1a1a1a; color: #ff4d4d; padding: 20px; font-family: sans-serif; border: 1px solid #ff4d4d; border-radius: 8px; margin: 20px;">' +
+          '<h2 style="margin-top: 0">Application Boot Failure</h2>' +
+          '<p style="opacity: 0.8">The application encountered a fatal error during initialization.</p>' +
+          '<pre style="background: #000; padding: 10px; border-radius: 4px; overflow: auto; font-size: 12px; border: 1px solid #333">' + (msg || 'Unknown Error') + '\n\n' + (error ? error.stack : '') + '</pre>' +
+          '<p style="font-size: 13px; color: #aaa">Please check the console for more details.</p>' +
+          '</div>';
+      }
+      return false;
+    };
+    window.onunhandledrejection = function (event) {
+      console.error('GLOBAL_REJECTION_TRAP:', event.reason);
+    };
+    console.log("INDEX_HTML_SCRIPT_ALIVE");
+  </script>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 

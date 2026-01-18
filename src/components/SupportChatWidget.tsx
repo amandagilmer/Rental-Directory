@@ -1,4 +1,5 @@
-import OpenAI from 'openai';
+// OpenAI will be imported dynamically
+// import OpenAI from 'openai';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MessageCircle, X, Send, Loader2, Headphones, FileText, ChevronLeft, Ticket, GripHorizontal } from 'lucide-react';
@@ -14,11 +15,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDraggable } from '@/hooks/useDraggable';
 
-const getOpenAI = () => {
+const getOpenAI = async () => {
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error('OpenAI API key is missing. Please add VITE_OPENAI_API_KEY to your environment variables.');
   }
+
+  // Dynamic import to prevent top-level module evaluation issues
+  const { default: OpenAI } = await import('openai');
+
   return new OpenAI({
     apiKey,
     dangerouslyAllowBrowser: true
@@ -183,7 +188,7 @@ export function SupportChatWidget() {
     setIsSubmitting(true);
 
     try {
-      const openai = getOpenAI();
+      const openai = await getOpenAI();
       // 1. Generate local embedding
       const embeddingResponse = await openai.embeddings.create({
         model: 'text-embedding-3-small',
@@ -215,9 +220,9 @@ Context:
 ${contextText}
 `;
 
-      const openai = getOpenAI();
+      const openai_completion = await getOpenAI();
       // 4. Generate Answer using Chat Completion
-      const completion = await openai.chat.completions.create({
+      const completion = await openai_completion.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
