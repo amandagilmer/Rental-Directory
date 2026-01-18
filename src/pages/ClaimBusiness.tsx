@@ -32,8 +32,12 @@ export default function ClaimBusiness() {
   const [userId, setUserId] = useState<string | null>(null);
 
   // Form State
+  const [claimantName, setClaimantName] = useState('');
+  const [claimantPhone, setClaimantPhone] = useState('');
+  const [claimantAddress, setClaimantAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [proofFile, setProofFile] = useState<File | null>(null);
+  const [dlFile, setDlFile] = useState<File | null>(null);
 
   useEffect(() => {
     // specific check for access without slug
@@ -47,6 +51,21 @@ export default function ClaimBusiness() {
       // 1. Check Auth
       const { data: { session } } = await supabase.auth.getSession();
       setUserId(session?.user?.id || null);
+
+      if (session?.user?.id) {
+        // Fetch profile to pre-populate name/phone/address
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, phone, personal_address')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profile) {
+          setClaimantName(profile.full_name || '');
+          setClaimantPhone(profile.phone || '');
+          setClaimantAddress(profile.personal_address || '');
+        }
+      }
 
       // 2. Fetch Business
       const { data: listing, error: listingError } = await supabase
@@ -68,20 +87,22 @@ export default function ClaimBusiness() {
         return;
       }
 
-      // Check if user already has a pending claim for this business
-      if (session?.user?.id) {
-        const { data: existingClaim } = await supabase
-          .from('business_claims')
-          .select('status')
-          .eq('business_id', listing.id)
-          .eq('user_id', session.user.id)
-          .maybeSingle();
+      // Check if there's already a pending claim for this business
+      const { data: existingClaim } = await supabase
+        .from('business_claims')
+        .select('id, status, user_id')
+        .eq('business_id', listing.id)
+        .eq('status', 'pending')
+        .maybeSingle();
 
-        if (existingClaim) {
-          setError(`You already have a ${existingClaim.status} claim for this business.`);
-          setLoading(false);
-          return;
+      if (existingClaim) {
+        if (session?.user?.id && existingClaim.user_id === session.user.id) {
+          setError(`You already have a pending claim for this business.`);
+        } else {
+          setError(`A claim for this business is already being processed.`);
         }
+        setLoading(false);
+        return;
       }
 
       setBusiness(listing as BusinessListing);
@@ -91,15 +112,21 @@ export default function ClaimBusiness() {
     checkAuthAndFetchBusiness();
   }, [slug]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProofFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setProofFile(e.target.files[0]);
     }
   };
 
+  const handleDlFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setDlFile(e.target.files[0]);
+    }
+  };
+
   const handleLoginRedirect = () => {
-    // Redirect to auth page with return URL
-    navigate(`/auth?returnUrl=${encodeURIComponent(location.pathname)}`);
+    // Redirect to auth page with return URL and mode=register
+    navigate(`/auth?returnUrl=${encodeURIComponent(location.pathname)}&mode=register`);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -127,24 +154,47 @@ export default function ClaimBusiness() {
 
     try {
       let proofUrl = null;
+      let dlUrl = null;
 
       // 1. Upload Proof File if exists
       if (proofFile) {
         const fileExt = proofFile.name.split('.').pop();
-        const fileName = `${userId}/${business.id}-${Date.now()}.${fileExt}`;
+        const fileName = `${userId}/${business.id}-proof-${Date.now()}.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
           .from('claim-documents')
           .upload(fileName, proofFile);
 
         if (uploadError) throw uploadError;
-
-        // Get the URL (it will be private, but we store the path or signed url logic usually handled by policy/download)
-        // Storing the path is safer for private buckets.
         proofUrl = fileName;
       }
 
-      // 2. Create Claim Record
+      // 1b. Upload DL File if exists
+      if (dlFile) {
+        const fileExt = dlFile.name.split('.').pop();
+        const fileName = `${userId}/${business.id}-dl-${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('claim-documents')
+          .upload(fileName, dlFile);
+
+        if (uploadError) throw uploadError;
+        dlUrl = fileName;
+      }
+
+      // 2. Update Profile if info was provided
+      if (userId) {
+        await supabase
+          .from('profiles')
+          .update({
+            full_name: claimantName,
+            phone: claimantPhone,
+            personal_address: claimantAddress
+          })
+          .eq('id', userId);
+      }
+
+      // 3. Create Claim Record
       const { error: insertError } = await supabase
         .from('business_claims')
         .insert({
@@ -152,7 +202,11 @@ export default function ClaimBusiness() {
           user_id: userId,
           status: 'pending',
           notes: notes,
-          proof_doc_url: proofUrl
+          proof_doc_url: proofUrl,
+          dl_doc_url: dlUrl,
+          claimant_name: claimantName,
+          claimant_phone: claimantPhone,
+          claimant_address: claimantAddress
         });
 
       if (insertError) throw insertError;
@@ -167,11 +221,12 @@ export default function ClaimBusiness() {
         navigate('/dashboard');
       }, 2000);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Claim submission error:', err);
+      const errorMessage = err instanceof Error ? err.message : "An error occurred while submitting your claim.";
       toast({
         title: "Submission Failed",
-        description: err.message || "An error occurred while submitting your claim.",
+        description: errorMessage,
         variant: "destructive"
       });
       setSubmitting(false);
@@ -254,36 +309,100 @@ export default function ClaimBusiness() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <Alert>
                     <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Authenticated as User</AlertTitle>
+                    <AlertTitle>Claimant Information</AlertTitle>
                     <AlertDescription>
-                      You are submitting this claim as the currently logged-in user.
+                      Please provide your contact details so our command team can reach you for verification.
                     </AlertDescription>
                   </Alert>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="proof">Upload Proof of Ownership (Optional but Recommended)</Label>
-                    <div className="border-2 border-dashed border-input rounded-lg p-6 hover:bg-muted/50 transition-colors text-center cursor-pointer relative">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Full Name</Label>
                       <Input
-                        id="proof"
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        onChange={handleFileChange}
+                        id="name"
+                        placeholder="John Doe"
+                        value={claimantName}
+                        onChange={(e) => setClaimantName(e.target.value)}
+                        required
                       />
-                      <div className="flex flex-col items-center gap-2 pointer-events-none">
-                        {proofFile ? (
-                          <>
-                            <FileText className="h-8 w-8 text-primary" />
-                            <span className="font-medium text-foreground">{proofFile.name}</span>
-                            <span className="text-xs text-muted-foreground">Click to change file</span>
-                          </>
-                        ) : (
-                          <>
-                            <Upload className="h-8 w-8 text-muted-foreground" />
-                            <span className="font-medium text-muted-foreground">Click to upload document</span>
-                            <span className="text-xs text-muted-foreground">Accepted formats: PDF, JPG, PNG</span>
-                          </>
-                        )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Phone Number</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        placeholder="(555) 000-0000"
+                        value={claimantPhone}
+                        onChange={(e) => setClaimantPhone(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Personal Residence Address</Label>
+                    <Input
+                      id="address"
+                      placeholder="123 Patriot Way, Austin, TX 78701"
+                      value={claimantAddress}
+                      onChange={(e) => setClaimantAddress(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="proof">Verification Document</Label>
+                      <div className="border-2 border-dashed border-input rounded-lg p-6 hover:bg-muted/50 transition-colors text-center cursor-pointer relative min-h-[140px] flex items-center justify-center">
+                        <Input
+                          id="proof"
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          onChange={handleProofFileChange}
+                        />
+                        <div className="flex flex-col items-center gap-2 pointer-events-none">
+                          {proofFile ? (
+                            <>
+                              <FileText className="h-8 w-8 text-primary" />
+                              <span className="font-medium text-xs text-foreground truncate max-w-[150px]">{proofFile.name}</span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="h-6 w-6 text-muted-foreground" />
+                              <span className="text-xs font-medium text-muted-foreground">Proof of Ownership</span>
+                              <span className="text-[10px] text-muted-foreground">License, Utility Bill, etc.</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="dl">Driver's License / ID</Label>
+                      <div className="border-2 border-dashed border-input rounded-lg p-6 hover:bg-muted/50 transition-colors text-center cursor-pointer relative min-h-[140px] flex items-center justify-center">
+                        <Input
+                          id="dl"
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          onChange={handleDlFileChange}
+                          required
+                        />
+                        <div className="flex flex-col items-center gap-2 pointer-events-none">
+                          {dlFile ? (
+                            <>
+                              <Shield className="h-8 w-8 text-primary" />
+                              <span className="font-medium text-xs text-foreground truncate max-w-[150px]">{dlFile.name}</span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="h-6 w-6 text-muted-foreground" />
+                              <span className="text-xs font-medium text-muted-foreground">Upload ID</span>
+                              <span className="text-[10px] text-muted-foreground">Required for Identity Verification</span>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

@@ -195,4 +195,43 @@
   .border-b-amber-500 {
     border-bottom-color: hsl(38 92% 50%);
   }
+
+  /* Trust Badge Shine & Glisten Animations */
+  @keyframes glisten {
+    0% { transform: translateX(-150%) skewX(-25deg); }
+    20% { transform: translateX(150%) skewX(-25deg); }
+    100% { transform: translateX(150%) skewX(-25deg); }
+  }
+
+  .badge-glisten-container {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .badge-glisten-container::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.4) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    transform: translateX(-150%) skewX(-25deg);
+    pointer-events: none;
+  }
+
+  .badge-glisten-container:hover::after {
+    animation: glisten 0.8s ease-in-out forwards;
+  }
+
+  /* Periodic subtle glisten for "stand out" effect */
+  .badge-glisten-perpetual::after {
+    animation: glisten 4s ease-in-out infinite;
+    animation-delay: 2s;
+  }
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Package, Plus, Edit, Trash2, DollarSign, Image as ImageIcon, ChevronDown, ChevronUp, BarChart3, X, MapPin } from 'lucide-react';
+import { Package, Plus, Edit, Trash2, DollarSign, Image as ImageIcon, ChevronDown, ChevronUp, BarChart3, X, MapPin, Upload } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -80,7 +80,6 @@ interface Service {
   hitch_connection?: string;
   ball_size?: string;
   electrical_plug?: string;
-  traction_type?: string;
   axle_configuration?: string;
   daily_rate?: number;
   three_day_rate?: number;
@@ -88,6 +87,7 @@ interface Service {
   monthly_rate?: number;
   features?: string[];
   youtube_url?: string;
+  tow_capacity?: string;
 }
 
 interface ServicesEditorProps {
@@ -110,7 +110,6 @@ const emptyService: Service = {
   hitch_connection: '',
   ball_size: '',
   electrical_plug: '',
-  traction_type: '',
   axle_configuration: '',
   daily_rate: 0,
   three_day_rate: 0,
@@ -118,6 +117,7 @@ const emptyService: Service = {
   monthly_rate: 0,
   features: [],
   youtube_url: '',
+  tow_capacity: '',
 };
 
 export default function ServicesEditor({ listingId }: ServicesEditorProps) {
@@ -128,7 +128,16 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
   const [formData, setFormData] = useState<Service>(emptyService);
   const [saving, setSaving] = useState(false);
   const [expandedService, setExpandedService] = useState<string | null>(null);
+  const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [newFeature, setNewFeature] = useState('');
+
+  // Dynamically find the current service in the state to get live updates (for photos, etc.)
+  const liveService = editingService?.id
+    ? (services && Array.isArray(services) ? services.find(s => s.id === editingService.id) : null)
+    : null;
+  const activePhotos = liveService?.photos || editingService?.photos || [];
 
   const fetchServices = useCallback(async () => {
     const { data: servicesData } = await supabase
@@ -145,7 +154,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
             .select('*')
             .eq('service_id', service.id)
             .order('display_order');
-          
+
           return { ...service, photos: photos || [] } as Service;
         })
       );
@@ -161,6 +170,9 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
   const openAddDialog = () => {
     setEditingService(null);
     setFormData(emptyService);
+    setExpandedService(null);
+    setPendingPhotos([]);
+    setPhotoPreviews([]);
     setDialogOpen(true);
   };
 
@@ -201,15 +213,17 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
         hitch_connection: formData.hitch_connection || null,
         ball_size: formData.ball_size || null,
         electrical_plug: formData.electrical_plug || null,
-        traction_type: formData.traction_type || null,
         axle_configuration: formData.axle_configuration || null,
         daily_rate: formData.daily_rate || null,
         three_day_rate: formData.three_day_rate || null,
         weekly_rate: formData.weekly_rate || null,
         monthly_rate: formData.monthly_rate || null,
-        features: formData.features && formData.features.length > 0 ? formData.features : null,
+        features: (formData.features && Array.isArray(formData.features) && formData.features.length > 0) ? formData.features : null,
         youtube_url: formData.youtube_url || null,
+        tow_capacity: formData.tow_capacity || null,
       };
+
+      let newServiceId = editingService?.id;
 
       if (editingService?.id) {
         const { error } = await supabase
@@ -223,26 +237,81 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
         if (error) throw error;
         toast.success('Asset updated');
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('business_services')
           .insert({
             listing_id: listingId,
             ...serviceData,
-            display_order: services.length
-          });
+            display_order: (services?.length || 0)
+          })
+          .select()
+          .single();
 
         if (error) throw error;
+        newServiceId = data.id;
         toast.success('Asset deployed');
+      }
+
+      // Handle pending photo uploads if it's a new service
+      if (!editingService?.id && newServiceId && pendingPhotos.length > 0) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          for (let i = 0; i < pendingPhotos.length; i++) {
+            const file = pendingPhotos[i];
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+            const storagePath = `${user.id}/${listingId}/services/${newServiceId}/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+              .from('business-photos')
+              .upload(storagePath, file);
+
+            if (!uploadError) {
+              await supabase
+                .from('service_photos')
+                .insert({
+                  service_id: newServiceId,
+                  storage_path: storagePath,
+                  file_name: file.name,
+                  file_size: file.size,
+                  is_primary: i === 0,
+                  display_order: i
+                });
+            } else {
+              console.error('Error uploading photo:', uploadError);
+              toast.error(`Failed to upload photo ${file.name}`);
+            }
+          }
+          toast.success(`${pendingPhotos.length} photos uploaded`);
+        }
       }
 
       setDialogOpen(false);
       fetchServices();
-    } catch (error) {
-      console.error('Error saving service:', error);
-      toast.error('Failed to save asset');
+      setPendingPhotos([]);
+      setPhotoPreviews([]);
+    } catch (error: any) {
+      console.error('Error saving asset:', error);
+      toast.error('Failed to save asset: ' + (error.message || 'Unknown error'));
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newFiles = Array.from(files);
+    setPendingPhotos(prev => [...prev, ...newFiles]);
+
+    const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+    setPhotoPreviews(prev => [...prev, ...newPreviews]);
+  };
+
+  const removePendingPhoto = (index: number) => {
+    setPendingPhotos(prev => prev.filter((_, i) => i !== index));
+    setPhotoPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleDelete = async (serviceId: string) => {
@@ -302,7 +371,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
     return data.publicUrl;
   };
 
-  const currentSubCategories = formData.asset_class 
+  const currentSubCategories = formData.asset_class
     ? SUB_CATEGORIES[formData.asset_class as keyof typeof SUB_CATEGORIES] || []
     : [];
 
@@ -331,8 +400,8 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button 
-                onClick={openAddDialog} 
+              <Button
+                onClick={openAddDialog}
                 className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold uppercase tracking-wide"
               >
                 <Plus className="h-4 w-4" />
@@ -355,7 +424,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                   <h3 className="text-lg font-bold uppercase italic text-primary mb-4 tracking-wide">
                     Mission Briefing
                   </h3>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div className="space-y-2">
                       <Label className="text-xs uppercase tracking-widest text-white/80">
@@ -368,7 +437,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                         className="bg-background border-border"
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label className="text-xs uppercase tracking-widest text-white/80">
                         Class
@@ -389,7 +458,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label className="text-xs uppercase tracking-widest text-white/80">
                         Deployment Sub-Class
@@ -411,7 +480,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                       </Select>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label className="text-xs uppercase tracking-widest text-white/80">
                       Operational Performance Brief (Description)
@@ -432,6 +501,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                         yearMakeModel: formData.year_make_model || '',
                         length: formData.length_ft || '',
                         payload: formData.payload_capacity || '',
+                        towCapacity: formData.tow_capacity || '',
                       }}
                       onUseDescription={(desc) => setFormData({ ...formData, description: desc })}
                     />
@@ -443,7 +513,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                   <h3 className="text-lg font-bold uppercase italic text-primary mb-4 tracking-wide">
                     Combat Specifications
                   </h3>
-                  
+
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="space-y-2">
                       <Label className="text-xs uppercase tracking-widest text-white/80">
@@ -456,7 +526,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                         className="bg-background border-border"
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label className="text-xs uppercase tracking-widest text-white/80">
                         Length (FT)
@@ -468,7 +538,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                         className="bg-background border-border"
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label className="text-xs uppercase tracking-widest text-white/80">
                         Payload Capacity (LBS)
@@ -480,7 +550,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                         className="bg-background border-border"
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label className="text-xs uppercase tracking-widest text-white/80">
                         Empty Weight (LBS)
@@ -492,7 +562,19 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                         className="bg-background border-border"
                       />
                     </div>
-                    
+
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase tracking-widest text-white/80">
+                        Tow Capacity (LBS)
+                      </Label>
+                      <Input
+                        value={formData.tow_capacity || ''}
+                        onChange={(e) => setFormData({ ...formData, tow_capacity: e.target.value })}
+                        placeholder="10,000 lbs"
+                        className="bg-background border-border"
+                      />
+                    </div>
+
                     <div className="space-y-2">
                       <Label className="text-xs uppercase tracking-widest text-white/80">
                         Dimensions
@@ -504,7 +586,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                         className="bg-background border-border"
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label className="text-xs uppercase tracking-widest text-white/80">
                         Hitch Connection
@@ -516,7 +598,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                         className="bg-background border-border"
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label className="text-xs uppercase tracking-widest text-white/80">
                         Ball Size (IN)
@@ -528,7 +610,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                         className="bg-background border-border"
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label className="text-xs uppercase tracking-widest text-white/80">
                         Electrical Plug
@@ -540,19 +622,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                         className="bg-background border-border"
                       />
                     </div>
-                    
-                    <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-widest text-white/80">
-                        Traction Type
-                      </Label>
-                      <Input
-                        value={formData.traction_type || ''}
-                        onChange={(e) => setFormData({ ...formData, traction_type: e.target.value })}
-                        placeholder="Bumper Pull"
-                        className="bg-background border-border"
-                      />
-                    </div>
-                    
+
                     <div className="space-y-2">
                       <Label className="text-xs uppercase tracking-widest text-white/80">
                         Axle Configuration
@@ -572,7 +642,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                   <h3 className="text-lg font-bold uppercase italic text-primary mb-4 tracking-wide">
                     Mission Rates
                   </h3>
-                  
+
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="space-y-2">
                       <Label className="text-xs uppercase tracking-widest text-white/80">
@@ -586,7 +656,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                         className="bg-background border-border"
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label className="text-xs uppercase tracking-widest text-white/80">
                         3-Day Block ($)
@@ -599,7 +669,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                         className="bg-background border-border"
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label className="text-xs uppercase tracking-widest text-white/80">
                         Weekly Deployment ($)
@@ -612,7 +682,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                         className="bg-background border-border"
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label className="text-xs uppercase tracking-widest text-white/80">
                         Monthly Garrison ($)
@@ -636,44 +706,47 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                       <h3 className="text-lg font-bold uppercase italic text-primary tracking-wide">
                         Tactical Features
                       </h3>
-                      <div className="flex gap-2">
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        {formData.features && formData.features.map((feature, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between bg-background rounded p-3 border border-border"
+                          >
+                            <span className="text-foreground">{feature}</span>
+                            <button
+                              onClick={() => removeFeature(index)}
+                              className="text-primary hover:text-primary/80"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                        {(!formData.features || !Array.isArray(formData.features) || formData.features.length === 0) && (
+                          <p className="text-sm text-white/60 text-center py-4">
+                            No features added yet
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex gap-2 pt-2 border-t border-border/30">
                         <Input
                           value={newFeature}
                           onChange={(e) => setNewFeature(e.target.value)}
                           placeholder="Add feature..."
-                          className="w-32 h-8 text-sm bg-background border-border"
+                          className="flex-1 h-10 text-sm bg-background border-border"
                           onKeyDown={(e) => e.key === 'Enter' && addFeature()}
                         />
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           onClick={addFeature}
-                          className="bg-[hsl(var(--navy-dark))] hover:bg-[hsl(var(--navy-dark))]/80 text-foreground border border-border"
+                          className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold uppercase tracking-wide border-none px-6"
                         >
                           + Add
                         </Button>
                       </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      {formData.features && formData.features.map((feature, index) => (
-                        <div 
-                          key={index} 
-                          className="flex items-center justify-between bg-background rounded p-3 border border-border"
-                        >
-                          <span className="text-foreground">{feature}</span>
-                          <button 
-                            onClick={() => removeFeature(index)}
-                            className="text-primary hover:text-primary/80"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                      {(!formData.features || formData.features.length === 0) && (
-                        <p className="text-sm text-white/60 text-center py-4">
-                          No features added yet
-                        </p>
-                      )}
                     </div>
                   </div>
 
@@ -683,29 +756,54 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                       <h3 className="text-lg font-bold uppercase italic text-primary tracking-wide">
                         Asset Visual Gallery
                       </h3>
-                      <Button 
-                        size="sm"
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                      >
-                        + Add Photo
-                      </Button>
                     </div>
-                    
+
                     <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label className="text-xs uppercase tracking-widest text-white/80">
-                          Primary Asset Photo (Upload)
-                        </Label>
-                        <div className="flex items-center gap-4 p-4 bg-background rounded border border-dashed border-border">
-                          <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
-                            <ImageIcon className="h-6 w-6 text-white/50" />
+                      {!editingService ? (
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-4 gap-2 mb-2">
+                            {photoPreviews.map((preview, idx) => (
+                              <div key={idx} className="relative aspect-square rounded overflow-hidden border border-border group">
+                                <img src={preview} alt="" className="w-full h-full object-cover" />
+                                <button
+                                  onClick={() => removePendingPhoto(idx)}
+                                  className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              onClick={() => fileInputRef.current?.click()}
+                              className="aspect-square rounded border border-dashed border-primary/40 flex flex-col items-center justify-center hover:bg-primary/5 transition-colors"
+                            >
+                              <Upload className="h-5 w-5 text-primary mb-1" />
+                              <span className="text-[10px] uppercase font-bold text-primary">Add</span>
+                            </button>
                           </div>
-                          <span className="text-sm text-white/60">
-                            Upload Tactical Profile Image
-                          </span>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleFileSelect}
+                          />
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-widest text-center">
+                            Tactical photos will be uploaded upon deployment
+                          </p>
                         </div>
-                      </div>
-                      
+                      ) : (
+                        <div className="space-y-4">
+                          <ServicePhotoUpload
+                            serviceId={editingService.id!}
+                            listingId={listingId}
+                            photos={activePhotos}
+                            onPhotosChange={fetchServices}
+                          />
+                        </div>
+                      )}
+
                       <div className="space-y-2">
                         <Label className="text-xs uppercase tracking-widest text-white/80">
                           Action Briefing (YouTube URL)
@@ -734,15 +832,15 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
 
                 {/* ACTION BUTTONS */}
                 <div className="flex justify-between gap-4 pt-4 border-t border-border">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => setDialogOpen(false)}
                     className="px-8 uppercase tracking-wide font-bold text-primary border-primary/30 hover:bg-primary/10"
                   >
                     Abort Mission
                   </Button>
-                  <Button 
-                    onClick={handleSave} 
+                  <Button
+                    onClick={handleSave}
                     disabled={saving}
                     className="px-12 bg-primary hover:bg-primary/90 text-primary-foreground uppercase tracking-wide font-bold"
                   >
@@ -755,13 +853,13 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
         </div>
       </CardHeader>
       <CardContent>
-        {services.length === 0 ? (
+        {(!services || !Array.isArray(services) || services.length === 0) ? (
           <p className="text-sm text-white/60 text-center py-8 uppercase tracking-wide">
             No assets deployed. Deploy your rental fleet to attract more customers.
           </p>
         ) : (
           <div className="space-y-3">
-            {services.map((service) => (
+            {Array.isArray(services) && services.map((service) => (
               <Collapsible
                 key={service.id}
                 open={expandedService === service.id}
@@ -773,7 +871,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                       {service.photos && service.photos.length > 0 ? (
                         <div className="w-16 h-16 rounded-md overflow-hidden bg-muted flex-shrink-0">
                           <img
-                            src={getPublicUrl(service.photos.find(p => p.is_primary)?.storage_path || service.photos[0].storage_path)}
+                            src={getPublicUrl(service.photos.find(p => p.is_primary)?.storage_path || (service.photos[0] ? service.photos[0].storage_path : ''))}
                             alt={service.service_name}
                             className="w-full h-full object-cover"
                           />
@@ -783,7 +881,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                           <ImageIcon className="h-6 w-6 text-muted-foreground" />
                         </div>
                       )}
-                      
+
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h4 className="font-bold text-foreground uppercase tracking-wide">
@@ -794,7 +892,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                               Offline
                             </Badge>
                           )}
-                          {service.photos && service.photos.length > 0 && (
+                          {service.photos && Array.isArray(service.photos) && service.photos.length > 0 && (
                             <Badge variant="outline" className="text-xs">
                               <ImageIcon className="h-3 w-3 mr-1" />
                               {service.photos.length}
@@ -811,7 +909,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                         </p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-1">
                       <Button variant="ghost" size="sm" onClick={() => openEditDialog(service)}>
                         <Edit className="h-4 w-4" />
@@ -830,7 +928,7 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                       </CollapsibleTrigger>
                     </div>
                   </div>
-                  
+
                   <CollapsibleContent>
                     <div className="px-4 pb-4 border-t border-border pt-4">
                       <Tabs defaultValue="photos">
@@ -863,8 +961,8 @@ export default function ServicesEditor({ listingId }: ServicesEditorProps) {
                           />
                         </TabsContent>
                         <TabsContent value="analytics">
-                          <UnitAnalytics 
-                            serviceId={service.id!} 
+                          <UnitAnalytics
+                            serviceId={service.id!}
                             serviceName={service.service_name}
                           />
                         </TabsContent>

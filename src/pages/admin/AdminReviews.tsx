@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Star, MessageSquare, Search, EyeOff, Eye, Loader2, Building2 } from 'lucide-react';
+import { Star, MessageSquare, Search, EyeOff, Eye, Loader2, Building2, Download, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -38,10 +38,25 @@ export default function AdminReviews() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [hidingReview, setHidingReview] = useState<string | null>(null);
+  const [importingBusiness, setImportingBusiness] = useState<string | null>(null);
+  const [eligibleBusinesses, setEligibleBusinesses] = useState<any[]>([]);
 
   useEffect(() => {
     fetchReviews();
+    fetchEligibleBusinesses();
   }, []);
+
+  const fetchEligibleBusinesses = async () => {
+    const { data, error } = await supabase
+      .from('business_listings')
+      .select('id, business_name, place_id, gmb_import_completed')
+      .not('place_id', 'is', null)
+      .eq('gmb_import_completed', false);
+
+    if (!error && data) {
+      setEligibleBusinesses(data);
+    }
+  };
 
   const fetchReviews = async () => {
     try {
@@ -99,6 +114,25 @@ export default function AdminReviews() {
     }
   };
 
+  const handleImport = async (businessId: string, placeId: string) => {
+    setImportingBusiness(businessId);
+    try {
+      const { data, error } = await supabase.functions.invoke('import-gmb-reviews', {
+        body: { business_id: businessId, place_id: placeId },
+      });
+
+      if (error) throw error;
+
+      toast.success(data.message || 'Reviews imported successfully');
+      fetchReviews();
+      fetchEligibleBusinesses();
+    } catch (error: any) {
+      console.error('Error importing reviews:', error);
+      toast.error(error.message || 'Failed to import reviews');
+    } finally {
+      setImportingBusiness(null);
+    }
+  };
   const toggleGmbReviewVisibility = async (reviewId: string, currentHidden: boolean) => {
     setHidingReview(reviewId);
     try {
@@ -109,7 +143,7 @@ export default function AdminReviews() {
 
       if (error) throw error;
 
-      setGmbReviews(gmbReviews.map(r => 
+      setGmbReviews(gmbReviews.map(r =>
         r.id === reviewId ? { ...r, admin_hidden: !currentHidden } : r
       ));
 
@@ -217,6 +251,10 @@ export default function AdminReviews() {
             <MessageSquare className="h-4 w-4" />
             User Reviews ({filteredUserReviews.length})
           </TabsTrigger>
+          <TabsTrigger value="import" className="gap-2">
+            <Download className="h-4 w-4" />
+            Import System ({eligibleBusinesses.length})
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="google">
@@ -237,9 +275,8 @@ export default function AdminReviews() {
                   {filteredGmbReviews.map((review) => (
                     <div
                       key={review.id}
-                      className={`border rounded-lg p-4 ${
-                        review.admin_hidden ? 'bg-muted/50 opacity-75' : ''
-                      }`}
+                      className={`border rounded-lg p-4 ${review.admin_hidden ? 'bg-muted/50 opacity-75' : ''
+                        }`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -249,11 +286,10 @@ export default function AdminReviews() {
                               {[1, 2, 3, 4, 5].map((star) => (
                                 <Star
                                   key={star}
-                                  className={`h-4 w-4 ${
-                                    star <= review.rating
-                                      ? 'text-yellow-500 fill-yellow-500'
-                                      : 'text-muted'
-                                  }`}
+                                  className={`h-4 w-4 ${star <= review.rating
+                                    ? 'text-yellow-500 fill-yellow-500'
+                                    : 'text-muted'
+                                    }`}
                                 />
                               ))}
                             </div>
@@ -331,11 +367,10 @@ export default function AdminReviews() {
                               {[1, 2, 3, 4, 5].map((star) => (
                                 <Star
                                   key={star}
-                                  className={`h-4 w-4 ${
-                                    star <= review.rating
-                                      ? 'text-yellow-500 fill-yellow-500'
-                                      : 'text-muted'
-                                  }`}
+                                  className={`h-4 w-4 ${star <= review.rating
+                                    ? 'text-yellow-500 fill-yellow-500'
+                                    : 'text-muted'
+                                    }`}
                                 />
                               ))}
                             </div>
@@ -364,6 +399,53 @@ export default function AdminReviews() {
                           )}
                         </div>
                       </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="import">
+          <Card>
+            <CardHeader>
+              <CardTitle>Google Review Import System</CardTitle>
+              <CardDescription>
+                Trigger a one-time import of Google reviews for businesses that have a Place ID configured but haven't imported yet.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {eligibleBusinesses.length === 0 ? (
+                <div className="text-center py-12 bg-muted/30 rounded-lg border-2 border-dashed">
+                  <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-3" />
+                  <p className="font-medium">All eligible businesses have been imported!</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Only businesses with a valid Place ID and no previous import will appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {eligibleBusinesses.map((biz) => (
+                    <div
+                      key={biz.id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors"
+                    >
+                      <div>
+                        <p className="font-bold text-lg">{biz.business_name}</p>
+                        <p className="text-sm text-muted-foreground font-mono">Place ID: {biz.place_id}</p>
+                      </div>
+                      <Button
+                        onClick={() => handleImport(biz.id, biz.place_id)}
+                        disabled={importingBusiness === biz.id}
+                        className="gap-2"
+                      >
+                        {importingBusiness === biz.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4" />
+                        )}
+                        Import GMB Reviews
+                      </Button>
                     </div>
                   ))}
                 </div>

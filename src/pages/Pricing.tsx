@@ -4,14 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { Footer } from "@/components/Footer";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/hooks/useSubscription";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const pricingTiers = [
   {
     name: "Free",
     monthlyPrice: 0,
     annualPrice: 0,
+    priceId: "",
     description: "Perfect for getting started",
     features: [
       "Basic business listing",
@@ -28,6 +33,7 @@ const pricingTiers = [
     name: "Pro",
     monthlyPrice: 49,
     annualPrice: 39,
+    priceId: "price_pro_placeholder", // Replace with real ID
     description: "For growing businesses",
     features: [
       "Everything in Free",
@@ -46,6 +52,7 @@ const pricingTiers = [
     name: "Premium",
     monthlyPrice: 99,
     annualPrice: 79,
+    priceId: "price_premium_placeholder", // Replace with real ID
     description: "For established businesses",
     features: [
       "Everything in Pro",
@@ -75,11 +82,59 @@ const pricingTiers = [
     cta: "Contact Sales",
     popular: false,
     enterprise: true,
+    priceId: "price_enterprise_placeholder" // Replace with real IDs
   },
 ];
 
 const Pricing = () => {
   const [isAnnual, setIsAnnual] = useState(false);
+  const { user } = useAuth();
+  const { plan: currentPlan } = useSubscription();
+  const { toast } = useToast();
+  const [upgrading, setUpgrading] = useState<string | null>(null);
+
+  const handleUpgrade = async (tierName: string, priceId: string) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to upgrade your plan.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (tierName === currentPlan) {
+      toast({
+        title: "Current Plan",
+        description: `You are already subscribed to the ${tierName} plan.`,
+      });
+      return;
+    }
+
+    setUpgrading(tierName);
+    try {
+      const { data, error } = await supabase.functions.invoke('stripe-checkout', {
+        body: {
+          priceId,
+          returnUrl: window.location.origin
+        },
+      });
+
+      if (error) throw error;
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error("Upgrade error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to initiate checkout. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUpgrading(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -149,11 +204,10 @@ const Pricing = () => {
             {pricingTiers.map((tier) => (
               <Card
                 key={tier.name}
-                className={`relative flex flex-col ${
-                  tier.popular
+                className={`relative flex flex-col ${tier.popular
                     ? "border-primary shadow-lg shadow-primary/10 scale-105 z-10"
                     : "border-border"
-                }`}
+                  }`}
               >
                 {tier.popular && (
                   <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground">
@@ -197,8 +251,16 @@ const Pricing = () => {
                     className="w-full"
                     variant={tier.popular ? "default" : "outline"}
                     size="lg"
+                    disabled={upgrading !== null || tier.name === currentPlan}
+                    onClick={() => tier.priceId ? handleUpgrade(tier.name, tier.priceId) : (window.location.href = '/support')}
                   >
-                    {tier.cta}
+                    {upgrading === tier.name ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : tier.name === currentPlan ? (
+                      "Current Plan"
+                    ) : (
+                      tier.cta
+                    )}
                   </Button>
                 </CardFooter>
               </Card>

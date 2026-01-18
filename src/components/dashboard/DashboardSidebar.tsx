@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
     LayoutDashboard,
@@ -10,8 +11,13 @@ import {
     Shield,
     Home,
     MessageSquare,
-    BarChart3
+    BarChart3,
+    Ticket,
+    CreditCard,
+    Loader2
 } from 'lucide-react';
+import { useSubscription } from '@/hooks/useSubscription';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminCheck } from '@/hooks/useAdminCheck';
@@ -22,6 +28,7 @@ const sidebarItems = [
     { name: 'Messages', href: '/dashboard/leads', icon: MessageSquare },
     { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
     { name: 'Business Info', href: '/dashboard/business-info', icon: Building2 },
+    { name: 'Support', href: '/my-tickets', icon: Ticket },
     { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
@@ -29,6 +36,25 @@ export function DashboardSidebar() {
     const location = useLocation();
     const { signOut } = useAuth();
     const { isAdmin } = useAdminCheck();
+    const { plan } = useSubscription();
+    const [loadingPortal, setLoadingPortal] = useState(false);
+
+    const handleOpenPortal = async () => {
+        setLoadingPortal(true);
+        try {
+            const { data, error } = await supabase.functions.invoke('stripe-portal', {
+                body: { returnUrl: window.location.origin },
+            });
+            if (error) throw error;
+            if (data?.url) {
+                window.location.href = data.url;
+            }
+        } catch (error) {
+            console.error("Portal error:", error);
+        } finally {
+            setLoadingPortal(false);
+        }
+    };
 
     const isActive = (path: string, exact = false) => {
         return exact ? location.pathname === path : location.pathname.startsWith(path);
@@ -88,8 +114,22 @@ export function DashboardSidebar() {
                         className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all"
                     >
                         <Home className="h-5 w-5 text-gray-500" />
-                        Public Site
+                        Back to Directory
                     </Link>
+                    {plan !== 'Free' && (
+                        <button
+                            onClick={handleOpenPortal}
+                            disabled={loadingPortal}
+                            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all disabled:opacity-50"
+                        >
+                            {loadingPortal ? (
+                                <Loader2 className="h-5 w-5 animate-spin text-orange-500" />
+                            ) : (
+                                <CreditCard className="h-5 w-5 text-orange-500" />
+                            )}
+                            Manage Billing
+                        </button>
+                    )}
                 </div>
             </nav>
 

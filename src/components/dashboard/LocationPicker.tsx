@@ -1,6 +1,5 @@
-
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { APIProvider, Map, Marker, MapCameraChangedEvent } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, Marker, useMapsLibrary, useMap } from '@vis.gl/react-google-maps';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,6 +29,51 @@ export const LocationPicker = ({
     const [exact, setExact] = useState(initialExact);
     const [searching, setSearching] = useState(false);
 
+    return (
+        <APIProvider apiKey={apiKey}>
+            <LocationPickerInner
+                initialLat={initialLat}
+                initialLng={initialLng}
+                position={position}
+                setPosition={setPosition}
+                address={address}
+                setAddress={setAddress}
+                exact={exact}
+                setExact={setExact}
+                searching={searching}
+                setSearching={setSearching}
+                onLocationChange={onLocationChange}
+            />
+        </APIProvider>
+    );
+};
+
+interface InnerProps {
+    initialLat: number;
+    initialLng: number;
+    position: { lat: number, lng: number };
+    setPosition: (p: { lat: number, lng: number }) => void;
+    address: string;
+    setAddress: (a: string) => void;
+    exact: boolean;
+    setExact: (e: boolean) => void;
+    searching: boolean;
+    setSearching: (s: boolean) => void;
+    onLocationChange: (lat: number, lng: number, address: string, exact: boolean) => void;
+}
+
+const LocationPickerInner = ({
+    initialLat, initialLng, position, setPosition, address, setAddress, exact, setExact, searching, setSearching, onLocationChange
+}: InnerProps) => {
+    const map = useMap();
+    const geocodingLibrary = useMapsLibrary('geocoding');
+    const [geocoder, setGeocoder] = useState<google.maps.Geocoder | null>(null);
+
+    useEffect(() => {
+        if (!geocodingLibrary) return;
+        setGeocoder(new geocodingLibrary.Geocoder());
+    }, [geocodingLibrary]);
+
     // Sync initial props to state if they change significantly
     useEffect(() => {
         if (initialLat && initialLng) {
@@ -50,15 +94,26 @@ export const LocationPicker = ({
     // Handle address search (lightweight simulation of autocomplete for now)
     // In a full implementation, we'd use the Places Autocomplete Service here
     const handleSearch = async () => {
-        if (!address) return;
+        if (!address || !geocoder || !map) return;
         setSearching(true);
 
-        // Simulate geocoding delay
-        // Real implementation would use the Geocoding service from the API
-        setTimeout(() => {
+        geocoder.geocode({ address }, (results, status) => {
             setSearching(false);
-            toast.info("Geocoding simulation: Location updated (normally would move map)");
-        }, 1000);
+            if (status === 'OK' && results?.[0]) {
+                const location = results[0].geometry.location;
+                const newPos = { lat: location.lat(), lng: location.lng() };
+                setPosition(newPos);
+                map.panTo(newPos);
+                onLocationChange(newPos.lat, newPos.lng, address, exact);
+                toast.success("Location updated successfully");
+            } else {
+                const errorMsg = status === 'REQUEST_DENIED'
+                    ? "Geocoding API is not enabled for your Google Maps API key. Please enable it in the Google Cloud Console."
+                    : "Could not find address location. Error: " + status;
+                toast.error(errorMsg);
+                console.error("Geocoding failed with status:", status);
+            }
+        });
     };
 
     return (
@@ -79,21 +134,19 @@ export const LocationPicker = ({
             </div>
 
             <div className="h-[300px] w-full rounded-lg overflow-hidden border relative">
-                <APIProvider apiKey={apiKey}>
-                    <Map
-                        defaultCenter={position}
-                        defaultZoom={13}
-                        gestureHandling={'greedy'}
-                        disableDefaultUI={true}
-                        mapId={'bf51a910020fa25a'} // Dark mode style ID or generic
-                    >
-                        <Marker
-                            position={position}
-                            draggable={true}
-                            onDragEnd={onDragEnd}
-                        />
-                    </Map>
-                </APIProvider>
+                <Map
+                    defaultCenter={position}
+                    defaultZoom={13}
+                    gestureHandling={'greedy'}
+                    disableDefaultUI={true}
+                    mapId={'bf51a910020fa25a'} // Dark mode style ID or generic
+                >
+                    <Marker
+                        position={position}
+                        draggable={true}
+                        onDragEnd={onDragEnd}
+                    />
+                </Map>
 
                 {!exact && (
                     <div className="absolute inset-0 bg-blue-500/10 pointer-events-none flex items-center justify-center z-10">

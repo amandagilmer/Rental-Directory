@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Upload, X, Star, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, Star, Image as ImageIcon, Loader2, GripVertical } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ServicePhoto {
@@ -24,6 +24,7 @@ export default function ServicePhotoUpload({ serviceId, listingId, photos, onPho
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getPublicUrl = (storagePath: string) => {
@@ -36,7 +37,7 @@ export default function ServicePhotoUpload({ serviceId, listingId, photos, onPho
     if (!files || files.length === 0 || !user) return;
 
     setUploading(true);
-    
+
     try {
       for (const file of Array.from(files)) {
         if (!file.type.startsWith('image/')) {
@@ -99,7 +100,7 @@ export default function ServicePhotoUpload({ serviceId, listingId, photos, onPho
 
   const handleDelete = async (photo: ServicePhoto) => {
     setDeleting(photo.id);
-    
+
     try {
       await supabase.storage
         .from('business-photos')
@@ -152,27 +153,81 @@ export default function ServicePhotoUpload({ serviceId, listingId, photos, onPho
     }
   };
 
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = async (targetIndex: number) => {
+    if (draggedIndex === null || draggedIndex === targetIndex) {
+      setDraggedIndex(null);
+      return;
+    }
+
+    const newPhotos = [...photos];
+    const [draggedPhoto] = newPhotos.splice(draggedIndex, 1);
+    newPhotos.splice(targetIndex, 0, draggedPhoto);
+
+    try {
+      // Update display_order for all affected photos
+      const updates = newPhotos.map((photo, index) => ({
+        id: photo.id,
+        display_order: index
+      }));
+
+      // Optimization: Batch updates if possible, but here we do them sequentially to ensure correctness
+      for (const update of updates) {
+        await supabase
+          .from('service_photos')
+          .update({ display_order: update.display_order })
+          .eq('id', update.id);
+      }
+
+      onPhotosChange();
+      toast.success('Photo order updated');
+    } catch (err) {
+      console.error('Reorder error:', err);
+      toast.error('Failed to update photo order');
+    } finally {
+      setDraggedIndex(null);
+    }
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <ImageIcon className="h-4 w-4 text-muted-foreground" />
         <span className="text-sm font-medium">Unit Photos</span>
       </div>
-      
+
       {/* Photo Grid */}
       {photos.length > 0 && (
         <div className="grid grid-cols-3 gap-2">
-          {photos.map((photo) => (
+          {photos.map((photo, index) => (
             <div
               key={photo.id}
-              className="relative group aspect-square rounded-md overflow-hidden bg-muted"
+              draggable
+              onDragStart={() => handleDragStart(index)}
+              onDragOver={handleDragOver}
+              onDrop={() => handleDrop(index)}
+              className={`relative group aspect-square rounded-md overflow-hidden bg-muted border-2 transition-all cursor-move ${draggedIndex === index ? 'opacity-40 border-primary border-dashed' : 'border-transparent'
+                }`}
             >
               <img
                 src={getPublicUrl(photo.storage_path)}
                 alt={photo.file_name}
                 className="w-full h-full object-cover"
               />
-              
+
+              <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="bg-black/60 rounded p-0.5">
+                  <GripVertical className="h-3 w-3 text-white" />
+                </div>
+              </div>
+
               {photo.is_primary && (
                 <div className="absolute top-1 left-1 bg-primary text-primary-foreground px-1 py-0.5 rounded text-[10px] font-medium flex items-center gap-0.5">
                   <Star className="h-2 w-2" />
@@ -185,7 +240,10 @@ export default function ServicePhotoUpload({ serviceId, listingId, photos, onPho
                   <Button
                     size="sm"
                     variant="secondary"
-                    onClick={() => handleSetPrimary(photo)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSetPrimary(photo);
+                    }}
                     className="h-6 text-[10px] px-2"
                   >
                     <Star className="h-2 w-2" />
@@ -194,7 +252,10 @@ export default function ServicePhotoUpload({ serviceId, listingId, photos, onPho
                 <Button
                   size="sm"
                   variant="destructive"
-                  onClick={() => handleDelete(photo)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(photo);
+                  }}
                   disabled={deleting === photo.id}
                   className="h-6 px-2"
                 >
@@ -219,10 +280,17 @@ export default function ServicePhotoUpload({ serviceId, listingId, photos, onPho
           onChange={handleFileSelect}
           className="hidden"
         />
-        <Upload className="h-5 w-5 mx-auto text-muted-foreground mb-1" />
-        <p className="text-xs text-muted-foreground">
-          {uploading ? 'Uploading...' : 'Add photos'}
-        </p>
+        {uploading ? (
+          <div className="flex flex-col items-center">
+            <Loader2 className="h-5 w-5 text-primary animate-spin mb-1" />
+            <p className="text-xs text-muted-foreground uppercase font-bold">Uploading Intel...</p>
+          </div>
+        ) : (
+          <>
+            <Upload className="h-5 w-5 mx-auto text-muted-foreground mb-1" />
+            <p className="text-xs text-muted-foreground">Add photos</p>
+          </>
+        )}
       </div>
     </div>
   );

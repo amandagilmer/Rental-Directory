@@ -22,6 +22,7 @@ interface UserReview {
   show_initials?: boolean;
   vendor_response?: string | null;
   vendor_response_at?: string | null;
+  review_source?: 'patriot_hauls' | 'google';
 }
 
 interface BusinessReviewsProps {
@@ -53,31 +54,32 @@ export default function BusinessReviews({ businessId, placeId }: BusinessReviews
   const fetchReviews = async () => {
     setLoading(true);
     try {
-      // Fetch user reviews (no expiration - show all)
+      // First, get business import status
+      const { data: bizData } = await supabase
+        .from('business_listings')
+        .select('gmb_import_completed')
+        .eq('id', businessId)
+        .single();
+
+      const isImported = bizData?.gmb_import_completed || false;
+
+      // Fetch user reviews
       const { data: userReviewsData } = await supabase
         .from('your_reviews')
         .select('*')
         .eq('business_id', businessId)
-        .order('created_at', { ascending: false })
-        .limit(5);
+        .order('created_at', { ascending: false });
 
       const validUserReviews = (userReviewsData || []) as UserReview[];
       setUserReviews(validUserReviews);
 
-      // If we have 5+ user reviews, use those and skip GMB
-      if (validUserReviews.length >= 5) {
-        setSource('user');
-        setLoading(false);
-        return;
-      }
-
-      // If we have any user reviews, show them (but also check GMB as fallback)
+      // If we have any reviews in your_reviews, we show those
       if (validUserReviews.length > 0) {
         setSource('user');
       }
 
-      // Try to fetch GMB reviews only if < 5 user reviews
-      if (validUserReviews.length < 5 && placeId) {
+      // If NOT imported and < 5 reviews, try to fetch GMB fallback
+      if (!isImported && validUserReviews.length < 5 && placeId) {
         const { data, error } = await supabase.functions.invoke('get-gmb-reviews', {
           body: { business_id: businessId, place_id: placeId },
         });
@@ -85,17 +87,14 @@ export default function BusinessReviews({ businessId, placeId }: BusinessReviews
         if (error) {
           console.error('Error fetching GMB reviews:', error);
         } else if (data?.reviews?.length > 0) {
-          // Filter out admin-hidden reviews
           const visibleReviews = (data.reviews as GmbReview[]).filter(r => !r.admin_hidden);
           setGmbReviews(visibleReviews);
-          // Only show GMB if no user reviews exist
           if (validUserReviews.length === 0 && visibleReviews.length > 0) {
             setSource('google');
           }
         }
       }
 
-      // Set source to none if no reviews at all
       if (validUserReviews.length === 0 && gmbReviews.length === 0) {
         setSource('none');
       }
@@ -107,25 +106,25 @@ export default function BusinessReviews({ businessId, placeId }: BusinessReviews
   };
 
   // Normalize reviews into a common display format
-  const displayReviews: DisplayReview[] = source === 'user' 
+  const displayReviews: DisplayReview[] = source === 'user'
     ? userReviews.map(r => ({
-        id: r.id,
-        author: r.author_name,
-        rating: r.rating,
-        review_text: r.review_text,
-        date: new Date(r.created_at).toLocaleDateString(),
-        vendor_response: r.vendor_response,
-        vendor_response_at: r.vendor_response_at,
-        isUserReview: true,
-      }))
+      id: r.id,
+      author: r.author_name,
+      rating: r.rating,
+      review_text: r.review_text,
+      date: new Date(r.created_at).toLocaleDateString(),
+      vendor_response: r.vendor_response,
+      vendor_response_at: r.vendor_response_at,
+      isUserReview: true,
+    }))
     : gmbReviews.map(r => ({
-        id: r.id,
-        author: r.author,
-        rating: r.rating,
-        review_text: r.review_text,
-        date: r.review_date || '',
-        isUserReview: false,
-      }));
+      id: r.id,
+      author: r.author,
+      rating: r.rating,
+      review_text: r.review_text,
+      date: r.review_date || '',
+      isUserReview: false,
+    }));
 
   const hasReviews = displayReviews.length > 0;
 
@@ -173,17 +172,30 @@ export default function BusinessReviews({ businessId, placeId }: BusinessReviews
                   className="border-b border-border last:border-0 pb-4 last:pb-0"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium">{review.author_name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{review.author_name}</span>
+                      {review.review_source === 'google' ? (
+                        <Badge variant="outline" className="text-[10px] h-4 px-1 gap-1 py-0 border-dashed text-muted-foreground">
+                          <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                          </svg>
+                          Imported
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-[10px] h-4 px-1 py-0 bg-primary/10 text-primary border-none">
+                          Verified Renter
+                        </Badge>
+                      )}
+                    </div>
                     <div className="flex items-center gap-2">
                       <div className="flex">
                         {[1, 2, 3, 4, 5].map((star) => (
                           <Star
                             key={star}
-                            className={`h-4 w-4 ${
-                              star <= review.rating
+                            className={`h-4 w-4 ${star <= review.rating
                                 ? 'text-yellow-500 fill-yellow-500'
                                 : 'text-muted'
-                            }`}
+                              }`}
                           />
                         ))}
                       </div>
@@ -222,10 +234,10 @@ export default function BusinessReviews({ businessId, placeId }: BusinessReviews
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
               </svg>
               Google Reviews
             </CardTitle>
@@ -247,11 +259,10 @@ export default function BusinessReviews({ businessId, placeId }: BusinessReviews
                         {[1, 2, 3, 4, 5].map((star) => (
                           <Star
                             key={star}
-                            className={`h-3 w-3 ${
-                              star <= review.rating
-                                ? 'text-yellow-500 fill-yellow-500'
-                                : 'text-muted'
-                            }`}
+                            className={`h-3 w-3 ${star <= review.rating
+                              ? 'text-yellow-500 fill-yellow-500'
+                              : 'text-muted'
+                              }`}
                           />
                         ))}
                       </div>

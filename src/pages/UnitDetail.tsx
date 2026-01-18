@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { LeadCaptureModal } from "@/components/LeadCaptureModal";
 import { Footer } from "@/components/Footer";
+import { Header } from "@/components/Header";
 import {
   ArrowLeft,
   Phone,
@@ -47,6 +48,7 @@ interface UnitData {
   monthly_rate: number | null;
   features: string[] | null;
   youtube_url: string | null;
+  tow_capacity: string | null;
   is_available: boolean;
   listing_id: string;
 }
@@ -223,6 +225,7 @@ const UnitDetail = () => {
     { label: "Dimensions", value: unit.dimensions, icon: Package },
     { label: "Empty Weight", value: unit.empty_weight, icon: Weight },
     { label: "Payload Capacity", value: unit.payload_capacity, icon: Truck },
+    { label: "Tow Capacity", value: unit.tow_capacity ? `${unit.tow_capacity} lbs` : null, icon: Weight },
     { label: "Axle Configuration", value: unit.axle_configuration, icon: Settings },
     { label: "Traction Type", value: unit.traction_type, icon: Zap },
     { label: "Hitch Connection", value: unit.hitch_connection, icon: Settings },
@@ -239,6 +242,7 @@ const UnitDetail = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Header />
       {/* Breadcrumb */}
       <div className="bg-card border-b border-border">
         <div className="container mx-auto px-4 py-3">
@@ -305,11 +309,10 @@ const UnitDetail = () => {
                       <button
                         key={index}
                         onClick={() => setActivePhotoIndex(index)}
-                        className={`flex-shrink-0 w-20 h-16 rounded-md overflow-hidden border-2 transition-all ${
-                          activePhotoIndex === index
-                            ? "border-primary"
-                            : "border-transparent opacity-70 hover:opacity-100"
-                        }`}
+                        className={`flex-shrink-0 w-20 h-16 rounded-md overflow-hidden border-2 transition-all ${activePhotoIndex === index
+                          ? "border-primary"
+                          : "border-transparent opacity-70 hover:opacity-100"
+                          }`}
                       >
                         <img
                           src={photo}
@@ -426,18 +429,16 @@ const UnitDetail = () => {
                   {locations.map((location) => (
                     <div
                       key={location.id}
-                      className={`p-4 rounded-lg border ${
-                        location.is_primary
-                          ? "bg-primary/10 border-primary/30"
-                          : "bg-muted/50 border-border"
-                      }`}
+                      className={`p-4 rounded-lg border ${location.is_primary
+                        ? "bg-primary/10 border-primary/30"
+                        : "bg-muted/50 border-border"
+                        }`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-3">
                           <MapPin
-                            className={`h-5 w-5 mt-0.5 flex-shrink-0 ${
-                              location.is_primary ? "text-primary" : "text-muted-foreground"
-                            }`}
+                            className={`h-5 w-5 mt-0.5 flex-shrink-0 ${location.is_primary ? "text-primary" : "text-muted-foreground"
+                              }`}
                           />
                           <div>
                             <div className="flex items-center gap-2">

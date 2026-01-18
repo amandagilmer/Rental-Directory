@@ -237,7 +237,7 @@ export const DashboardCreateLeadModal = ({ open, onOpenChange, onSuccess }: Dash
                     </div>
 
                     <div className="flex justify-end gap-2 pt-4">
-                        <Button type="button" variant="outline" onClick={handleClose}>Cancel</Button>
+                        <Button type="button" variant="ghost" onClick={handleClose} className="text-muted-foreground hover:text-foreground hover:bg-accent/50">Cancel</Button>
                         <Button type="submit" disabled={loading}>
                             {loading ? "Adding..." : "Add Lead"}
                         </Button>

@@ -1,3 +1,4 @@
+import OpenAI from 'openai';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MessageCircle, X, Send, Loader2, Headphones, FileText, ChevronLeft, Ticket, GripHorizontal } from 'lucide-react';
@@ -12,6 +13,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDraggable } from '@/hooks/useDraggable';
+
+const openai = new OpenAI({
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true
+});
+
 
 interface Message {
   id: string;
@@ -95,6 +102,7 @@ export function SupportChatWidget() {
               ...prev,
               {
                 id: newMsg.id,
+                role: 'assistant',
                 content: newMsg.message,
                 isUser: false,
                 timestamp: new Date(newMsg.created_at),
@@ -152,6 +160,7 @@ export function SupportChatWidget() {
   };
 
   const handleSendMessage = async () => {
+
     if (!chatInput.trim()) return;
 
     const userMessage: Message = {
@@ -162,100 +171,98 @@ export function SupportChatWidget() {
       timestamp: new Date(),
     };
 
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+    setMessages((prev) => [...prev, userMessage]);
     const messageContent = chatInput;
     setChatInput('');
     setIsSubmitting(true);
 
     try {
-      // Create a temporary placeholder for the AI response
-      const aiPlaceholderId = (Date.now() + 1).toString();
-      setMessages(prev => [...prev, {
-        id: aiPlaceholderId,
-        role: 'assistant',
-        content: '',
-        isUser: false,
-        timestamp: new Date()
-      }]);
+      // 1. Generate local embedding
+      const embeddingResponse = await openai.embeddings.create({
+        model: 'text-embedding-3-small',
+        input: messageContent,
+      });
+      const embedding = embeddingResponse.data[0].embedding;
 
-      const response = await supabase.functions.invoke('ai-support-chat', {
-        body: {
-          message: messageContent,
-          history: newMessages.map(m => ({
-            isUser: m.isUser,
-            content: m.content
-          }))
-        }
+      // 2. Query Knowledge Base for documents
+      const { data: documents, error: matchError } = await supabase.rpc('match_documents', {
+        query_embedding: embedding,
+        match_threshold: 0.3, // Lower threshold for better range
+        match_count: 5,
       });
 
-      if (response.error) throw response.error;
+      if (matchError) throw matchError;
 
-      // Handle streaming response manually if needed, or if invoked returns JSON
-      // For simplicity with supabase-js invoke, let's assume valid JSON or text stream handling
-      // Note: invoke returns a JSON object by default unless we handle the response body stream manually.
-      // To get streaming text, we need to access the underlying response body or handle the stream locally.
-      // However, supabase-js `invoke` simplifies this. If we return a stream from the server, 
-      // we might need to use basic fetch instead of supabase.functions.invoke to handle the readable stream easily 
-      // OR handle the blob.
+      // 3. Construct System Prompt with context
+      let contextText = "";
+      if (documents && documents.length > 0) {
+        contextText = documents.map((doc: any) => doc.content).join("\n---\n");
+      } else {
+        contextText = "No specific knowledge base documents found.";
+      }
 
-      // Let's use direct fetch for simpler streaming support if invoke doesn't auto-handle it well in this context
-      // Actually, let's use the standard fetch pattern we used in TrailerChatbot for reliable streaming.
+      const systemPrompt = `You are a helpful support assistant for "Patriot Hauls".
+Use the following context to answer the user's question. If the answer is not in the context, say you don't know and offer to connect them with a human agent.
 
-      const session = await supabase.auth.getSession();
-      const token = session.data.session?.access_token;
+Context:
+${contextText}
+`;
 
-      const streamResponse = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-support-chat`,
+      // 4. Generate Answer using Chat Completion
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...messages.slice(-5).map(m => ({ role: m.role, content: m.content })),
+          { role: "user", content: messageContent }
+        ],
+      });
+
+      const aiResponse = completion.choices[0].message.content || "I'm sorry, I couldn't generate a response.";
+
+      // 5. Add to UI
+      setMessages((prev) => [
+        ...prev,
         {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            message: messageContent,
-            history: newMessages.map(m => ({
-              isUser: m.isUser,
-              content: m.content
-            }))
-          })
-        }
-      );
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: aiResponse,
+          isUser: false,
+          timestamp: new Date(),
+        },
+      ]);
 
-      if (!streamResponse.body) throw new Error('No response body');
+      // 6. If we have an active ticket, save to DB
+      if (activeTicketId) {
+        // Save user message
+        await supabase.from('chat_messages').insert({
+          ticket_id: activeTicketId,
+          sender_id: user?.id || null,
+          sender_type: 'user',
+          message: messageContent
+        });
 
-      const reader = streamResponse.body.getReader();
-      const decoder = new TextDecoder();
-      let aiContent = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const text = decoder.decode(value, { stream: true });
-        aiContent += text;
-
-        // Update the placeholder message with new content
-        setMessages(prev => prev.map(msg =>
-          msg.id === aiPlaceholderId
-            ? { ...msg, content: aiContent }
-            : msg
-        ));
+        // Save AI message
+        await supabase.from('chat_messages').insert({
+          ticket_id: activeTicketId,
+          sender_id: null,
+          sender_type: 'system', // or 'ai' if we update schema/types, using 'system' for now
+          message: aiResponse
+        });
       }
 
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to send message. Please try again.',
+        title: 'Support Bot Error',
+        description: 'I encountered an issue connecting to my brain. Please try again or submit a ticket.',
         variant: 'destructive',
       });
-      // Remove the user message on error? Or just leave it.
     } finally {
       setIsSubmitting(false);
     }
   };
+
 
 
   const handleViewTickets = () => {

@@ -10,34 +10,26 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { 
-  ExternalLink, 
-  Star, 
-  Eye, 
-  Search, 
-  MapPin, 
-  Phone, 
-  Mail, 
-  Globe, 
+import {
+  ExternalLink,
+  Star,
+  Eye,
+  Search,
+  MapPin,
+  Phone,
+  Mail,
+  Globe,
   Package,
   Loader2,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Shield
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import ServicesEditor from '@/components/dashboard/ServicesEditor';
+import { useCategories } from '@/hooks/useCategories';
 
-const categories = [
-  'Car Rental',
-  'Equipment Rental',
-  'Event Rental',
-  'Storage',
-  'Bikes & Scooters',
-  'Party Supplies',
-  'Trailer Rental',
-  'RV Rental',
-  'Camper Rental'
-];
 
 const listingSchema = z.object({
   business_name: z.string().min(2, 'Business name must be at least 2 characters'),
@@ -54,16 +46,49 @@ interface Analytics {
   searchImpressions: number;
 }
 
+interface DbListing {
+  id: string;
+  business_name: string;
+  description: string | null;
+  category: string;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  is_published: boolean;
+  slug: string | null;
+}
+
+interface FormData {
+  business_name: string;
+  description: string;
+  category: string;
+  address: string;
+  phone: string;
+  email: string;
+  website: string;
+  is_published: boolean;
+}
+
+interface PendingClaim {
+  id: string;
+  status: string;
+  business?: {
+    business_name: string;
+  };
+}
+
 export default function MyListing() {
   const { user } = useAuth();
-  const [listing, setListing] = useState<any>(null);
+  const [listing, setListing] = useState<DbListing | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [pendingClaim, setPendingClaim] = useState<PendingClaim | null>(null);
   const [analytics, setAnalytics] = useState<Analytics>({ views: 0, searchImpressions: 0 });
   const [reviewCount, setReviewCount] = useState(0);
   const [unitCount, setUnitCount] = useState(0);
-  
-  const [formData, setFormData] = useState({
+
+  const [formData, setFormData] = useState<FormData>({
     business_name: '',
     description: '',
     category: '',
@@ -116,7 +141,7 @@ export default function MyListing() {
           .from('business_services')
           .select('*', { count: 'exact', head: true })
           .eq('listing_id', listingData.id);
-        
+
         setUnitCount(unitsCount || 0);
 
         // Fetch review count
@@ -124,8 +149,20 @@ export default function MyListing() {
           .from('your_reviews')
           .select('*', { count: 'exact', head: true })
           .eq('business_id', listingData.id);
-        
+
         setReviewCount(count || 0);
+      } else {
+        // Check for pending claims
+        const { data: claimData } = await supabase
+          .from('business_claims')
+          .select('*, business:business_listings(business_name)')
+          .eq('user_id', user.id)
+          .eq('status', 'pending')
+          .maybeSingle();
+
+        if (claimData) {
+          setPendingClaim(claimData);
+        }
       }
 
       setLoading(false);
@@ -136,16 +173,21 @@ export default function MyListing() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       listingSchema.parse(formData);
       setSaving(true);
+
+      const sanitizeName = (name: string) => name.replace(/(.{2,})\1{2,}/g, '$1');
+      const cleanName = sanitizeName(formData.business_name);
 
       if (listing) {
         const { error } = await supabase
           .from('business_listings')
           .update({
             ...formData,
+            business_name: cleanName,
+            slug: generateSlug(cleanName),
             updated_at: new Date().toISOString()
           })
           .eq('id', listing.id);
@@ -157,6 +199,8 @@ export default function MyListing() {
           .from('business_listings')
           .insert({
             ...formData,
+            business_name: cleanName,
+            slug: generateSlug(cleanName),
             user_id: user?.id
           })
           .select()
@@ -189,7 +233,37 @@ export default function MyListing() {
     );
   }
 
-  // If no listing exists, show create form
+  // If no listing exists, check for pending claim first
+  if (pendingClaim) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-20">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-yellow-500/10 mb-6 group">
+            <Shield className="h-10 w-10 text-yellow-600 animate-pulse" />
+          </div>
+          <h1 className="text-3xl font-bold text-foreground mb-4">Verification In Progress</h1>
+          <div className="max-w-md mx-auto space-y-4">
+            <p className="text-muted-foreground text-lg">
+              Your claim for <span className="font-bold text-foreground">{pendingClaim.business?.business_name || 'your business'}</span> is currently being reviewed by our command team.
+            </p>
+            <Alert className="bg-blue-500/5 border-blue-500/20 text-blue-700">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle className="font-bold">Next Steps</AlertTitle>
+              <AlertDescription>
+                You will receive a notification of approval or denial within 24 hours. Once approved, this listing will be assigned to your account and you'll gain full access to the Command Center features.
+              </AlertDescription>
+            </Alert>
+            <div className="pt-6">
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                Refresh Status
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!listing) {
     return <CreateListingForm formData={formData} setFormData={setFormData} onSubmit={handleSubmit} saving={saving} />;
   }
@@ -217,7 +291,7 @@ export default function MyListing() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Link to={`/business/${generateSlug(listing.business_name)}`} target="_blank">
+          <Link to={`/business/${listing.slug || generateSlug(listing.business_name)}`} target="_blank">
             <Button variant="outline" className="gap-2">
               <ExternalLink className="h-4 w-4" />
               View Public Listing
@@ -289,28 +363,18 @@ export default function MyListing() {
 }
 
 // Separate component for creating a new listing
-function CreateListingForm({ 
-  formData, 
-  setFormData, 
-  onSubmit, 
-  saving 
-}: { 
-  formData: any; 
-  setFormData: (data: any) => void; 
-  onSubmit: (e: React.FormEvent) => void; 
+function CreateListingForm({
+  formData,
+  setFormData,
+  onSubmit,
+  saving
+}: {
+  formData: FormData;
+  setFormData: React.Dispatch<React.SetStateAction<FormData>>;
+  onSubmit: (e: React.FormEvent) => void;
   saving: boolean;
 }) {
-  const categories = [
-    'Car Rental',
-    'Equipment Rental',
-    'Event Rental',
-    'Storage',
-    'Bikes & Scooters',
-    'Party Supplies',
-    'Trailer Rental',
-    'RV Rental',
-    'Camper Rental'
-  ];
+  const { categories, loading: categoriesLoading } = useCategories();
 
   return (
     <div className="space-y-6">
@@ -336,23 +400,29 @@ function CreateListingForm({
                 <Input
                   id="business_name"
                   value={formData.business_name}
-                  onChange={(e) => setFormData({ ...formData, business_name: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, business_name: e.target.value }))}
                   required
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="category">Category *</Label>
-                <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
+                    {categoriesLoading ? (
+                      <div className="flex items-center justify-center py-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      </div>
+                    ) : (
+                      categories.map((category) => (
+                        <SelectItem key={category.id} value={category.name}>
+                          {category.name}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -363,7 +433,7 @@ function CreateListingForm({
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Tell customers about your rental business..."
                 rows={4}
               />
@@ -377,7 +447,7 @@ function CreateListingForm({
                   id="address"
                   className="pl-10"
                   value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
                   placeholder="123 Main St, City, State ZIP"
                 />
               </div>
@@ -393,7 +463,7 @@ function CreateListingForm({
                     type="tel"
                     className="pl-10"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                     placeholder="(555) 123-4567"
                   />
                 </div>
@@ -408,7 +478,7 @@ function CreateListingForm({
                     type="email"
                     className="pl-10"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                     placeholder="contact@yourbusiness.com"
                   />
                 </div>
@@ -424,7 +494,7 @@ function CreateListingForm({
                   type="url"
                   className="pl-10"
                   value={formData.website}
-                  onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
                   placeholder="https://yourbusiness.com"
                 />
               </div>

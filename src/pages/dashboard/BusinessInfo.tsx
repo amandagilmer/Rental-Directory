@@ -19,7 +19,8 @@ import {
   Camera,
   Shield,
   CheckCircle2,
-  Star
+  Star,
+  Medal
 } from 'lucide-react';
 import BusinessHoursEditor from '@/components/dashboard/BusinessHoursEditor';
 import ServiceAreaEditor from '@/components/dashboard/ServiceAreaEditor';
@@ -60,6 +61,7 @@ export default function BusinessInfo() {
   const [listing, setListing] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isPending, setIsPending] = useState(false);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [badgeModal, setBadgeModal] = useState<{
@@ -135,6 +137,38 @@ export default function BusinessInfo() {
           longitude: listingData.longitude || -99.9018
         });
         fetchPhotos(listingData.id);
+      } else {
+        // Check for pending claims
+        const { data: claimData } = await supabase
+          .from('business_claims')
+          .select('*, business:business_listings(*)')
+          .eq('user_id', user.id)
+          .eq('status', 'pending')
+          .maybeSingle();
+
+        if (claimData?.business) {
+          const b = claimData.business as any;
+          setIsPending(true);
+          // Pre-populate but don't set 'listing' yet as they don't officially own it
+          setLogoUrl(b.logo_url);
+          setFormData({
+            business_name: b.business_name || '',
+            owner_name: b.owner_name || '',
+            description: b.description || '',
+            category: b.category || '',
+            additional_categories: b.additional_categories || [],
+            address: b.address || '',
+            phone: b.phone || '',
+            email: b.email || '',
+            website: b.website || '',
+            booking_url: b.booking_url || '',
+            is_published: b.is_published || false,
+            show_exact_location: b.show_exact_location ?? true,
+            latitude: b.latitude || 31.9686,
+            longitude: b.longitude || -99.9018
+          });
+          fetchPhotos(b.id);
+        }
       }
 
       setLoading(false);
@@ -145,6 +179,9 @@ export default function BusinessInfo() {
 
 
   // Removed old geocodeAddress function in favor of LocationPicker logic
+  const generateSlug = (name: string) => {
+    return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  };
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -154,15 +191,22 @@ export default function BusinessInfo() {
       listingSchema.parse(formData);
       setSaving(true);
 
+      const sanitizeName = (name: string) => name.replace(/(.{2,})\1{2,}/g, '$1');
+      const cleanName = sanitizeName(formData.business_name);
+
       const updateData = {
         ...formData,
+        business_name: cleanName,
         updated_at: new Date().toISOString()
       };
 
       if (listing) {
         const { error } = await supabase
           .from('business_listings')
-          .update(updateData)
+          .update({
+            ...updateData,
+            slug: generateSlug(cleanName)
+          })
           .eq('id', listing.id);
 
         if (error) throw error;
@@ -172,6 +216,7 @@ export default function BusinessInfo() {
           .from('business_listings')
           .insert({
             ...updateData,
+            slug: generateSlug(cleanName),
             user_id: user?.id
           })
           .select()
@@ -249,6 +294,12 @@ export default function BusinessInfo() {
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border border-green-500 text-green-600">
                     <CheckCircle2 className="h-3 w-3" />
                     Active Signal
+                  </span>
+                )}
+                {isPending && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border border-yellow-500 text-yellow-600 bg-yellow-500/5 animate-pulse">
+                    <Shield className="h-3 w-3" />
+                    Pending Verification
                   </span>
                 )}
               </div>
@@ -554,29 +605,29 @@ export default function BusinessInfo() {
           <div className="max-w-5xl mx-auto">
             {listing ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Verified Patriot Card */}
+                {/* VERIFIED OPERATOR Card */}
                 <Card className="bg-card border-0 shadow-md rounded-xl text-center">
                   <CardContent className="p-8">
                     <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-4">
                       <Shield className="h-8 w-8 text-primary" />
                     </div>
                     <h3 className="font-display text-lg font-bold uppercase tracking-wide mb-1">
-                      Verified Patriot
+                      VERIFIED OPERATOR
                     </h3>
                     <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-3">
-                      Real American. Real Equipment.
+                      Real Business. Real Mission.
                     </p>
                     <p className="text-sm text-muted-foreground mb-6">
-                      Requires ID Verification.
+                      Requires Identity & Business Verification.
                     </p>
                     <Button
                       className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold uppercase tracking-wider"
                       onClick={() => setBadgeModal({
                         open: true,
                         badgeKey: 'verified_operator',
-                        badgeName: 'Verified Patriot',
-                        badgeDescription: 'Verify your identity to earn the Verified Patriot badge.',
-                        documentType: 'Government ID',
+                        badgeName: 'VERIFIED OPERATOR',
+                        badgeDescription: 'Verify your identity and business to earn this mark of trust.',
+                        documentType: 'Government ID & Business License',
                       })}
                     >
                       Submit Protocol
@@ -584,32 +635,29 @@ export default function BusinessInfo() {
                   </CardContent>
                 </Card>
 
-                {/* Worker-Approved Card */}
+                {/* VETERAN OWNED Card */}
                 <Card className="bg-card border-0 shadow-md rounded-xl text-center">
                   <CardContent className="p-8">
                     <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <svg className="h-8 w-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
+                      <Medal className="h-8 w-8 text-primary" />
                     </div>
                     <h3 className="font-display text-lg font-bold uppercase tracking-wide mb-1">
-                      Worker-Approved
+                      VETERAN OWNED
                     </h3>
                     <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-3">
-                      Maintained by a Pro.
+                      Honor. Duty. Service.
                     </p>
                     <p className="text-sm text-muted-foreground mb-6">
-                      Submit 50-Point Checklist.
+                      Submit DD-214 or Veteran ID.
                     </p>
                     <Button
                       className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold uppercase tracking-wider"
                       onClick={() => setBadgeModal({
                         open: true,
-                        badgeKey: 'quality_certified',
-                        badgeName: 'Worker-Approved',
-                        badgeDescription: 'Submit your 50-point equipment checklist for certification.',
-                        documentType: '50-Point Checklist',
+                        badgeKey: 'veteran_owned',
+                        badgeName: 'VETERAN OWNED',
+                        badgeDescription: 'Verify your status as a U.S. military veteran.',
+                        documentType: 'Veteran Documentation (DD-214 or ID)',
                       })}
                     >
                       Submit Protocol
@@ -617,29 +665,29 @@ export default function BusinessInfo() {
                   </CardContent>
                 </Card>
 
-                {/* Local Legend Card */}
+                {/* INSURED & BONDED Card */}
                 <Card className="bg-card border-0 shadow-md rounded-xl text-center">
                   <CardContent className="p-8">
                     <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Star className="h-8 w-8 text-muted-foreground" />
+                      <Shield className="h-8 w-8 text-primary" />
                     </div>
                     <h3 className="font-display text-lg font-bold uppercase tracking-wide mb-1">
-                      Local Legend
+                      INSURED & BONDED
                     </h3>
                     <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-3">
-                      Built This Community.
+                      Protection for the Mission.
                     </p>
                     <p className="text-sm text-muted-foreground mb-6">
-                      Requires 50 Successful Jobs.
+                      Upload Proof of COI.
                     </p>
                     <Button
                       className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold uppercase tracking-wider"
                       onClick={() => setBadgeModal({
                         open: true,
-                        badgeKey: 'local_legend',
-                        badgeName: 'Local Legend',
-                        badgeDescription: 'Submit proof of 50+ successful rental transactions.',
-                        documentType: 'Job History Records',
+                        badgeKey: 'insured',
+                        badgeName: 'INSURED & BONDED',
+                        badgeDescription: 'Upload your current certificate of insurance.',
+                        documentType: 'Insurance COI',
                       })}
                     >
                       Submit Protocol

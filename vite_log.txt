@@ -1,0 +1,578 @@
+
+> vite_react_shadcn_ts@0.0.0 dev
+> vite --port 8080 --force
+
+Forced re-optimization of dependencies
+
+  VITE v5.4.19  ready in 322 ms
+
+  ➜  Local:   http://localhost:8080/
+  ➜  Network: http://192.168.12.222:8080/
+  ➜  press h + enter to show help
+Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+11:40:50 AM [vite] hmr update /src/pages/BadgeExplainer.tsx, /src/index.css
+11:41:03 AM [vite] hmr update /src/components/BadgeDisplay.tsx, /src/index.css
+11:41:05 AM [vite] hmr update /src/components/BusinessCard.tsx, /src/index.css
+11:41:05 AM [vite] Internal server error:   x Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BusinessCard.tsx:136:1]
+ 133 |         </div>
+ 134 |     </Card>
+ 135 |   );
+ 136 | };
+     : ^
+     `----
+  x Expected '</', got 'jsx text (
+  |   );
+  | };
+  | )'
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BusinessCard.tsx:134:1]
+ 131 |                 </Button>
+ 132 |               </Link>
+ 133 |             </div>
+ 134 | ,->     </Card>
+ 135 | |     );
+ 136 | `-> };
+     `----
+
+
+Caused by:
+    Syntax Error
+  Plugin: vite:react-swc
+  File: /Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BusinessCard.tsx
+  
+11:41:06 AM [vite] hmr update /src/components/BusinessCard.tsx, /src/index.css
+11:41:06 AM [vite] Internal server error:   x Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BusinessCard.tsx:133:1]
+ 130 |         </div>
+ 131 |     </Card>
+ 132 |   );
+ 133 | };
+     : ^
+     `----
+  x Expected '</', got 'jsx text (
+  |   );
+  | };
+  | )'
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BusinessCard.tsx:131:1]
+ 128 |                 </Button>
+ 129 |               </Link>
+ 130 |             </div>
+ 131 | ,->     </Card>
+ 132 | |     );
+ 133 | `-> };
+     `----
+
+
+Caused by:
+    Syntax Error
+  Plugin: vite:react-swc
+  File: /Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BusinessCard.tsx
+  
+11:41:16 AM [vite] hmr update /src/components/BadgeDisplay.tsx, /src/index.css
+11:41:25 AM [vite] hmr update /src/components/BusinessCard.tsx, /src/index.css
+11:41:36 AM [vite] hmr update /src/pages/dashboard/CommandCenterOverview.tsx, /src/index.css
+11:41:43 AM [vite] hmr update /src/pages/dashboard/CommandCenterOverview.tsx, /src/index.css
+12:22:38 PM [vite] hmr update /src/components/BadgeDisplay.tsx, /src/index.css
+12:22:52 PM [vite] hmr update /src/pages/admin/AdminUsers.tsx, /src/index.css
+12:23:01 PM [vite] hmr update /src/pages/admin/AdminUsers.tsx, /src/index.css
+12:23:39 PM [vite] hmr update /src/pages/dashboard/CommandCenterOverview.tsx, /src/index.css
+12:23:56 PM [vite] hmr update /src/pages/dashboard/CommandCenterOverview.tsx, /src/index.css
+12:38:54 PM [vite] hmr update /src/pages/admin/AdminBadges.tsx, /src/index.css
+12:38:54 PM [vite] Internal server error:   x Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/pages/admin/AdminBadges.tsx:682:1]
+ 679 |         </Dialog>
+ 680 |     </div>
+ 681 |   );
+ 682 | }
+     : ^
+     `----
+  x Expected '</', got 'jsx text (
+  |   );
+  | })'
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/pages/admin/AdminBadges.tsx:680:1]
+ 677 |                 </DialogFooter>
+ 678 |               </DialogContent>
+ 679 |             </Dialog>
+ 680 | ,->     </div>
+ 681 | |     );
+ 682 | `-> }
+     `----
+
+
+Caused by:
+    Syntax Error
+  Plugin: vite:react-swc
+  File: /Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/pages/admin/AdminBadges.tsx
+  
+12:38:54 PM [vite] Internal server error:   x Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/pages/admin/AdminBadges.tsx:682:1]
+ 679 |         </Dialog>
+ 680 |     </div>
+ 681 |   );
+ 682 | }
+     : ^
+     `----
+  x Expected '</', got 'jsx text (
+  |   );
+  | })'
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/pages/admin/AdminBadges.tsx:680:1]
+ 677 |                 </DialogFooter>
+ 678 |               </DialogContent>
+ 679 |             </Dialog>
+ 680 | ,->     </div>
+ 681 | |     );
+ 682 | `-> }
+     `----
+
+
+Caused by:
+    Syntax Error
+  Plugin: vite:react-swc
+  File: /Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/pages/admin/AdminBadges.tsx
+  
+12:38:54 PM [vite] Internal server error:   x Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/pages/admin/AdminBadges.tsx:682:1]
+ 679 |         </Dialog>
+ 680 |     </div>
+ 681 |   );
+ 682 | }
+     : ^
+     `----
+  x Expected '</', got 'jsx text (
+  |   );
+  | })'
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/pages/admin/AdminBadges.tsx:680:1]
+ 677 |                 </DialogFooter>
+ 678 |               </DialogContent>
+ 679 |             </Dialog>
+ 680 | ,->     </div>
+ 681 | |     );
+ 682 | `-> }
+     `----
+
+
+Caused by:
+    Syntax Error
+  Plugin: vite:react-swc
+  File: /Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/pages/admin/AdminBadges.tsx
+  
+12:38:54 PM [vite] Internal server error:   x Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/pages/admin/AdminBadges.tsx:682:1]
+ 679 |         </Dialog>
+ 680 |     </div>
+ 681 |   );
+ 682 | }
+     : ^
+     `----
+  x Expected '</', got 'jsx text (
+  |   );
+  | })'
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/pages/admin/AdminBadges.tsx:680:1]
+ 677 |                 </DialogFooter>
+ 678 |               </DialogContent>
+ 679 |             </Dialog>
+ 680 | ,->     </div>
+ 681 | |     );
+ 682 | `-> }
+     `----
+
+
+Caused by:
+    Syntax Error
+  Plugin: vite:react-swc
+  File: /Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/pages/admin/AdminBadges.tsx
+  
+12:39:06 PM [vite] hmr update /src/pages/admin/AdminBadges.tsx, /src/index.css
+12:39:06 PM [vite] Internal server error:   x Expression expected
+    ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/pages/admin/AdminBadges.tsx:62:1]
+ 59 | } from "@/components/ui/command";
+ 60 | import { cn } from "@/lib/utils";
+ 61 | import { BadgeDisplay } from "@/components/BadgeDisplay";
+ 62 | } from 'lucide-react';
+    : ^
+ 63 | import { format } from 'date-fns';
+ 64 | 
+ 65 | interface BadgeVerification {
+    `----
+
+
+Caused by:
+    Syntax Error
+  Plugin: vite:react-swc
+  File: /Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/pages/admin/AdminBadges.tsx
+  
+12:39:06 PM [vite] Internal server error:   x Expression expected
+    ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/pages/admin/AdminBadges.tsx:62:1]
+ 59 | } from "@/components/ui/command";
+ 60 | import { cn } from "@/lib/utils";
+ 61 | import { BadgeDisplay } from "@/components/BadgeDisplay";
+ 62 | } from 'lucide-react';
+    : ^
+ 63 | import { format } from 'date-fns';
+ 64 | 
+ 65 | interface BadgeVerification {
+    `----
+
+
+Caused by:
+    Syntax Error
+  Plugin: vite:react-swc
+  File: /Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/pages/admin/AdminBadges.tsx
+  
+12:39:06 PM [vite] Internal server error:   x Expression expected
+    ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/pages/admin/AdminBadges.tsx:62:1]
+ 59 | } from "@/components/ui/command";
+ 60 | import { cn } from "@/lib/utils";
+ 61 | import { BadgeDisplay } from "@/components/BadgeDisplay";
+ 62 | } from 'lucide-react';
+    : ^
+ 63 | import { format } from 'date-fns';
+ 64 | 
+ 65 | interface BadgeVerification {
+    `----
+
+
+Caused by:
+    Syntax Error
+  Plugin: vite:react-swc
+  File: /Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/pages/admin/AdminBadges.tsx
+  
+12:39:06 PM [vite] Internal server error:   x Expression expected
+    ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/pages/admin/AdminBadges.tsx:62:1]
+ 59 | } from "@/components/ui/command";
+ 60 | import { cn } from "@/lib/utils";
+ 61 | import { BadgeDisplay } from "@/components/BadgeDisplay";
+ 62 | } from 'lucide-react';
+    : ^
+ 63 | import { format } from 'date-fns';
+ 64 | 
+ 65 | interface BadgeVerification {
+    `----
+
+
+Caused by:
+    Syntax Error
+  Plugin: vite:react-swc
+  File: /Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/pages/admin/AdminBadges.tsx
+  
+12:39:22 PM [vite] hmr update /src/pages/admin/AdminBadges.tsx, /src/index.css
+12:39:24 PM [vite] ✨ new dependencies optimized: cmdk
+12:39:24 PM [vite] ✨ optimized dependencies changed. reloading
+12:39:40 PM [vite] hmr update /src/components/BusinessCard.tsx, /src/index.css
+12:39:40 PM [vite] Internal server error:   x Expression expected
+    ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BusinessCard.tsx:37:1]
+ 34 |   return (
+ 35 |     <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 bg-gradient-to-b from-card to-card/95">
+ 36 |           </div>
+ 37 |           <Link to={`/business/${slug}`}>
+    :           ^
+ 38 |             <Button className="w-full bg-primary hover:bg-primary/90">
+ 39 |               View Details
+ 40 |             </Button>
+    `----
+  x Expected ',', got 'to'
+    ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BusinessCard.tsx:37:1]
+ 34 |   return (
+ 35 |     <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 bg-gradient-to-b from-card to-card/95">
+ 36 |           </div>
+ 37 |           <Link to={`/business/${slug}`}>
+    :                 ^^
+ 38 |             <Button className="w-full bg-primary hover:bg-primary/90">
+ 39 |               View Details
+ 40 |             </Button>
+    `----
+
+
+Caused by:
+    Syntax Error
+  Plugin: vite:react-swc
+  File: /Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BusinessCard.tsx
+  
+12:39:40 PM [vite] Internal server error:   x Expression expected
+    ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BusinessCard.tsx:37:1]
+ 34 |   return (
+ 35 |     <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 bg-gradient-to-b from-card to-card/95">
+ 36 |           </div>
+ 37 |           <Link to={`/business/${slug}`}>
+    :           ^
+ 38 |             <Button className="w-full bg-primary hover:bg-primary/90">
+ 39 |               View Details
+ 40 |             </Button>
+    `----
+  x Expected ',', got 'to'
+    ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BusinessCard.tsx:37:1]
+ 34 |   return (
+ 35 |     <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 bg-gradient-to-b from-card to-card/95">
+ 36 |           </div>
+ 37 |           <Link to={`/business/${slug}`}>
+    :                 ^^
+ 38 |             <Button className="w-full bg-primary hover:bg-primary/90">
+ 39 |               View Details
+ 40 |             </Button>
+    `----
+
+
+Caused by:
+    Syntax Error
+  Plugin: vite:react-swc
+  File: /Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BusinessCard.tsx
+  
+12:39:40 PM [vite] Internal server error:   x Expression expected
+    ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BusinessCard.tsx:37:1]
+ 34 |   return (
+ 35 |     <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 bg-gradient-to-b from-card to-card/95">
+ 36 |           </div>
+ 37 |           <Link to={`/business/${slug}`}>
+    :           ^
+ 38 |             <Button className="w-full bg-primary hover:bg-primary/90">
+ 39 |               View Details
+ 40 |             </Button>
+    `----
+  x Expected ',', got 'to'
+    ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BusinessCard.tsx:37:1]
+ 34 |   return (
+ 35 |     <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 bg-gradient-to-b from-card to-card/95">
+ 36 |           </div>
+ 37 |           <Link to={`/business/${slug}`}>
+    :                 ^^
+ 38 |             <Button className="w-full bg-primary hover:bg-primary/90">
+ 39 |               View Details
+ 40 |             </Button>
+    `----
+
+
+Caused by:
+    Syntax Error
+  Plugin: vite:react-swc
+  File: /Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BusinessCard.tsx
+  
+12:39:40 PM [vite] Internal server error:   x Expression expected
+    ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BusinessCard.tsx:37:1]
+ 34 |   return (
+ 35 |     <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 bg-gradient-to-b from-card to-card/95">
+ 36 |           </div>
+ 37 |           <Link to={`/business/${slug}`}>
+    :           ^
+ 38 |             <Button className="w-full bg-primary hover:bg-primary/90">
+ 39 |               View Details
+ 40 |             </Button>
+    `----
+  x Expected ',', got 'to'
+    ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BusinessCard.tsx:37:1]
+ 34 |   return (
+ 35 |     <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 bg-gradient-to-b from-card to-card/95">
+ 36 |           </div>
+ 37 |           <Link to={`/business/${slug}`}>
+    :                 ^^
+ 38 |             <Button className="w-full bg-primary hover:bg-primary/90">
+ 39 |               View Details
+ 40 |             </Button>
+    `----
+
+
+Caused by:
+    Syntax Error
+  Plugin: vite:react-swc
+  File: /Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BusinessCard.tsx
+  
+12:39:55 PM [vite] hmr update /src/components/BusinessCard.tsx, /src/index.css
+12:40:03 PM [vite] hmr update /src/components/BadgeDisplay.tsx, /src/index.css
+12:40:03 PM [vite] Internal server error:   x Unexpected token. Did you mean `{'>'}` or `&gt;`?
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BadgeDisplay.tsx:136:1]
+ 133 |           <Tooltip>
+ 134 |             <TooltipTrigger asChild>
+ 135 |                 className={`h-8 w-8 text-white/40 flex items-center justify-center text-[10px] font-black font-display`}
+ 136 |               >
+     :               ^
+ 137 |                 +{remainingCount}
+ 138 |               </div>
+ 139 |             </TooltipTrigger>
+     `----
+  x Expected '</', got 'jsx text (
+  |             )'
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BadgeDisplay.tsx:138:1]
+ 135 |                     className={`h-8 w-8 text-white/40 flex items-center justify-center text-[10px] font-black font-display`}
+ 136 |                   >
+ 137 |                     +{remainingCount}
+ 138 | ,->               </div>
+ 139 | `->             </TooltipTrigger>
+ 140 |                 <TooltipContent side="top">
+ 141 |                   <p>{remainingCount} more badges</p>
+ 142 |                 </TooltipContent>
+     `----
+
+
+Caused by:
+    Syntax Error
+  Plugin: vite:react-swc
+  File: /Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BadgeDisplay.tsx
+  
+12:40:03 PM [vite] Internal server error:   x Unexpected token. Did you mean `{'>'}` or `&gt;`?
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BadgeDisplay.tsx:136:1]
+ 133 |           <Tooltip>
+ 134 |             <TooltipTrigger asChild>
+ 135 |                 className={`h-8 w-8 text-white/40 flex items-center justify-center text-[10px] font-black font-display`}
+ 136 |               >
+     :               ^
+ 137 |                 +{remainingCount}
+ 138 |               </div>
+ 139 |             </TooltipTrigger>
+     `----
+  x Expected '</', got 'jsx text (
+  |             )'
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BadgeDisplay.tsx:138:1]
+ 135 |                     className={`h-8 w-8 text-white/40 flex items-center justify-center text-[10px] font-black font-display`}
+ 136 |                   >
+ 137 |                     +{remainingCount}
+ 138 | ,->               </div>
+ 139 | `->             </TooltipTrigger>
+ 140 |                 <TooltipContent side="top">
+ 141 |                   <p>{remainingCount} more badges</p>
+ 142 |                 </TooltipContent>
+     `----
+
+
+Caused by:
+    Syntax Error
+  Plugin: vite:react-swc
+  File: /Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BadgeDisplay.tsx
+  
+12:40:03 PM [vite] Internal server error:   x Unexpected token. Did you mean `{'>'}` or `&gt;`?
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BadgeDisplay.tsx:136:1]
+ 133 |           <Tooltip>
+ 134 |             <TooltipTrigger asChild>
+ 135 |                 className={`h-8 w-8 text-white/40 flex items-center justify-center text-[10px] font-black font-display`}
+ 136 |               >
+     :               ^
+ 137 |                 +{remainingCount}
+ 138 |               </div>
+ 139 |             </TooltipTrigger>
+     `----
+  x Expected '</', got 'jsx text (
+  |             )'
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BadgeDisplay.tsx:138:1]
+ 135 |                     className={`h-8 w-8 text-white/40 flex items-center justify-center text-[10px] font-black font-display`}
+ 136 |                   >
+ 137 |                     +{remainingCount}
+ 138 | ,->               </div>
+ 139 | `->             </TooltipTrigger>
+ 140 |                 <TooltipContent side="top">
+ 141 |                   <p>{remainingCount} more badges</p>
+ 142 |                 </TooltipContent>
+     `----
+
+
+Caused by:
+    Syntax Error
+  Plugin: vite:react-swc
+  File: /Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BadgeDisplay.tsx
+  
+12:40:03 PM [vite] Internal server error:   x Unexpected token. Did you mean `{'>'}` or `&gt;`?
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BadgeDisplay.tsx:136:1]
+ 133 |           <Tooltip>
+ 134 |             <TooltipTrigger asChild>
+ 135 |                 className={`h-8 w-8 text-white/40 flex items-center justify-center text-[10px] font-black font-display`}
+ 136 |               >
+     :               ^
+ 137 |                 +{remainingCount}
+ 138 |               </div>
+ 139 |             </TooltipTrigger>
+     `----
+  x Expected '</', got 'jsx text (
+  |             )'
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BadgeDisplay.tsx:138:1]
+ 135 |                     className={`h-8 w-8 text-white/40 flex items-center justify-center text-[10px] font-black font-display`}
+ 136 |                   >
+ 137 |                     +{remainingCount}
+ 138 | ,->               </div>
+ 139 | `->             </TooltipTrigger>
+ 140 |                 <TooltipContent side="top">
+ 141 |                   <p>{remainingCount} more badges</p>
+ 142 |                 </TooltipContent>
+     `----
+
+
+Caused by:
+    Syntax Error
+  Plugin: vite:react-swc
+  File: /Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BadgeDisplay.tsx
+  
+12:40:10 PM [vite] hmr update /src/components/BadgeDisplay.tsx, /src/index.css
+12:40:10 PM [vite] Internal server error:   x Unterminated regexp literal
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BadgeDisplay.tsx:138:1]
+ 135 |           >
+ 136 |             +{remainingCount}
+ 137 |           </div>
+ 138 |             </TooltipTrigger>
+     :              ^^^^^^^^^^^^^^^^
+ 139 |       <TooltipContent side="top">
+ 140 |         <p>{remainingCount} more badges</p>
+ 141 |       </TooltipContent>
+     `----
+
+
+Caused by:
+    Syntax Error
+  Plugin: vite:react-swc
+  File: /Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BadgeDisplay.tsx
+  
+12:40:10 PM [vite] Internal server error:   x Unterminated regexp literal
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BadgeDisplay.tsx:138:1]
+ 135 |           >
+ 136 |             +{remainingCount}
+ 137 |           </div>
+ 138 |             </TooltipTrigger>
+     :              ^^^^^^^^^^^^^^^^
+ 139 |       <TooltipContent side="top">
+ 140 |         <p>{remainingCount} more badges</p>
+ 141 |       </TooltipContent>
+     `----
+
+
+Caused by:
+    Syntax Error
+  Plugin: vite:react-swc
+  File: /Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BadgeDisplay.tsx
+  
+12:40:10 PM [vite] Internal server error:   x Unterminated regexp literal
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BadgeDisplay.tsx:138:1]
+ 135 |           >
+ 136 |             +{remainingCount}
+ 137 |           </div>
+ 138 |             </TooltipTrigger>
+     :              ^^^^^^^^^^^^^^^^
+ 139 |       <TooltipContent side="top">
+ 140 |         <p>{remainingCount} more badges</p>
+ 141 |       </TooltipContent>
+     `----
+
+
+Caused by:
+    Syntax Error
+  Plugin: vite:react-swc
+  File: /Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BadgeDisplay.tsx
+  
+12:40:10 PM [vite] Internal server error:   x Unterminated regexp literal
+     ,-[/Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BadgeDisplay.tsx:138:1]
+ 135 |           >
+ 136 |             +{remainingCount}
+ 137 |           </div>
+ 138 |             </TooltipTrigger>
+     :              ^^^^^^^^^^^^^^^^
+ 139 |       <TooltipContent side="top">
+ 140 |         <p>{remainingCount} more badges</p>
+ 141 |       </TooltipContent>
+     `----
+
+
+Caused by:
+    Syntax Error
+  Plugin: vite:react-swc
+  File: /Users/amandagilmer/Patriot Hauls Directory lovable/rent-local-now/src/components/BadgeDisplay.tsx
+  
+12:40:24 PM [vite] hmr update /src/components/BadgeDisplay.tsx, /src/index.css
+12:58:53 PM [vite] hmr update /src/components/BadgeDisplay.tsx, /src/index.css
+12:59:00 PM [vite] hmr update /src/components/BusinessCard.tsx, /src/index.css
+12:59:06 PM [vite] hmr update /src/pages/BusinessDetail.tsx, /src/index.css

@@ -51,7 +51,7 @@ export default function AdminListings() {
       if (error) throw error;
 
       setListings(data || []);
-      
+
       // Extract unique categories
       const uniqueCategories = [...new Set(data?.map((l) => l.category) || [])];
       setCategories(uniqueCategories);
@@ -103,11 +103,11 @@ export default function AdminListings() {
   };
 
   const filteredListings = listings.filter((listing) => {
-    const matchesSearch = 
+    const matchesSearch =
       listing.business_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       listing.email?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || 
+
+    const matchesStatus = statusFilter === 'all' ||
       (statusFilter === 'published' && listing.is_published) ||
       (statusFilter === 'unpublished' && !listing.is_published);
 
@@ -256,7 +256,7 @@ export default function AdminListings() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Listing</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this listing? This action cannot be undone.
+              Are you sure you want to remove this business from the platform? This action will permanently delete the listing and all its associated data. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

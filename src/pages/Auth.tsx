@@ -47,11 +47,17 @@ export default function Auth() {
   const { signIn, signUp, resetPassword } = useAuth();
   const navigate = useNavigate();
 
-  // Check for renter flow from URL params
+  // Check for renter flow and mode from URL params
   useEffect(() => {
     const type = searchParams.get('type');
+    const mode = searchParams.get('mode');
+
     if (type === 'renter') {
       setUserType('renter');
+    }
+
+    if (mode === 'register') {
+      setActiveTab('register');
     }
   }, [searchParams]);
 
@@ -74,6 +80,8 @@ export default function Auth() {
         }
       } else {
         toast.success('Logged in successfully');
+        const returnUrl = searchParams.get('returnUrl');
+        navigate(returnUrl ? decodeURIComponent(returnUrl) : '/dashboard');
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -121,8 +129,10 @@ export default function Auth() {
           setLoginEmail(registerEmail);
           setLoginPassword(registerPassword);
           setActiveTab('login');
+        } else {
+          const returnUrl = searchParams.get('returnUrl');
+          navigate(returnUrl ? decodeURIComponent(returnUrl) : '/dashboard');
         }
-        // If success, AuthContext listener will handle redirect
       }
     } catch (error) {
       if (error instanceof z.ZodError) {

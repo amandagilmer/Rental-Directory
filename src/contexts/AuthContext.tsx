@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 type UserType = 'renter' | 'host' | 'both';
 
@@ -24,35 +25,91 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set up auth state listener first
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (event === 'SIGNED_IN' && session) {
-        navigate('/dashboard');
-      } else if (event === 'SIGNED_OUT') {
-        navigate('/auth');
+    let mounted = true;
+
+    // Failsafe timer to ensure loading screen eventually disappears
+    const failsafeTimer = setTimeout(() => {
+      if (mounted) {
+        setLoading(prev => {
+          if (prev) {
+            console.warn('Auth loading timed out. Forcing state resolution.');
+            return false;
+          }
+          return false;
+        });
+      }
+    }, 5000);
+
+    // Initial session check
+    const initAuth = async () => {
+      try {
+        // Race getSession with a timeout to prevent app-wide hang
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('getSession timeout')), 2500)
+        );
+
+        const result = await Promise.race([sessionPromise, timeoutPromise]) as any;
+        const session = result?.data?.session;
+
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+
+          if (session?.user) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('is_banned')
+              .eq('id', session.user.id)
+              .maybeSingle();
+
+            if (profile?.is_banned) {
+              await supabase.auth.signOut();
+              setUser(null);
+              setSession(null);
+              toast.error('Your account has been banned.');
+              navigate('/auth');
+            }
+          }
+        }
+      } catch (err: any) {
+        console.warn('Auth initialization bypass (using fallback):', err.message);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+          clearTimeout(failsafeTimer);
+        }
+      }
+    };
+
+    initAuth();
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed event:', event);
+      if (mounted) {
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (event === 'SIGNED_OUT') {
+          navigate('/auth');
+        }
       }
     });
 
-    // Then check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+      clearTimeout(failsafeTimer);
+    };
   }, [navigate]);
 
   const signUp = async (email: string, password: string, businessName: string, location: string, userType: UserType = 'host', signupSource?: string) => {
     const redirectUrl = `${window.location.origin}/`;
-    
+
     // Capture UTM params from URL
     const urlParams = new URLSearchParams(window.location.search);
     const capturedSource = signupSource || urlParams.get('utm_source') || urlParams.get('ref') || 'direct';
-    
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -66,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     });
-    
+
     return { error };
   };
 
@@ -75,7 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password
     });
-    
+
     return { error };
   };
 
@@ -85,11 +142,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetPassword = async (email: string) => {
     const redirectUrl = `${window.location.origin}/reset-password`;
-    
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl
     });
-    
+
     return { error };
   };
 

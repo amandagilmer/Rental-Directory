@@ -183,7 +183,12 @@ export const LeadCaptureModal = ({ open, onOpenChange, businessName, businessId,
             <p className="text-muted-foreground mb-6">
               Thank you for your interest. {businessName} will contact you shortly.
             </p>
-            <Button onClick={handleClose}>Close</Button>
+            <Button
+              onClick={handleClose}
+              className="bg-primary text-white hover:bg-primary/90 font-bold px-12 h-12 text-lg shadow-[0_0_20px_rgba(239,68,68,0.3)] transition-all hover:scale-105"
+            >
+              Close
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

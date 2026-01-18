@@ -85,11 +85,10 @@ export default function ReviewModal({
                   className="p-1 transition-transform hover:scale-110"
                 >
                   <Star
-                    className={`h-8 w-8 transition-colors ${
-                      star <= (hoveredRating || rating)
+                    className={`h-8 w-8 transition-colors ${star <= (hoveredRating || rating)
                         ? 'text-yellow-500 fill-yellow-500'
                         : 'text-muted-foreground'
-                    }`}
+                      }`}
                   />
                 </button>
               ))}
@@ -113,7 +112,7 @@ export default function ReviewModal({
           </div>
 
           <div className="flex gap-3 justify-end">
-            <Button variant="outline" onClick={onClose} disabled={submitting}>
+            <Button variant="ghost" onClick={onClose} disabled={submitting} className="text-muted-foreground hover:text-foreground">
               Skip
             </Button>
             <Button onClick={handleSubmit} disabled={submitting}>

@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 const navigation = [
   { name: "Find a Rental", href: "/" },
-  { name: "Fleet Verification", href: "/badges" },
+  { name: "Trust Badges", href: "/badges" },
   { name: "Command Center", href: "/dashboard" },
 ];
 

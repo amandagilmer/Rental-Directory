@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Phone, Star, Heart } from "lucide-react";
+import { Star, Heart } from "lucide-react";
 import { BadgeDisplay } from "@/components/BadgeDisplay";
 import { useFavorites } from "@/hooks/useFavorites";
 
@@ -32,7 +32,7 @@ export const BusinessCard = ({
   const { isFavorite, toggleFavorite } = useFavorites(listingId);
 
   return (
-    <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 bg-gradient-to-b from-card to-card/95">
+    <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 bg-gradient-to-b from-card to-card/95 relative">
       <Link to={`/business/${slug}`} className="block relative">
         <div className="aspect-video overflow-hidden">
           <img
@@ -40,22 +40,12 @@ export const BusinessCard = ({
             alt={name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
-          {/* Badges overlay */}
-          {listingId && (
-            <div className="absolute top-2 left-2">
-              <BadgeDisplay listingId={listingId} size="sm" maxDisplay={3} />
-            </div>
-          )}
         </div>
       </Link>
 
-      {/* Favorite Button - Outside Link to avoid nesting issues, positioned absolutely over the card image via negative margin or by making card relative? 
-          Actually, simpler to put it absolute inside a relative wrapper around the imageLink. 
-          The Link above wraps the div. Let's put the button sibling to Link but absolutely positioned.
-       */}
       <button
         onClick={toggleFavorite}
-        className="absolute top-2 right-2 z-10 p-2 rounded-full bg-white/80 hover:bg-white backdrop-blur-sm transition-all shadow-sm group/heart"
+        className="absolute top-2 right-2 z-20 p-2 rounded-full bg-white/80 hover:bg-white backdrop-blur-sm transition-all shadow-sm group/heart"
         aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
       >
         <Heart
@@ -75,12 +65,9 @@ export const BusinessCard = ({
               </h3>
             </Link>
             <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="secondary" className="text-xs">
+              <Badge variant="secondary" className="text-[10px] uppercase font-bold tracking-wider bg-primary/10 text-primary border-primary/20">
                 {category}
               </Badge>
-              {listingId && (
-                <BadgeDisplay listingId={listingId} size="sm" maxDisplay={2} />
-              )}
             </div>
           </div>
           <div className="flex items-center gap-1 bg-accent/10 px-2 py-1 rounded-md flex-shrink-0 ml-2">
@@ -89,40 +76,37 @@ export const BusinessCard = ({
           </div>
         </div>
 
-        <p className="text-muted-foreground mb-4 line-clamp-2">
+        <p className="text-muted-foreground mb-6 line-clamp-2 text-sm italic">
           {description}
         </p>
 
-        {/* Contact Info Hidden for Lead Model
-        <div className="space-y-2 mb-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
-            <span className="truncate">{address}</span>
+        <div className="space-y-4">
+          <div className="pt-4 border-t border-white/5">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] font-display">Trust Profile</span>
+                <div className="flex items-center gap-1.5 text-[10px] text-green-500 font-black uppercase tracking-widest">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                  </span>
+                  Active
+                </div>
+              </div>
+              <div className="flex items-center justify-center min-h-[48px] pt-2">
+                {listingId && (
+                  <BadgeDisplay listingId={listingId} size="md" maxDisplay={6} />
+                )}
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Phone className="h-4 w-4 text-primary flex-shrink-0" />
-            <span>{phone}</span>
-          </div>
-        </div>
-        */}
-        <div className="mb-4">
-          {/* Spacer or substitute content could go here if needed, 
-               e.g. "Verified Operator" badge or response time indicator 
-           */}
-          <div className="flex items-center gap-2 text-sm text-green-600 font-medium">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-            </span>
-            Active Responder
-          </div>
-        </div>
 
-        <Link to={`/business/${slug}`}>
-          <Button className="w-full bg-primary hover:bg-primary/90">
-            View Details
-          </Button>
-        </Link>
+          <Link to={`/business/${slug}`}>
+            <Button className="w-full bg-primary hover:bg-primary/90 font-bold uppercase italic tracking-tighter">
+              View Details
+            </Button>
+          </Link>
+        </div>
       </div>
     </Card>
   );

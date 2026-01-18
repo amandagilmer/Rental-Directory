@@ -5,14 +5,16 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAdminCheck } from '@/hooks/useAdminCheck';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, AlertCircle } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import NotificationBell from '@/components/dashboard/NotificationBell';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function Dashboard() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [businessName, setBusinessName] = useState('');
+  const [hasPendingClaim, setHasPendingClaim] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -34,6 +36,21 @@ export default function Dashboard() {
 
       if (listingData?.business_name) {
         setBusinessName(listingData.business_name);
+      } else {
+        // If no listing, check for pending claims
+        const { data: claimData } = await supabase
+          .from('business_claims')
+          .select('*, business:business_listings(business_name)')
+          .eq('user_id', user.id)
+          .eq('status', 'pending')
+          .maybeSingle();
+
+        if (claimData) {
+          setHasPendingClaim(true);
+          if (claimData.business?.business_name) {
+            setBusinessName(claimData.business.business_name);
+          }
+        }
       }
     };
     fetchData();
@@ -100,6 +117,20 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+
+          {hasPendingClaim && (
+            <div className="mb-6 animate-fade-in">
+              <Alert className="bg-yellow-500/10 border-yellow-500/20 text-yellow-700">
+                <AlertCircle className="h-4 w-4 text-yellow-600" />
+                <AlertTitle className="font-bold flex items-center gap-2 text-yellow-800">
+                  Verification In Progress
+                </AlertTitle>
+                <AlertDescription className="text-yellow-700 font-medium">
+                  Your claim for <span className="font-bold">{businessName || 'your business'}</span> is currently being reviewed by our command team. You will be approved or denied within 24 hours. You have partial access to the Command Center.
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
 
           <Outlet />
         </main>

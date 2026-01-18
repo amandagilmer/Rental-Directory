@@ -6,17 +6,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  ShieldCheck,
-  Medal,
-  Star,
-  Zap,
-  Shield,
-  Truck,
-  Flag,
-  Award,
-  LucideIcon,
-} from "lucide-react";
 
 interface BadgeDefinition {
   badge_key: string;
@@ -33,43 +22,18 @@ interface OperatorBadge {
 
 interface BadgeDisplayProps {
   listingId: string;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   maxDisplay?: number;
   showTooltips?: boolean;
 }
 
-const iconMap: Record<string, LucideIcon> = {
-  "shield-check": ShieldCheck,
-  medal: Medal,
-  star: Star,
-  zap: Zap,
-  shield: Shield,
-  truck: Truck,
-  flag: Flag,
-  award: Award,
-};
-
-const colorMap: Record<string, string> = {
-  green: "text-green-500 bg-green-500/10",
-  blue: "text-blue-500 bg-blue-500/10",
-  yellow: "text-yellow-500 bg-yellow-500/10",
-  orange: "text-orange-500 bg-orange-500/10",
-  purple: "text-purple-500 bg-purple-500/10",
-  primary: "text-primary bg-primary/10",
-  red: "text-red-500 bg-red-500/10",
-  gold: "text-amber-500 bg-amber-500/10",
-};
-
 const sizeMap = {
-  sm: "h-4 w-4",
-  md: "h-5 w-5",
-  lg: "h-6 w-6",
-};
-
-const containerSizeMap = {
-  sm: "p-1",
-  md: "p-1.5",
-  lg: "p-2",
+  xs: "h-8 w-8",
+  sm: "h-12 w-12",
+  md: "h-16 w-16",
+  lg: "h-20 w-20",
+  xl: "h-32 w-32",
+  "2xl": "h-40 w-40",
 };
 
 export const BadgeDisplay = ({
@@ -116,15 +80,17 @@ export const BadgeDisplay = ({
 
   const renderBadge = (badge: OperatorBadge, index: number) => {
     const def = badge.badge_definitions;
-    const Icon = iconMap[def.icon] || Shield;
-    const colorClass = colorMap[def.color] || colorMap.primary;
 
     const badgeElement = (
       <div
         key={index}
-        className={`rounded-full ${containerSizeMap[size]} ${colorClass} flex items-center justify-center`}
+        className="relative group/badge flex-shrink-0 bg-white rounded-full overflow-hidden border border-black/5 shadow-sm badge-glisten-container badge-glisten-perpetual"
       >
-        <Icon className={sizeMap[size]} />
+        <img
+          src={def.icon}
+          alt={def.name}
+          className={`${sizeMap[size]} object-cover mix-blend-multiply scale-100 transition-all duration-300 group-hover/badge:scale-110`}
+        />
       </div>
     );
 
@@ -133,9 +99,9 @@ export const BadgeDisplay = ({
     return (
       <Tooltip key={index}>
         <TooltipTrigger asChild>{badgeElement}</TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs">
-          <p className="font-semibold">{def.name}</p>
-          <p className="text-xs text-muted-foreground">{def.description}</p>
+        <TooltipContent side="top" className="max-w-xs p-3">
+          <p className="font-bold text-base mb-1">{def.name}</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">{def.description}</p>
         </TooltipContent>
       </Tooltip>
     );
@@ -143,19 +109,19 @@ export const BadgeDisplay = ({
 
   return (
     <TooltipProvider>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2">
         {displayBadges.map((badge, index) => renderBadge(badge, index))}
         {remainingCount > 0 && (
           <Tooltip>
             <TooltipTrigger asChild>
               <div
-                className={`rounded-full ${containerSizeMap[size]} bg-muted text-muted-foreground flex items-center justify-center text-xs font-medium`}
+                className={`h-8 w-8 text-white/40 flex items-center justify-center text-[10px] font-black font-display cursor-help hover:text-white/60 transition-colors`}
               >
                 +{remainingCount}
               </div>
             </TooltipTrigger>
             <TooltipContent side="top">
-              <p>{remainingCount} more badges</p>
+              <p>{remainingCount} more badges earned</p>
             </TooltipContent>
           </Tooltip>
         )}
@@ -167,7 +133,7 @@ export const BadgeDisplay = ({
 // Static badge component for displaying a single badge by key
 interface StaticBadgeProps {
   badgeKey: string;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   showLabel?: boolean;
 }
 
@@ -184,7 +150,7 @@ export const StaticBadge = ({
         .from("badge_definitions")
         .select("*")
         .eq("badge_key", badgeKey)
-        .single();
+        .maybeSingle();
 
       if (data) {
         setBadge(data as BadgeDefinition);
@@ -196,29 +162,30 @@ export const StaticBadge = ({
 
   if (!badge) return null;
 
-  const Icon = iconMap[badge.icon] || Shield;
-  const colorClass = colorMap[badge.color] || colorMap.primary;
-
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className={`flex items-center gap-2 ${showLabel ? "" : ""}`}>
+          <div className={`flex items-center gap-3`}>
             <div
-              className={`rounded-full ${containerSizeMap[size]} ${colorClass} flex items-center justify-center`}
+              className={`flex items-center justify-center transition-all duration-300 hover:scale-110 group/static`}
             >
-              <Icon className={sizeMap[size]} />
+              <img
+                src={badge.icon}
+                alt={badge.name}
+                className={`${sizeMap[size]} object-contain drop-shadow-[0_4px_20px_rgba(255,255,255,0.1)] group-hover/static:drop-shadow-[0_8px_30px_rgba(255,255,255,0.2)]`}
+              />
             </div>
             {showLabel && (
-              <span className="text-sm font-medium text-foreground">
+              <span className="text-base font-bold text-white uppercase italic tracking-tight font-display drop-shadow-md">
                 {badge.name}
               </span>
             )}
           </div>
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs">
-          <p className="font-semibold">{badge.name}</p>
-          <p className="text-xs text-muted-foreground">{badge.description}</p>
+        <TooltipContent side="top" className="max-w-xs p-3">
+          <p className="font-bold text-base mb-1">{badge.name}</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">{badge.description}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

@@ -12,9 +12,26 @@ import {
   Plus,
   ArrowUpRight,
   Zap,
-  Phone
+  Phone,
+  Trophy,
+  CheckCircle2,
+  Rocket,
+  Lock,
+  Shield
 } from "lucide-react";
+import { PlanGate } from "@/components/subscription/PlanGate";
 import { Link } from "react-router-dom";
+import confetti from 'canvas-confetti';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { BadgeDisplay } from "@/components/BadgeDisplay";
+import { BadgeApplicationModal } from "@/components/dashboard/BadgeApplicationModal";
 
 export default function CommandCenterOverview() {
   const { user } = useAuth();
@@ -26,6 +43,10 @@ export default function CommandCenterOverview() {
     rating: 4.9
   });
   const [listings, setListings] = useState<any[]>([]);
+  const [hasPendingClaim, setHasPendingClaim] = useState(false);
+  const [badgeDefs, setBadgeDefs] = useState<{ badge_key: string; name: string }[]>([]);
+  const [showCelebrate, setShowCelebrate] = useState(false);
+  const [newlyApprovedName, setNewlyApprovedName] = useState("");
 
   useEffect(() => {
     fetchDashboardData();
@@ -41,6 +62,29 @@ export default function CommandCenterOverview() {
         .eq('user_id', user.id);
 
       setListings(listingsData || []);
+
+      if (!listingsData || listingsData.length === 0) {
+        // Check for pending claims
+        const { data: claimData } = await supabase
+          .from('business_claims')
+          .select('*, business:business_listings(*)')
+          .eq('user_id', user.id)
+          .eq('status', 'pending')
+          .maybeSingle();
+
+        if (claimData?.business) {
+          setHasPendingClaim(true);
+          setListings([claimData.business]);
+        }
+      }
+
+      // Fetch badge definitions for application
+      const { data: badgeData } = await supabase
+        .from('badge_definitions')
+        .select('badge_key, name')
+        .order('display_order');
+
+      if (badgeData) setBadgeDefs(badgeData);
 
       // Fetch Leads (count)
       // In a real scenario, we'd join or filter by business_id
@@ -60,11 +104,58 @@ export default function CommandCenterOverview() {
     }
   };
 
+  useEffect(() => {
+    if (listings.length > 0 && !hasPendingClaim) {
+      const verifiedListing = listings.find(l => l.claimed === true);
+      if (verifiedListing) {
+        const hasCelebrated = localStorage.getItem(`celebrated_${verifiedListing.id}`);
+        if (!hasCelebrated) {
+          setNewlyApprovedName(verifiedListing.business_name);
+          setShowCelebrate(true);
+          triggerConfetti();
+          localStorage.setItem(`celebrated_${verifiedListing.id}`, 'true');
+        }
+      }
+    }
+  }, [listings, hasPendingClaim]);
+
+  const triggerConfetti = () => {
+    const duration = 3 * 1000;
+    const end = Date.now() + duration;
+
+    const frame = () => {
+      confetti({
+        particleCount: 3,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0 },
+        colors: ['#ef4444', '#f97316', '#ffffff']
+      });
+      confetti({
+        particleCount: 3,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1 },
+        colors: ['#ef4444', '#f97316', '#ffffff']
+      });
+
+      if (Date.now() < end) {
+        requestAnimationFrame(frame);
+      }
+    };
+    frame();
+  };
+
   const getUserName = () => {
     // Try to get first name from metadata
-    const metaName = user?.user_metadata?.first_name || user?.user_metadata?.full_name;
-    if (metaName) return metaName;
-    return "BOSS";
+    const meta = user?.user_metadata;
+    const firstName = meta?.first_name ||
+      (meta?.full_name ? meta.full_name.split(' ')[0] : null) ||
+      (meta?.name ? meta.name.split(' ')[0] : null) ||
+      meta?.display_name;
+
+    if (firstName) return firstName;
+    return "Boss";
   };
 
   return (
@@ -161,12 +252,44 @@ export default function CommandCenterOverview() {
         </Card>
       </div>
 
+      {/* Trust Profile Section */}
+      {listings.length > 0 && (
+        <Card className="p-8 border-none shadow-sm bg-gradient-to-br from-[#0A0F1C] to-red-900/10 backdrop-blur overflow-hidden relative">
+          <div className="absolute top-0 right-0 p-8 opacity-10">
+            <Shield className="h-32 w-32 text-white" />
+          </div>
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="space-y-3 text-center md:text-left">
+              <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter font-display">
+                Your <span className="text-red-500">Trust Profile</span>
+              </h2>
+              <p className="text-gray-400 max-w-md">
+                These badges represent your verified status on the Patriot Hauls network. Higher trust levels lead to more inquiries and elite placement.
+              </p>
+              <div className="flex flex-wrap justify-center md:justify-start gap-4">
+                <Button variant="outline" size="sm" className="border-white/10 text-white hover:bg-white/5" asChild>
+                  <Link to="/badges">View Standards</Link>
+                </Button>
+                {listings.length > 0 && (
+                  <BadgeApplicationModal listingId={listings[0].id} badges={badgeDefs} />
+                )}
+              </div>
+            </div>
+            <div className="bg-white/5 p-6 rounded-2xl border border-white/10 backdrop-blur-sm">
+              <BadgeDisplay listingId={listings[0].id} size="lg" maxDisplay={10} />
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Active Fleet Deployment Table */}
       <Card className="border-none shadow-sm overflow-hidden">
         <div className="p-6 border-b border-border/50 bg-card/50 flex justify-between items-center">
           <h2 className="text-lg font-bold font-display uppercase tracking-wider">Active Fleet Deployment</h2>
           <div className="flex items-center gap-4">
-            <span className="text-xs font-medium text-muted-foreground">{listings.length} UNITS ONLINE</span>
+            <span className="text-xs font-medium text-muted-foreground">
+              {hasPendingClaim ? '1 PENDING' : `${listings.length} UNITS ONLINE`}
+            </span>
             <Button variant="ghost" size="sm" className="text-xs font-bold text-red-600 hover:text-red-700 hover:bg-red-50" asChild>
               <Link to="/dashboard/listing">VIEW ALL</Link>
             </Button>
@@ -203,9 +326,15 @@ export default function CommandCenterOverview() {
                       $75
                     </td>
                     <td className="py-4 px-6">
-                      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 uppercase text-[10px] tracking-wider font-bold px-2 py-0.5">
-                        Ready
-                      </Badge>
+                      {hasPendingClaim ? (
+                        <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 uppercase text-[10px] tracking-wider font-bold px-2 py-0.5 animate-pulse">
+                          Pending Verification
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 uppercase text-[10px] tracking-wider font-bold px-2 py-0.5">
+                          Ready
+                        </Badge>
+                      )}
                     </td>
                     <td className="py-4 px-6 text-right space-x-2">
                       <Link to="/dashboard/listing" className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">Edit</Link>
@@ -264,11 +393,53 @@ export default function CommandCenterOverview() {
             Generate professional, mission-focused rig descriptions using our proprietary AI model. Stand out from the competition with high-impact copy.
           </p>
 
-          <Button size="lg" className="bg-white text-black hover:bg-gray-100 font-bold border-0" onClick={() => window.location.href = '/dashboard/business-info'}>
-            Launch AI Briefing
-          </Button>
+          <PlanGate minPlan="Pro" feature="AI Descriptions" fallback="lock">
+            <Button size="lg" className="bg-white text-black hover:bg-gray-100 font-bold border-0" onClick={() => window.location.href = '/dashboard/business-info'}>
+              Launch AI Briefing
+            </Button>
+          </PlanGate>
         </div>
       </div>
+
+      {/* Celebration Modal */}
+      <Dialog open={showCelebrate} onOpenChange={setShowCelebrate}>
+        <DialogContent className="sm:max-w-[500px] bg-[#0A0F1C] border-zinc-800 text-white p-0 overflow-hidden">
+          <div className="relative h-48 bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center">
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
+            <div className="relative z-10 bg-white/10 backdrop-blur-xl p-6 rounded-full border border-white/20 shadow-2xl">
+              <Trophy className="h-20 w-20 text-white" />
+            </div>
+            {/* Animated Rings */}
+            <div className="absolute h-32 w-32 border-2 border-white/20 rounded-full animate-ping"></div>
+          </div>
+
+          <div className="p-8 text-center space-y-6">
+            <div className="space-y-2">
+              <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/20 mb-2">
+                MISSION ACCOMPLISHED
+              </Badge>
+              <h2 className="text-3xl font-black uppercase tracking-tight font-display">
+                Verification <span className="text-red-500">Confirmed</span>
+              </h2>
+              <p className="text-zinc-400">
+                Congratulations! <strong>{newlyApprovedName}</strong> is now officially under your command.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 pt-4">
+              <Button size="lg" className="bg-white text-black hover:bg-gray-100 font-bold border-0 h-14" asChild>
+                <Link to="/pricing">
+                  <Zap className="mr-2 h-5 w-5 text-orange-500" />
+                  Upgrade to Pro Fleet
+                </Link>
+              </Button>
+              <Button variant="ghost" className="text-zinc-400 hover:text-white" onClick={() => setShowCelebrate(false)}>
+                Continue to Command Center
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

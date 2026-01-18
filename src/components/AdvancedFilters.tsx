@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, ChevronUp, SlidersHorizontal, X, DollarSign, ArrowUpDown, Shield, Tag, CheckCircle } from 'lucide-react';
+import { ChevronDown, ChevronUp, SlidersHorizontal, X, DollarSign, ArrowUpDown, Shield, Tag, CheckCircle, Search as SearchIcon } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 
 export type SortOption = 'relevance' | 'price-low' | 'price-high' | 'rating' | 'reviews';
@@ -17,6 +18,7 @@ export interface FilterState {
   selectedBadges: string[];
   subCategory: string;
   availableOnly: boolean;
+  businessName: string;
 }
 
 interface BadgeDefinition {
@@ -81,6 +83,10 @@ export function AdvancedFilters({
     onFiltersChange({ ...filters, availableOnly: checked });
   };
 
+  const handleBusinessNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onFiltersChange({ ...filters, businessName: e.target.value });
+  };
+
   const clearAllFilters = () => {
     onFiltersChange({
       priceRange: [0, maxPrice],
@@ -88,6 +94,7 @@ export function AdvancedFilters({
       selectedBadges: [],
       subCategory: 'all',
       availableOnly: false,
+      businessName: '',
     });
   };
 
@@ -150,6 +157,20 @@ export function AdvancedFilters({
       {isExpanded && (
         <div className="border-t border-border p-4 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Business Name Search */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <SearchIcon className="h-4 w-4 text-primary" />
+                <Label className="font-medium">Search Business Name</Label>
+              </div>
+              <Input
+                placeholder="Enter business name..."
+                value={filters.businessName}
+                onChange={handleBusinessNameChange}
+                className="bg-background"
+              />
+            </div>
+
             {/* Price Range */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">

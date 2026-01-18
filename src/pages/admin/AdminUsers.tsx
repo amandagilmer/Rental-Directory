@@ -6,8 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Shield, Truck, Home, Users } from 'lucide-react';
+import { Search, Shield, Truck, Home, Users, Award } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +28,10 @@ interface UserWithRole {
   role: 'admin' | 'moderator' | 'user' | null;
   user_type: 'renter' | 'host' | 'both' | null;
   marketing_consent: boolean | null;
+  plan?: string | null;
+  subscription_status?: string | null;
+  full_name?: string | null;
+  is_banned?: boolean;
 }
 
 export default function AdminUsers() {
@@ -36,7 +42,12 @@ export default function AdminUsers() {
   const [userTypeFilter, setUserTypeFilter] = useState<string>('all');
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
   const [newRole, setNewRole] = useState<string>('');
-  const [showRoleDialog, setShowRoleDialog] = useState(false);
+  const [newPlan, setNewPlan] = useState<string>('Free');
+  const [newStatus, setNewStatus] = useState<string>('active');
+  const [isBanned, setIsBanned] = useState(false);
+  const [showManageDialog, setShowManageDialog] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchUsers = async () => {
     try {
@@ -67,6 +78,10 @@ export default function AdminUsers() {
           role: userRole?.role || null,
           user_type: profile.user_type,
           marketing_consent: profile.marketing_consent,
+          plan: profile.plan || 'Free',
+          subscription_status: profile.subscription_status || 'active',
+          full_name: profile.full_name,
+          is_banned: profile.is_banned || false,
         };
       });
 
@@ -83,45 +98,79 @@ export default function AdminUsers() {
     fetchUsers();
   }, []);
 
-  const handleRoleChange = async () => {
+  const handleUserUpdate = async () => {
     if (!selectedUser) return;
+    setUpdating(true);
 
     try {
+      // 1. Update Role
       if (newRole === 'none') {
-        // Remove role
-        const { error } = await supabase
+        await supabase
           .from('user_roles')
           .delete()
           .eq('user_id', selectedUser.id);
-
-        if (error) throw error;
       } else {
-        // Upsert role
-        const { error } = await supabase
+        await supabase
           .from('user_roles')
           .upsert({
             user_id: selectedUser.id,
             role: newRole as 'admin' | 'moderator' | 'user',
           }, { onConflict: 'user_id,role' });
-
-        if (error) throw error;
       }
 
-      toast.success('Role updated successfully');
-      setShowRoleDialog(false);
+      // 2. Update Profile (Plan & Status)
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          plan: newPlan,
+          subscription_status: newStatus,
+          is_banned: isBanned
+        })
+        .eq('id', selectedUser.id);
+
+      if (profileError) throw profileError;
+
+      toast.success('User updated successfully');
+      setShowManageDialog(false);
       fetchUsers();
     } catch (error) {
-      console.error('Error updating role:', error);
-      toast.error('Failed to update role');
+      console.error('Error updating user:', error);
+      toast.error('Failed to update user');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+    if (!confirm(`Are you sure you want to PERMANENTLY delete user ${selectedUser.email}? This action cannot be undone and will remove all their data and listings.`)) return;
+
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', selectedUser.id);
+
+      if (error) throw error;
+
+      toast.success('User and all associated data deleted successfully');
+      setShowManageDialog(false);
+      fetchUsers();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast.error('Failed to delete user');
+    } finally {
+      setDeleting(false);
     }
   };
 
   const filteredUsers = users.filter((user) => {
-    const matchesSearch = 
+    const matchesSearch =
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.business_name?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesRole = roleFilter === 'all' || 
+
+    const matchesRole = roleFilter === 'all' ||
       (roleFilter === 'none' && !user.role) ||
       user.role === roleFilter;
 
@@ -134,7 +183,7 @@ export default function AdminUsers() {
 
   const getUserTypeBadge = (userType: string | null) => {
     if (!userType) return <Badge variant="outline">Not Set</Badge>;
-    
+
     const config: Record<string, { class: string; icon: React.ReactNode; label: string }> = {
       renter: { class: 'bg-blue-500/10 text-blue-500 border-blue-500/20', icon: <Users className="h-3 w-3 mr-1" />, label: 'Renter' },
       host: { class: 'bg-amber-500/10 text-amber-500 border-amber-500/20', icon: <Truck className="h-3 w-3 mr-1" />, label: 'Host/Vendor' },
@@ -156,12 +205,13 @@ export default function AdminUsers() {
     totalRenters: users.filter(u => u.user_type === 'renter').length,
     totalHosts: users.filter(u => u.user_type === 'host').length,
     totalBoth: users.filter(u => u.user_type === 'both').length,
+    totalPro: users.filter(u => u.plan === 'Pro' || u.plan === 'Premium').length,
     marketingOptIn: users.filter(u => u.marketing_consent).length,
   };
 
   const getRoleBadge = (role: string | null) => {
     if (!role) return <Badge variant="outline">No Role</Badge>;
-    
+
     const colors: Record<string, string> = {
       admin: 'bg-red-500/10 text-red-500 border-red-500/20',
       moderator: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
@@ -231,8 +281,8 @@ export default function AdminUsers() {
             <div className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-green-500" />
               <div>
-                <p className="text-2xl font-bold">{stats.marketingOptIn}</p>
-                <p className="text-xs text-muted-foreground">Marketing Opt-In</p>
+                <p className="text-2xl font-bold">{stats.totalPro}</p>
+                <p className="text-xs text-muted-foreground">Pro/Premium Fleet</p>
               </div>
             </div>
           </CardContent>
@@ -288,10 +338,10 @@ export default function AdminUsers() {
             <TableHeader>
               <TableRow>
                 <TableHead>Email</TableHead>
-                <TableHead>Business Name</TableHead>
+                <TableHead>Business / Name</TableHead>
                 <TableHead>User Type</TableHead>
+                <TableHead>Plan</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Marketing</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -299,17 +349,28 @@ export default function AdminUsers() {
             <TableBody>
               {filteredUsers.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.email}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex flex-col">
+                      <span>{user.email}</span>
+                      {user.full_name && <span className="text-xs text-muted-foreground font-normal">{user.full_name}</span>}
+                    </div>
+                  </TableCell>
                   <TableCell>{user.business_name || '-'}</TableCell>
                   <TableCell>{getUserTypeBadge(user.user_type)}</TableCell>
-                  <TableCell>{getRoleBadge(user.role)}</TableCell>
                   <TableCell>
-                    {user.marketing_consent ? (
-                      <Badge className="bg-green-500/10 text-green-500 border-green-500/20" variant="outline">Opted In</Badge>
-                    ) : (
-                      <Badge variant="outline">No</Badge>
-                    )}
+                    <Badge
+                      className={cn(
+                        "font-bold",
+                        user.plan === 'Free' ? "bg-zinc-500/10 text-zinc-500 border-zinc-500/20" :
+                          user.plan === 'Pro' ? "bg-blue-500/10 text-blue-500 border-blue-500/20" :
+                            "bg-purple-500/10 text-purple-500 border-purple-500/20"
+                      )}
+                      variant="outline"
+                    >
+                      {user.plan}
+                    </Badge>
                   </TableCell>
+                  <TableCell>{getRoleBadge(user.role)}</TableCell>
                   <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right">
                     <Button
@@ -318,11 +379,14 @@ export default function AdminUsers() {
                       onClick={() => {
                         setSelectedUser(user);
                         setNewRole(user.role || 'none');
-                        setShowRoleDialog(true);
+                        setNewPlan(user.plan || 'Free');
+                        setNewStatus(user.subscription_status || 'active');
+                        setIsBanned(user.is_banned || false);
+                        setShowManageDialog(true);
                       }}
                     >
                       <Shield className="h-4 w-4 mr-1" />
-                      Manage Role
+                      Manage User
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -338,34 +402,106 @@ export default function AdminUsers() {
         </CardContent>
       </Card>
 
-      {/* Role Management Dialog */}
-      <Dialog open={showRoleDialog} onOpenChange={setShowRoleDialog}>
-        <DialogContent>
+      {/* User Management Dialog */}
+      <Dialog open={showManageDialog} onOpenChange={setShowManageDialog}>
+        <DialogContent className="sm:max-w-[425px] bg-[#0A0F1C] border-white/10 text-white">
           <DialogHeader>
-            <DialogTitle>Manage User Role</DialogTitle>
-            <DialogDescription>
-              Update role for {selectedUser?.email}
+            <DialogTitle className="text-white font-display uppercase italic tracking-tight">Manage User Account</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Update permissions and subscription plan for {selectedUser?.email}
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <Select value={newRole} onValueChange={setNewRole}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No Role</SelectItem>
-                <SelectItem value="user">User</SelectItem>
-                <SelectItem value="moderator">Moderator</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">System Access Role</label>
+              <Select value={newRole} onValueChange={setNewRole}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Role</SelectItem>
+                  <SelectItem value="user">User</SelectItem>
+                  <SelectItem value="moderator">Moderator</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Subscription Tier</label>
+              <Select value={newPlan} onValueChange={setNewPlan}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select plan" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Free">Free / Starter</SelectItem>
+                  <SelectItem value="Pro">Pro Fleet</SelectItem>
+                  <SelectItem value="Premium">Premium Fleet</SelectItem>
+                  <SelectItem value="Enterprise">Enterprise</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Subscription Status</label>
+              <Select value={newStatus} onValueChange={setNewStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active / Healthy</SelectItem>
+                  <SelectItem value="past_due">Past Due / Error</SelectItem>
+                  <SelectItem value="canceled">Canceled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Account Access</label>
+              <div className="flex items-center gap-2 p-3 border rounded-md border-white/10 bg-white/5">
+                <input
+                  type="checkbox"
+                  id="is_banned"
+                  checked={isBanned}
+                  onChange={(e) => setIsBanned(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <label htmlFor="is_banned" className="text-sm font-medium cursor-pointer text-white">
+                  Ban this user (Deny access to platform)
+                </label>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <Button
+                variant="outline"
+                className="w-full border-blue-600/30 text-blue-500 hover:bg-blue-600/10"
+                asChild
+              >
+                <Link to="/admin/badges">
+                  <Award className="h-4 w-4 mr-2" />
+                  Award Badges to this User
+                </Link>
+              </Button>
+            </div>
+
+            <div className="pt-4 mt-4 border-t border-white/10 space-y-2">
+              <label className="text-sm font-medium text-red-500 uppercase tracking-widest text-[10px]">Danger Zone</label>
+              <Button
+                variant="destructive"
+                className="w-full bg-red-600/10 text-red-500 border border-red-600/20 hover:bg-red-600 hover:text-white"
+                onClick={handleDeleteUser}
+                disabled={deleting || updating}
+              >
+                {deleting ? "Deleting..." : "Delete User Account Permanently"}
+              </Button>
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRoleDialog(false)}>
+            <Button variant="outline" className="border-white/10 text-white hover:bg-white/5" onClick={() => setShowManageDialog(false)} disabled={updating || deleting}>
               Cancel
             </Button>
-            <Button onClick={handleRoleChange}>
-              Save Changes
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleUserUpdate} disabled={updating || deleting}>
+              {updating ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -21,6 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Link } from 'react-router-dom';
 import {
   flexRender,
   getCoreRowModel,
@@ -52,6 +53,8 @@ import { useToast } from '@/hooks/use-toast';
 import { LeadCaptureModal } from '@/components/LeadCaptureModal'; // Reuse if needed or just detail sheet
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { DashboardCreateLeadModal } from '@/components/dashboard/DashboardCreateLeadModal';
+import { PlanGate } from '@/components/subscription/PlanGate';
+import { useSubscription } from '@/hooks/useSubscription';
 
 // --- Types ---
 interface Lead {
@@ -117,6 +120,7 @@ const probabilityColors = {
 export default function LeadInbox() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { plan } = useSubscription();
   const [data, setData] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -336,6 +340,25 @@ export default function LeadInbox() {
           <div className="text-2xl font-bold text-green-600">${stats.totalValue.toLocaleString()}</div>
         </Card>
       </div>
+
+      <PlanGate minPlan="Pro" feature="Unlimited Leads" fallback="inline">
+        {plan === 'Free' && stats.total >= 10 && (
+          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-500/20 rounded-full">
+                <Clock className="h-5 w-5 text-red-500" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-red-500">LEAD LIMIT REACHED</p>
+                <p className="text-xs text-muted-foreground">You are at {stats.total}/10 leads. Upgrade to Pro for unlimited leads and advanced tracking.</p>
+              </div>
+            </div>
+            <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white" asChild>
+              <Link to="/pricing">Upgrade to Pro</Link>
+            </Button>
+          </div>
+        )}
+      </PlanGate>
 
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-4">

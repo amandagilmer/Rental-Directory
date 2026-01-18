@@ -48,6 +48,7 @@ interface RawListing {
   website?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  slug: string | null;
 }
 
 interface Review {
@@ -55,7 +56,8 @@ interface Review {
 }
 
 // Helper to generate slug from category name
-const generateCategorySlug = (name: string): string => {
+const generateCategorySlug = (name: string | null | undefined): string => {
+  if (!name) return 'uncategorized';
   return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 };
 
@@ -70,7 +72,7 @@ export function useBusinessListings() {
         // Fetch published business listings
         const { data: listings, error: listingsError } = await supabase
           .from('business_listings')
-          .select('id, business_name, category, additional_categories, description, address, phone, image_url, email, website, latitude, longitude')
+          .select('id, business_name, slug, category, additional_categories, description, address, phone, image_url, email, website, latitude, longitude')
           .eq('is_published', true)
           .order('created_at', { ascending: false });
 
@@ -83,6 +85,7 @@ export function useBusinessListings() {
         }
 
         const listingIds = listings.map(l => l.id);
+        console.log('Fetching related data for listings:', listingIds);
 
         // Fetch all related data in parallel
         const [reviewsResult, photosResult, badgesResult, servicesResult] = await Promise.all([
@@ -105,6 +108,8 @@ export function useBusinessListings() {
             .select('id, listing_id, service_name, sub_category, daily_rate, weekly_rate, monthly_rate, is_available')
             .in('listing_id', listingIds)
         ]);
+
+        console.log('Related data fetch complete');
 
         const reviews = reviewsResult.data || [];
         const photos = photosResult.data || [];
@@ -150,18 +155,18 @@ export function useBusinessListings() {
         // Transform listings to the expected format
         const transformedListings: BusinessListing[] = listings.map((listing: RawListing) => {
           const ratings = ratingsMap.get(listing.id) || [];
-          const avgRating = ratings.length > 0 
-            ? ratings.reduce((a, b) => a + b, 0) / ratings.length 
+          const avgRating = ratings.length > 0
+            ? ratings.reduce((a, b) => a + b, 0) / ratings.length
             : 0;
 
           const categoryId = generateCategorySlug(listing.category);
-          const slug = listing.business_name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-          
+          const slug = listing.slug || (listing.business_name ? listing.business_name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') : 'listing-' + listing.id);
+
           // Handle additional categories
           const additionalCategories = listing.additional_categories || [];
           const additionalCategoryIds = additionalCategories.map(cat => generateCategorySlug(cat));
           const allCategoryIds = [categoryId, ...additionalCategoryIds];
-          
+
           const listingServices = servicesMap.get(listing.id) || [];
           const dailyRates = listingServices
             .map(s => s.dailyRate)
