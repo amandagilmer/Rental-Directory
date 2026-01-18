@@ -23,6 +23,7 @@ import CommandCenterOverview from "./pages/dashboard/CommandCenterOverview";
 import MyListing from "./pages/dashboard/MyListing";
 import BusinessInfo from "./pages/dashboard/BusinessInfo";
 import Analytics from "./pages/dashboard/Analytics";
+import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
 import GmbSettings from "./pages/dashboard/GmbSettings";
 import Settings from "./pages/dashboard/Settings";
 import LeadInbox from "./pages/dashboard/LeadInbox";
@@ -52,13 +53,17 @@ import AdminBadges from "./pages/admin/AdminBadges";
 import AdminMarketing from "./pages/admin/AdminMarketing";
 import AdminLiveChat from "./pages/admin/AdminLiveChat";
 import AdminCategories from "./pages/admin/AdminCategories";
+import AdminKnowledgeBase from "./pages/admin/KnowledgeBase";
 import MyTickets from "./pages/MyTickets";
 
+
 const queryClient = new QueryClient();
+
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <VercelAnalytics />
       <Toaster />
       <Sonner />
       <BrowserRouter>
@@ -106,6 +111,7 @@ const App = () => (
               <Route path="reviews" element={<AdminReviews />} />
               <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="support" element={<AdminSupport />} />
+              <Route path="knowledge-base" element={<AdminKnowledgeBase />} />
               <Route path="live-chat" element={<AdminLiveChat />} />
               <Route path="pages" element={<AdminPages />} />
               <Route path="faqs" element={<AdminFaqs />} />
