@@ -12,10 +12,16 @@ import { Footer } from '@/components/Footer';
 
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-    apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-    dangerouslyAllowBrowser: true // Necessary for client-side usage
-});
+const getOpenAI = () => {
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    if (!apiKey) {
+        throw new Error('OpenAI API key is missing. Please add VITE_OPENAI_API_KEY to your environment variables.');
+    }
+    return new OpenAI({
+        apiKey,
+        dangerouslyAllowBrowser: true
+    });
+};
 
 interface SupportDoc {
     id: number;
@@ -61,6 +67,7 @@ export default function KnowledgeBase() {
 
         setAdding(true);
         try {
+            const openai = getOpenAI();
             // Generate embedding client-side
             const embeddingResponse = await openai.embeddings.create({
                 model: 'text-embedding-3-small',

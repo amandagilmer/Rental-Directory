@@ -14,10 +14,16 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDraggable } from '@/hooks/useDraggable';
 
-const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true
-});
+const getOpenAI = () => {
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OpenAI API key is missing. Please add VITE_OPENAI_API_KEY to your environment variables.');
+  }
+  return new OpenAI({
+    apiKey,
+    dangerouslyAllowBrowser: true
+  });
+};
 
 
 interface Message {
@@ -177,6 +183,7 @@ export function SupportChatWidget() {
     setIsSubmitting(true);
 
     try {
+      const openai = getOpenAI();
       // 1. Generate local embedding
       const embeddingResponse = await openai.embeddings.create({
         model: 'text-embedding-3-small',
@@ -208,6 +215,7 @@ Context:
 ${contextText}
 `;
 
+      const openai = getOpenAI();
       // 4. Generate Answer using Chat Completion
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
