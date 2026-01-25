@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,6 +11,9 @@ import ReviewsListTab from '@/components/dashboard/reviews/ReviewsListTab';
 import ReviewsWidgetsTab from '@/components/dashboard/reviews/ReviewsWidgetsTab';
 import ReviewsRequestsTab from '@/components/dashboard/reviews/ReviewsRequestsTab';
 import ReviewSettingsTab from '@/components/dashboard/reviews/ReviewSettingsTab';
+import { useToast } from '@/hooks/use-toast';
+import { RefreshCw, Info, Globe } from 'lucide-react';
+import GoogleBusinessConnect from '@/components/dashboard/reviews/GoogleBusinessConnect';
 interface Review {
   id: string;
   author_name: string;
@@ -23,9 +28,16 @@ interface Review {
 
 export default function Reviews() {
   const { user } = useAuth();
-  const [listing, setListing] = useState<{ id: string; business_name: string } | null>(null);
+  const { toast } = useToast();
+  const [listing, setListing] = useState<{
+    id: string;
+    business_name: string;
+    place_id?: string | null;
+    gmb_import_completed?: boolean;
+  } | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -38,7 +50,7 @@ export default function Reviews() {
       // First get the user's listing
       const { data: listingData, error: listingError } = await supabase
         .from('business_listings')
-        .select('id, business_name')
+        .select('id, business_name, place_id, gmb_import_completed')
         .eq('user_id', user?.id)
         .single();
 
@@ -63,6 +75,35 @@ export default function Reviews() {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleImport = async () => {
+    if (!listing?.id || !listing?.place_id) return;
+
+    setImporting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('import-gmb-reviews', {
+        body: { business_id: listing.id, place_id: listing.place_id },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Import Successful',
+        description: data.message || 'Your Google reviews have been imported.',
+      });
+
+      fetchListingAndReviews();
+    } catch (error: any) {
+      console.error('Error importing reviews:', error);
+      toast({
+        title: 'Import Failed',
+        description: error.message || 'Failed to import reviews. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -101,10 +142,15 @@ export default function Reviews() {
         </p>
       </div>
 
+
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="reviews">Reviews</TabsTrigger>
+          <TabsTrigger value="sync" className="flex items-center gap-1.5">
+            <Globe className="h-3.5 w-3.5" />
+            Google Sync
+          </TabsTrigger>
           <TabsTrigger value="widgets">Widgets</TabsTrigger>
           <TabsTrigger value="requests">Requests</TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-1.5">
@@ -117,9 +163,17 @@ export default function Reviews() {
           <ReviewsOverviewTab reviews={reviews} />
         </TabsContent>
 
+        <TabsContent value="sync">
+          <GoogleBusinessConnect
+            listingId={listing.id}
+            businessName={listing.business_name}
+            onSuccess={fetchListingAndReviews}
+          />
+        </TabsContent>
+
         <TabsContent value="reviews">
-          <ReviewsListTab 
-            reviews={reviews} 
+          <ReviewsListTab
+            reviews={reviews}
             listingId={listing.id}
             businessName={listing.business_name}
             isPro={true}

@@ -27,6 +27,7 @@ export interface BusinessListing {
   image: string;
   latitude?: number;
   longitude?: number;
+  show_exact_location?: boolean;
   email?: string;
   website?: string;
   badges: string[];
@@ -48,6 +49,7 @@ interface RawListing {
   website?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  show_exact_location: boolean | null;
   slug: string | null;
 }
 
@@ -72,7 +74,7 @@ export function useBusinessListings() {
         // Fetch published business listings
         const { data: listings, error: listingsError } = await supabase
           .from('business_listings')
-          .select('id, business_name, slug, category, additional_categories, description, address, phone, image_url, email, website, latitude, longitude')
+          .select('id, business_name, slug, category, additional_categories, description, address, phone, image_url, email, website, latitude, longitude, show_exact_location')
           .eq('is_published', true)
           .order('created_at', { ascending: false });
 
@@ -192,6 +194,7 @@ export function useBusinessListings() {
             website: listing.website || undefined,
             latitude: listing.latitude ?? undefined,
             longitude: listing.longitude ?? undefined,
+            show_exact_location: listing.show_exact_location ?? true,
             badges: badgesMap.get(listing.id) || [],
             services: listingServices,
             lowestDailyRate,

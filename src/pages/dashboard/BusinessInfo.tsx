@@ -92,7 +92,8 @@ export default function BusinessInfo() {
     is_published: false,
     show_exact_location: true,
     latitude: 31.9686, // Default Texas
-    longitude: -99.9018
+    longitude: -99.9018,
+    place_id: ''
   });
 
   const fetchPhotos = useCallback(async (listingId: string) => {
@@ -134,7 +135,8 @@ export default function BusinessInfo() {
           is_published: listingData.is_published || false,
           show_exact_location: listingData.show_exact_location ?? true,
           latitude: listingData.latitude || 31.9686,
-          longitude: listingData.longitude || -99.9018
+          longitude: listingData.longitude || -99.9018,
+          place_id: listingData.place_id || ''
         });
         fetchPhotos(listingData.id);
       } else {
@@ -165,7 +167,8 @@ export default function BusinessInfo() {
             is_published: b.is_published || false,
             show_exact_location: b.show_exact_location ?? true,
             latitude: b.latitude || 31.9686,
-            longitude: b.longitude || -99.9018
+            longitude: b.longitude || -99.9018,
+            place_id: b.place_id || ''
           });
           fetchPhotos(b.id);
         }
@@ -340,13 +343,14 @@ export default function BusinessInfo() {
                     initialLat={formData.latitude}
                     initialLng={formData.longitude}
                     initialExact={formData.show_exact_location}
-                    onLocationChange={(lat, lng, address, exact) => {
+                    onLocationChange={(lat, lng, address, exact, placeId) => {
                       setFormData(prev => ({
                         ...prev,
                         latitude: lat,
                         longitude: lng,
                         address: address, // In a real app we might not want to overwrite address unless confirmed
-                        show_exact_location: exact
+                        show_exact_location: exact,
+                        place_id: placeId || prev.place_id
                       }));
                     }}
                   />

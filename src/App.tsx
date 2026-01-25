@@ -12,6 +12,7 @@ import UnitDetail from "./pages/UnitDetail";
 import BadgeExplainer from "./pages/BadgeExplainer";
 import Pricing from "./pages/Pricing";
 import About from "./pages/About";
+import LocationSearch from "./pages/LocationSearch";
 import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
 import Privacy from "./pages/Privacy";
@@ -76,6 +77,8 @@ const App = () => (
             <Route path="/badges" element={<BadgeExplainer />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/about" element={<About />} />
+            <Route path="/locations" element={<LocationSearch />} />
+            <Route path="/locations/:state" element={<LocationSearch />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/privacy" element={<Privacy />} />

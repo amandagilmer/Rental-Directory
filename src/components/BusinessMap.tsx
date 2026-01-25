@@ -53,7 +53,41 @@ function Circle(props: google.maps.CircleOptions & { onClick?: () => void }) {
 
 export const BusinessMap = ({ businesses, userLocation, className = "", onBoundsChanged }: BusinessMapProps) => {
   const [selectedBusiness, setSelectedBusiness] = useState<MapBusiness | null>(null);
+  const map = useMap();
   const defaultCenter = { lat: 31.9686, lng: -99.9018 }; // Center of Texas
+
+  // Auto-center map when businesses change
+  useEffect(() => {
+    if (!map || businesses.length === 0) return;
+
+    const bounds = new google.maps.LatLngBounds();
+    let hasValidPoints = false;
+
+    businesses.forEach(b => {
+      if (b.latitude && b.longitude) {
+        bounds.extend({ lat: b.latitude, lng: b.longitude });
+        hasValidPoints = true;
+      }
+    });
+
+    if (hasValidPoints) {
+      // Don't auto-fit if user interaction just happened (optional)
+      map.fitBounds(bounds, {
+        top: 50,
+        right: 50,
+        bottom: 50,
+        left: 50
+      });
+
+      // If only one business, cap the zoom
+      if (businesses.length === 1) {
+        const listener = map.addListener('idle', () => {
+          if (map.getZoom()! > 12) map.setZoom(12);
+          google.maps.event.removeListener(listener);
+        });
+      }
+    }
+  }, [map, businesses]);
 
   const handleCameraChange = (ev: MapCameraChangedEvent) => {
     if (onBoundsChanged) {

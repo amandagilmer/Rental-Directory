@@ -2,9 +2,11 @@ import { useState, useMemo } from "react";
 import { APIProvider } from "@vis.gl/react-google-maps";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
+import { WhyChoose } from "@/components/WhyChoose";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { BusinessCard } from "@/components/BusinessCard";
 import { BusinessMap } from "@/components/BusinessMap";
+import { StateBusinesses } from "@/components/StateBusinesses";
 import { Footer } from "@/components/Footer";
 import { AdvancedFilters, FilterState, defaultFilters } from "@/components/AdvancedFilters";
 import { useBusinessListings } from "@/hooks/useBusinessListings";
@@ -171,6 +173,8 @@ const Index = () => {
           <CategoryFilter activeCategory={activeCategory} onCategoryChange={setActiveCategory} />
         </div>
 
+        <WhyChoose />
+
         <main className="container mx-auto px-4 py-8">
           {loading ? (
             <div className="flex items-center justify-center py-20">
@@ -238,6 +242,7 @@ const Index = () => {
             </>
           )}
         </main>
+        <StateBusinesses businesses={businesses} />
         <Footer />
         <TrailerChatbot />
       </div>

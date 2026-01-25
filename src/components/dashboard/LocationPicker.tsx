@@ -12,7 +12,7 @@ interface LocationPickerProps {
     initialLng?: number;
     initialAddress?: string;
     initialExact?: boolean;
-    onLocationChange: (lat: number, lng: number, address: string, exact: boolean) => void;
+    onLocationChange: (lat: number, lng: number, address: string, exact: boolean, placeId?: string) => void;
     apiKey: string;
 }
 
@@ -59,7 +59,7 @@ interface InnerProps {
     setExact: (e: boolean) => void;
     searching: boolean;
     setSearching: (s: boolean) => void;
-    onLocationChange: (lat: number, lng: number, address: string, exact: boolean) => void;
+    onLocationChange: (lat: number, lng: number, address: string, exact: boolean, placeId?: string) => void;
 }
 
 const LocationPickerInner = ({
@@ -101,10 +101,11 @@ const LocationPickerInner = ({
             setSearching(false);
             if (status === 'OK' && results?.[0]) {
                 const location = results[0].geometry.location;
+                const placeId = results[0].place_id;
                 const newPos = { lat: location.lat(), lng: location.lng() };
                 setPosition(newPos);
                 map.panTo(newPos);
-                onLocationChange(newPos.lat, newPos.lng, address, exact);
+                onLocationChange(newPos.lat, newPos.lng, address, exact, placeId);
                 toast.success("Location updated successfully");
             } else {
                 const errorMsg = status === 'REQUEST_DENIED'
