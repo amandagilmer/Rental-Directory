@@ -404,7 +404,7 @@ export default function AdminUsers() {
 
       {/* User Management Dialog */}
       <Dialog open={showManageDialog} onOpenChange={setShowManageDialog}>
-        <DialogContent className="sm:max-w-[425px] bg-[#0A0F1C] border-white/10 text-white">
+        <DialogContent className="sm:max-w-[425px] bg-[#0A0F1C] border-white/10 text-white dark">
           <DialogHeader>
             <DialogTitle className="text-white font-display uppercase italic tracking-tight">Manage User Account</DialogTitle>
             <DialogDescription className="text-gray-400">
@@ -474,7 +474,7 @@ export default function AdminUsers() {
             <div className="space-y-2 pt-2">
               <Button
                 variant="outline"
-                className="w-full border-blue-600/30 text-blue-500 hover:bg-blue-600/10"
+                className="w-full border-blue-600/50 text-blue-400 hover:bg-blue-600/20"
                 asChild
               >
                 <Link to="/admin/badges">

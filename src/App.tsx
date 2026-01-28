@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { SupportChatWidget } from "@/components/SupportChatWidget";
+import ScrollToTop from "@/components/ScrollToTop";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import BusinessDetail from "./pages/BusinessDetail";
@@ -20,15 +21,19 @@ import Terms from "./pages/Terms";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import Dashboard from "./pages/Dashboard";
-import CommandCenterOverview from "./pages/dashboard/CommandCenterOverview";
+import CommandCenterOverview from "./pages/dashboard/OperatorDashboard";
 import MyListing from "./pages/dashboard/MyListing";
 import BusinessInfo from "./pages/dashboard/BusinessInfo";
+import ThePledge from "./pages/ThePledge";
+import Insurance from "./pages/Insurance";
+import JoinBrotherhood from "./pages/JoinBrotherhood";
 import Analytics from "./pages/dashboard/Analytics";
 import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
 import GmbSettings from "./pages/dashboard/GmbSettings";
 import Settings from "./pages/dashboard/Settings";
 import LeadInbox from "./pages/dashboard/LeadInbox";
 import Reviews from "./pages/dashboard/Reviews";
+import RenterProfile from "./pages/dashboard/RenterProfile";
 import TriggerLinks from "./pages/dashboard/TriggerLinks";
 import Auth from "./pages/Auth";
 import SubmitReview from "./pages/SubmitReview";
@@ -68,6 +73,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <ScrollToTop />
         <AuthProvider>
           <SupportChatWidget />
           <Routes>
@@ -87,6 +93,9 @@ const App = () => (
             <Route path="/blog/:slug" element={<BlogPost />} />
             <Route path="/review/:token" element={<SubmitReview />} />
             <Route path="/widget/reviews/:businessId" element={<ReviewWidget />} />
+            <Route path="/the-pledge" element={<ThePledge />} />
+            <Route path="/insurance" element={<Insurance />} />
+            <Route path="/join" element={<JoinBrotherhood />} />
             <Route path="/review-landing/:businessId" element={<ReviewLanding />} />
             <Route path="/go/:code" element={<TriggerRedirect />} />
             <Route path="/claim/:slug" element={<ClaimBusiness />} />
@@ -101,6 +110,7 @@ const App = () => (
               <Route path="analytics" element={<Analytics />} />
               <Route path="gmb" element={<GmbSettings />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="renter-profile" element={<RenterProfile />} />
             </Route>
             <Route path="/admin" element={<AdminDashboard />}>
               <Route index element={<AdminHQOverview />} />

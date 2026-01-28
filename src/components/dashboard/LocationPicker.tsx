@@ -12,7 +12,7 @@ interface LocationPickerProps {
     initialLng?: number;
     initialAddress?: string;
     initialExact?: boolean;
-    onLocationChange: (lat: number, lng: number, address: string, exact: boolean, placeId?: string) => void;
+    onLocationChange: (lat: number, lng: number, address: string, exact: boolean, placeId?: string, city?: string, state?: string, zip?: string) => void;
     apiKey: string;
 }
 
@@ -59,7 +59,7 @@ interface InnerProps {
     setExact: (e: boolean) => void;
     searching: boolean;
     setSearching: (s: boolean) => void;
-    onLocationChange: (lat: number, lng: number, address: string, exact: boolean, placeId?: string) => void;
+    onLocationChange: (lat: number, lng: number, address: string, exact: boolean, placeId?: string, city?: string, state?: string, zip?: string) => void;
 }
 
 const LocationPickerInner = ({
@@ -83,16 +83,47 @@ const LocationPickerInner = ({
 
     // Handle marker drag end
     const onDragEnd = useCallback((e: google.maps.MapMouseEvent) => {
-        if (e.latLng) {
+        if (e.latLng && geocoder) {
             const newLat = e.latLng.lat();
             const newLng = e.latLng.lng();
             setPosition({ lat: newLat, lng: newLng });
-            onLocationChange(newLat, newLng, address, exact);
-        }
-    }, [address, exact, onLocationChange]);
 
-    // Handle address search (lightweight simulation of autocomplete for now)
-    // In a full implementation, we'd use the Places Autocomplete Service here
+            // Reverse geocode to get address components
+            geocoder.geocode({ location: { lat: newLat, lng: newLng } }, (results, status) => {
+                if (status === 'OK' && results?.[0]) {
+                    const result = results[0];
+                    const { city, state, zip } = extractAddressComponents(result);
+                    const formattedAddress = result.formatted_address;
+                    setAddress(formattedAddress);
+                    onLocationChange(newLat, newLng, formattedAddress, exact, result.place_id, city, state, zip);
+                } else {
+                    onLocationChange(newLat, newLng, address, exact);
+                }
+            });
+        }
+    }, [geocoder, address, exact, onLocationChange]);
+
+    // Extract address components from Google Maps Geocoder result
+    const extractAddressComponents = (results: google.maps.GeocoderResult) => {
+        let city = '';
+        let state = '';
+        let zip = '';
+
+        results.address_components.forEach(component => {
+            const types = component.types;
+            if (types.includes('locality')) {
+                city = component.long_name;
+            } else if (types.includes('administrative_area_level_1')) {
+                state = component.short_name; // Use abbreviation for uniformity
+            } else if (types.includes('postal_code')) {
+                zip = component.long_name;
+            }
+        });
+
+        return { city, state, zip };
+    };
+
+    // Handle address search
     const handleSearch = async () => {
         if (!address || !geocoder || !map) return;
         setSearching(true);
@@ -100,12 +131,15 @@ const LocationPickerInner = ({
         geocoder.geocode({ address }, (results, status) => {
             setSearching(false);
             if (status === 'OK' && results?.[0]) {
-                const location = results[0].geometry.location;
-                const placeId = results[0].place_id;
+                const result = results[0];
+                const location = result.geometry.location;
+                const placeId = result.place_id;
+                const { city, state, zip } = extractAddressComponents(result);
+
                 const newPos = { lat: location.lat(), lng: location.lng() };
                 setPosition(newPos);
                 map.panTo(newPos);
-                onLocationChange(newPos.lat, newPos.lng, address, exact, placeId);
+                onLocationChange(newPos.lat, newPos.lng, address, exact, placeId, city, state, zip);
                 toast.success("Location updated successfully");
             } else {
                 const errorMsg = status === 'REQUEST_DENIED'

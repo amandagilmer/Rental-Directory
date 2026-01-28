@@ -12,7 +12,33 @@ serve(async (req) => {
     }
 
     try {
-        const { business_id, place_id } = await req.json();
+        const { business_id, place_id, access_token, mode, query: searchQuery } = await req.json();
+
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+        const googleApiKey = Deno.env.get('GOOGLE_PLACES_API_KEY');
+
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+        // NEW: Search Mode to bypass frontend API restrictions
+        if (mode === 'search') {
+            if (!searchQuery) throw new Error('Query is required for search mode');
+            if (!googleApiKey) throw new Error('GOOGLE_PLACES_API_KEY not configured in Supabase');
+
+            console.log(`Searching for business: ${searchQuery}`);
+            const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(searchQuery)}&key=${googleApiKey}`;
+            const response = await fetch(searchUrl);
+            const data = await response.json();
+
+            if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
+                throw new Error(`Google API error: ${data.status} - ${data.error_message || ''}`);
+            }
+
+            return new Response(
+                JSON.stringify({ results: data.results || [] }),
+                { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+        }
 
         if (!business_id || !place_id) {
             return new Response(
@@ -21,58 +47,53 @@ serve(async (req) => {
             );
         }
 
-        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-        const googleApiKey = Deno.env.get('GOOGLE_PLACES_API_KEY');
+        let googleReviews = [];
 
-        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        if (access_token && place_id.startsWith('accounts/')) {
+            // HIGH-STAKES: Use GMB API for full review scrape
+            console.log(`Using GMB API for deep scrape: ${place_id}`);
+            const gmbUrl = `https://mybusiness.googleapis.com/v4/${place_id}/reviews`;
+            const gmbResponse = await fetch(gmbUrl, {
+                headers: { 'Authorization': `Bearer ${access_token}` }
+            });
+            const gmbData = await gmbResponse.json();
 
-        // Check if already imported
-        const { data: business, error: bizError } = await supabase
-            .from('business_listings')
-            .select('gmb_import_completed')
-            .eq('id', business_id)
-            .single();
+            if (gmbData.reviews) {
+                googleReviews = gmbData.reviews.map((r: any) => ({
+                    author_name: r.commenter?.displayName || 'Anonymous',
+                    rating: r.starRating === 'FIVE' ? 5 : r.starRating === 'FOUR' ? 4 : r.starRating === 'THREE' ? 3 : r.starRating === 'TWO' ? 2 : 1,
+                    text: r.comment || '',
+                    time: Math.floor(new Date(r.createTime).getTime() / 1000)
+                }));
+            }
+        } else if (googleApiKey) {
+            // Fallback to Places API (5 reviews limit)
+            console.log(`Using Places API fallback for place_id: ${place_id}`);
+            const googleUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place_id}&fields=reviews&key=${googleApiKey}`;
+            const googleResponse = await fetch(googleUrl);
+            const googleData = await googleResponse.json();
 
-        if (bizError) throw bizError;
-        if (business.gmb_import_completed) {
-            return new Response(
-                JSON.stringify({ message: 'GMB reviews already imported for this business' }),
-                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            );
+            if (googleData.status === 'OK') {
+                googleReviews = googleData.result?.reviews || [];
+            } else {
+                console.error(`Google Places API error: ${googleData.status}`);
+            }
         }
 
-        if (!googleApiKey) {
-            throw new Error('GOOGLE_PLACES_API_KEY not configured');
-        }
-
-        console.log(`Importing GMB reviews for place_id: ${place_id}`);
-        const googleUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place_id}&fields=reviews&key=${googleApiKey}`;
-
-        const googleResponse = await fetch(googleUrl);
-        const googleData = await googleResponse.json();
-
-        if (googleData.status !== 'OK') {
-            throw new Error(`Google API error: ${googleData.status}`);
-        }
-
-        const googleReviews = googleData.result?.reviews || [];
         console.log(`Found ${googleReviews.length} reviews to import`);
 
         const reviewsToInsert = googleReviews.map((review: any) => ({
             business_id,
             author_name: review.author_name || 'Anonymous',
-            author_email: null, // We don't get email from Google
+            author_email: null,
             rating: review.rating || 5,
-            review_text: review.text || '',
+            review_text: review.text || review.comment || '',
             review_source: 'google',
-            external_id: `gmb_${review.time}_${review.author_name.replace(/\s+/g, '_').toLowerCase()}`,
+            external_id: `gmb_${review.time}_${(review.author_name || 'anon').replace(/\s+/g, '_').toLowerCase()}`,
             created_at: review.time ? new Date(review.time * 1000).toISOString() : new Date().toISOString(),
             external_metadata: {
                 original_review: review,
-                author_url: review.author_url,
-                profile_photo_url: review.profile_photo_url,
-                relative_time_description: review.relative_time_description
+                source_api: access_token ? 'gmb_v4' : 'places_api'
             }
         }));
 

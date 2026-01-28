@@ -183,12 +183,29 @@ export const LeadCaptureModal = ({ open, onOpenChange, businessName, businessId,
             <p className="text-muted-foreground mb-6">
               Thank you for your interest. {businessName} will contact you shortly.
             </p>
-            <Button
-              onClick={handleClose}
-              className="bg-primary text-white hover:bg-primary/90 font-bold px-12 h-12 text-lg shadow-[0_0_20px_rgba(239,68,68,0.3)] transition-all hover:scale-105"
-            >
-              Close
-            </Button>
+            <div className="flex flex-col w-full gap-3 px-4">
+              <Button
+                onClick={handleClose}
+                className="w-full bg-primary text-white hover:bg-primary/90 font-bold h-12 text-lg shadow-[0_0_20px_rgba(239,68,68,0.3)] transition-all hover:scale-105"
+              >
+                Close
+              </Button>
+              <div className="mt-4 p-4 border border-primary/20 bg-primary/5 rounded-xl text-center">
+                <p className="text-sm font-semibold text-foreground mb-2">Want to track your request?</p>
+                <p className="text-xs text-muted-foreground mb-4">Create a Renter Profile to message the vendor directly and manage all your fleet inquiries in one place.</p>
+                <Button
+                  variant="outline"
+                  className="w-full border-primary text-primary hover:bg-primary hover:text-white font-bold"
+                  onClick={() => {
+                    handleClose();
+                    // Redirect to auth with renter type pre-selected
+                    window.location.href = `/auth?type=renter&email=${encodeURIComponent(formData.email)}&name=${encodeURIComponent(formData.name)}`;
+                  }}
+                >
+                  Create Renter Profile
+                </Button>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

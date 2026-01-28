@@ -31,6 +31,7 @@ import BadgeSubmissionModal from '@/components/dashboard/BadgeSubmissionModal';
 import { LocationPicker } from '@/components/dashboard/LocationPicker';
 import { AIDescriptionEnhancer } from '@/components/AIDescriptionEnhancer';
 import { useCategories } from '@/hooks/useCategories';
+import { STATE_NAME_TO_ABBR } from '@/utils/stateMapping';
 
 interface Photo {
   id: string;
@@ -48,6 +49,9 @@ const listingSchema = z.object({
   description: z.string().max(500, 'Description must be less than 500 characters').optional(),
   category: z.string().min(1, 'Please select a category'),
   address: z.string().min(5, 'Address must be at least 5 characters').optional(),
+  city: z.string().min(1, 'Please enter a city').optional(),
+  state: z.string().length(2, 'Please enter a 2-letter state code').optional(),
+  zip_code: z.string().min(5, 'Please enter a valid zip code').optional(),
   phone: z.string().min(10, 'Please enter a valid phone number').optional(),
   email: z.string().email('Invalid email address').optional().or(z.literal('')),
   website: z.string().url('Invalid website URL').optional().or(z.literal('')),
@@ -85,6 +89,9 @@ export default function BusinessInfo() {
     category: '',
     additional_categories: [] as string[],
     address: '',
+    city: '',
+    state: '',
+    zip_code: '',
     phone: '',
     email: '',
     website: '',
@@ -128,6 +135,9 @@ export default function BusinessInfo() {
           category: listingData.category || '',
           additional_categories: listingData.additional_categories || [],
           address: listingData.address || '',
+          city: listingData.city || '',
+          state: listingData.state || '',
+          zip_code: listingData.zip_code || '',
           phone: listingData.phone || '',
           email: listingData.email || '',
           website: listingData.website || '',
@@ -343,17 +353,67 @@ export default function BusinessInfo() {
                     initialLat={formData.latitude}
                     initialLng={formData.longitude}
                     initialExact={formData.show_exact_location}
-                    onLocationChange={(lat, lng, address, exact, placeId) => {
+                    onLocationChange={(lat, lng, address, exact, placeId, city, state, zip) => {
                       setFormData(prev => ({
                         ...prev,
                         latitude: lat,
                         longitude: lng,
-                        address: address, // In a real app we might not want to overwrite address unless confirmed
+                        address: address,
                         show_exact_location: exact,
-                        place_id: placeId || prev.place_id
+                        place_id: placeId || prev.place_id,
+                        city: city || prev.city,
+                        state: state || prev.state,
+                        zip_code: zip || prev.zip_code
                       }));
                     }}
                   />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      City
+                    </Label>
+                    <Input
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      className="bg-muted/30 border-0 h-10"
+                      placeholder="Houston"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      State
+                    </Label>
+                    <Select
+                      value={formData.state}
+                      onValueChange={(value) => setFormData({ ...formData, state: value })}
+                    >
+                      <SelectTrigger className="bg-muted/30 border-0 h-10">
+                        <SelectValue placeholder="State" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(STATE_NAME_TO_ABBR).map(([name, abbr]) => (
+                          <SelectItem key={abbr} value={abbr}>
+                            {name.charAt(0).toUpperCase() + name.slice(1).replace('-', ' ')} ({abbr})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Zip Code
+                    </Label>
+                    <Input
+                      value={formData.zip_code}
+                      onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
+                      className="bg-muted/30 border-0 h-10"
+                      placeholder="77001"
+                    />
+                  </div>
                 </div>
 
                 {/* Categories Section */}

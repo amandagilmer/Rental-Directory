@@ -70,6 +70,9 @@ interface Lead {
   last_action_at: string;
   created_at: string;
   message: string | null;
+  date_needed: string | null;
+  service_type: string | null;
+  location: string | null;
   business_listings?: {
     business_name: string;
     city: string | null;
@@ -509,10 +512,26 @@ export default function LeadInbox() {
                 </div>
 
                 <div>
+                  <label className="text-xs text-muted-foreground">Location</label>
+                  <p className="font-medium">{selectedLead.location || 'N/A'}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-muted-foreground">Date Needed</label>
+                    <p className="font-medium">
+                      {selectedLead.date_needed ? format(new Date(selectedLead.date_needed), 'PPP p') : 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Service Type</label>
+                    <p className="font-medium">{selectedLead.service_type || 'N/A'}</p>
+                  </div>
+                </div>
+
+                <div>
                   <label className="text-xs text-muted-foreground">Message</label>
                   <p className="text-sm mt-1 bg-background p-3 rounded border whitespace-pre-wrap">
-                    {/* Fetch 'message' from DB (not in interface yet? Wait, let's add it) */}
-                    {/* Actually I didn't include 'message' in the Lead interface above, I should add it */}
                     {selectedLead.message || 'No message provided'}
                   </p>
                 </div>

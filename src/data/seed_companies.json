@@ -6,7 +6,9 @@
         "email": "texasrentalsupply@gmail.com",
         "website": "https://texasrentalsupply.com",
         "city": "Austin",
-        "state": "TX"
+        "state": "TX",
+        "latitude": 30.2672,
+        "longitude": -97.7431
     },
     {
         "name": "Diamond D Rentals LLC",
@@ -15,7 +17,9 @@
         "email": "diamonddrentals@gmail.com",
         "website": "https://diamonddrentals.com",
         "city": "Austin",
-        "state": "TX"
+        "state": "TX",
+        "latitude": 30.2741,
+        "longitude": -97.7404
     },
     {
         "name": "Austin Rent Way",
@@ -24,7 +28,9 @@
         "email": "service@austinrentway.com",
         "website": "https://austinrentway.com",
         "city": "Austin",
-        "state": "TX"
+        "state": "TX",
+        "latitude": 30.2312,
+        "longitude": -97.7594
     },
     {
         "name": "Signature Trailer Rentals LLC.",
@@ -33,7 +39,9 @@
         "email": "landon@signaturetrailerrentals.com",
         "website": "https://signaturetrailerrentals.com",
         "city": "Nashville",
-        "state": "TN"
+        "state": "TN",
+        "latitude": 36.1627,
+        "longitude": -86.7816
     },
     {
         "name": "Turnkey Trailer Rentals",
@@ -42,6 +50,8 @@
         "email": "turnkeyrentals@proton.me",
         "website": "https://turnkeytrailerrentals.com",
         "city": "Nashville",
-        "state": "TN"
+        "state": "TN",
+        "latitude": 36.1744,
+        "longitude": -86.7679
     }
 ]

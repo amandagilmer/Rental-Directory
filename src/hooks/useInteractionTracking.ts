@@ -1,16 +1,17 @@
 import { supabase } from "@/integrations/supabase/client";
 
-type InteractionType = 
-  | 'profile_view' 
-  | 'click_to_call' 
+type InteractionType =
+  | 'profile_view'
+  | 'click_to_call'
   | 'click_to_email'
   | 'click_website'
   | 'click_booking'
   | 'click_social'
-  | 'button_click' 
-  | 'form_submit' 
-  | 'unit_view' 
-  | 'unit_inquiry';
+  | 'button_click'
+  | 'form_submit'
+  | 'unit_view'
+  | 'unit_inquiry'
+  | 'search_impression';
 
 interface TrackInteractionParams {
   hostId: string;
@@ -86,19 +87,19 @@ export const useInteractionTracking = (hostId: string | null) => {
 
   const trackButtonClick = (buttonName?: string) => {
     if (hostId) {
-      trackInteraction({ 
-        hostId, 
-        interactionType: 'button_click', 
-        source: buttonName || 'profile' 
+      trackInteraction({
+        hostId,
+        interactionType: 'button_click',
+        source: buttonName || 'profile'
       });
     }
   };
 
   const trackFormSubmit = (formName?: string, serviceId?: string) => {
     if (hostId) {
-      trackInteraction({ 
-        hostId, 
-        interactionType: 'form_submit', 
+      trackInteraction({
+        hostId,
+        interactionType: 'form_submit',
         source: formName || 'lead_form',
         serviceId
       });
@@ -107,9 +108,9 @@ export const useInteractionTracking = (hostId: string | null) => {
 
   const trackUnitView = (serviceId: string) => {
     if (hostId) {
-      trackInteraction({ 
-        hostId, 
-        interactionType: 'unit_view', 
+      trackInteraction({
+        hostId,
+        interactionType: 'unit_view',
         source: 'profile',
         serviceId
       });
@@ -118,9 +119,9 @@ export const useInteractionTracking = (hostId: string | null) => {
 
   const trackUnitInquiry = (serviceId: string) => {
     if (hostId) {
-      trackInteraction({ 
-        hostId, 
-        interactionType: 'unit_inquiry', 
+      trackInteraction({
+        hostId,
+        interactionType: 'unit_inquiry',
         source: 'profile',
         serviceId
       });
@@ -137,6 +138,9 @@ export const useInteractionTracking = (hostId: string | null) => {
     trackButtonClick,
     trackFormSubmit,
     trackUnitView,
-    trackUnitInquiry
+    trackUnitInquiry,
+    trackSearchImpression: (listingId: string) => {
+      trackInteraction({ hostId: listingId, interactionType: 'search_impression', source: 'search_results' });
+    }
   };
 };

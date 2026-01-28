@@ -33,7 +33,7 @@ import {
 import { BadgeDisplay } from "@/components/BadgeDisplay";
 import { BadgeApplicationModal } from "@/components/dashboard/BadgeApplicationModal";
 
-export default function CommandCenterOverview() {
+export default function OperatorDashboard() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -147,7 +147,15 @@ export default function CommandCenterOverview() {
   };
 
   const getUserName = () => {
-    // Try to get first name from metadata
+    // 1. Try to get owner name from the first business listing
+    if (listings && listings.length > 0) {
+      const firstListing = listings[0];
+      if (firstListing.owner_name) {
+        return firstListing.owner_name.split(' ')[0];
+      }
+    }
+
+    // 2. Fallback to auth metadata
     const meta = user?.user_metadata;
     const firstName = meta?.first_name ||
       (meta?.full_name ? meta.full_name.split(' ')[0] : null) ||
@@ -155,7 +163,9 @@ export default function CommandCenterOverview() {
       meta?.display_name;
 
     if (firstName) return firstName;
-    return "Boss";
+
+    // 3. Final fallback
+    return "Fellow Patriot";
   };
 
   return (
@@ -164,7 +174,7 @@ export default function CommandCenterOverview() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-display font-black text-foreground uppercase tracking-tight">
-            Command Center
+            Operator Dashboard
           </h1>
           <p className="text-muted-foreground mt-1 text-lg">
             Welcome back, <span className="font-semibold text-primary">{getUserName()}</span>.
@@ -253,34 +263,43 @@ export default function CommandCenterOverview() {
       </div>
 
       {/* Trust Profile Section */}
-      {listings.length > 0 && (
-        <Card className="p-8 border-none shadow-sm bg-gradient-to-br from-[#0A0F1C] to-red-900/10 backdrop-blur overflow-hidden relative">
-          <div className="absolute top-0 right-0 p-8 opacity-10">
-            <Shield className="h-32 w-32 text-white" />
-          </div>
-          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="space-y-3 text-center md:text-left">
-              <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter font-display">
-                Your <span className="text-red-500">Trust Profile</span>
-              </h2>
-              <p className="text-gray-400 max-w-md">
-                These badges represent your verified status on the Patriot Hauls network. Higher trust levels lead to more inquiries and elite placement.
-              </p>
-              <div className="flex flex-wrap justify-center md:justify-start gap-4">
-                <Button variant="outline" size="sm" className="border-white/10 text-white hover:bg-white/5" asChild>
-                  <Link to="/badges">View Standards</Link>
+      <Card className="p-8 border-none shadow-sm bg-gradient-to-br from-[#0A0F1C] to-red-900/10 backdrop-blur overflow-hidden relative dark">
+        <div className="absolute top-0 right-0 p-8 opacity-10">
+          <Shield className="h-32 w-32 text-white" />
+        </div>
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="space-y-3 text-center md:text-left">
+            <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter font-display">
+              Your <span className="text-red-500">Trust Profile</span>
+            </h2>
+            <p className="text-gray-400 max-w-md">
+              These badges represent your verified status on the Patriot Hauls network. {listings.length > 0 ? "Higher trust levels lead to more inquiries and elite placement." : "List your first asset to start earning badges and building trust."}
+            </p>
+            <div className="flex flex-wrap justify-center md:justify-start gap-4">
+              <Button variant="outline" size="sm" className="border-white/10 text-white hover:bg-white/5" asChild>
+                <Link to="/badges">View Standards</Link>
+              </Button>
+              {listings.length > 0 ? (
+                <BadgeApplicationModal listingId={listings[0].id} badges={badgeDefs} />
+              ) : (
+                <Button variant="default" size="sm" className="bg-red-600 hover:bg-red-700" asChild>
+                  <Link to="/dashboard/listing">List Your First Asset</Link>
                 </Button>
-                {listings.length > 0 && (
-                  <BadgeApplicationModal listingId={listings[0].id} badges={badgeDefs} />
-                )}
-              </div>
-            </div>
-            <div className="bg-white/5 p-6 rounded-2xl border border-white/10 backdrop-blur-sm">
-              <BadgeDisplay listingId={listings[0].id} size="lg" maxDisplay={10} />
+              )}
             </div>
           </div>
-        </Card>
-      )}
+          <div className="bg-white/5 p-6 rounded-2xl border border-white/10 backdrop-blur-sm">
+            {listings.length > 0 ? (
+              <BadgeDisplay listingId={listings[0].id} size="lg" maxDisplay={10} />
+            ) : (
+              <div className="flex flex-col items-center gap-2 text-center">
+                <Shield className="h-12 w-12 text-gray-600" />
+                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">No Active Badges</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </Card>
 
       {/* Active Fleet Deployment Table */}
       <Card className="border-none shadow-sm overflow-hidden">
@@ -375,7 +394,7 @@ export default function CommandCenterOverview() {
       </Card>
 
       {/* AI Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-[#0A0F1C] border border-white/5 p-8 md:p-12 mb-8 shadow-2xl">
+      <div className="relative overflow-hidden rounded-2xl bg-[#0A0F1C] border border-white/5 p-8 md:p-12 mb-8 shadow-2xl dark">
         {/* Background Glow */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
 
@@ -434,7 +453,7 @@ export default function CommandCenterOverview() {
                 </Link>
               </Button>
               <Button variant="ghost" className="text-zinc-400 hover:text-white" onClick={() => setShowCelebrate(false)}>
-                Continue to Command Center
+                Continue to Operator Dashboard
               </Button>
             </div>
           </div>

@@ -36,10 +36,34 @@ const sidebarItems = [
 
 export function DashboardSidebar() {
     const location = useLocation();
-    const { signOut } = useAuth();
+    const { signOut, user } = useAuth();
     const { isAdmin } = useAdminCheck();
     const { plan } = useSubscription();
     const [loadingPortal, setLoadingPortal] = useState(false);
+    const [userType, setUserType] = useState<'host' | 'renter' | null>(null);
+
+    useState(() => {
+        const fetchRole = async () => {
+            if (!user) return;
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('user_type')
+                .eq('id', user.id)
+                .maybeSingle();
+            if (profile) {
+                setUserType(profile.user_type as 'host' | 'renter');
+            }
+        };
+        fetchRole();
+    });
+
+    const renterItems = [
+        { name: 'My Profile', href: '/dashboard/renter-profile', icon: LayoutDashboard, exact: true },
+        { name: 'Support', href: '/my-tickets', icon: Ticket },
+        { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+    ];
+
+    const currentItems = userType === 'renter' ? renterItems : sidebarItems;
 
     const handleOpenPortal = async () => {
         setLoadingPortal(true);
@@ -72,19 +96,23 @@ export function DashboardSidebar() {
                             PATRIOT HAULS
                         </h1>
                         <div className="h-1.5 w-full bg-red-600 mt-1 -skew-x-12 origin-left" />
-                        <span className="text-[10px] text-gray-400 uppercase tracking-[0.2em] mt-2 font-bold w-full text-center">Command Center</span>
+                        <span className="text-[10px] text-gray-400 uppercase tracking-[0.2em] mt-2 font-bold w-full text-center">
+                            {userType === 'renter' ? 'Renter Outpost' : 'Operator Dashboard'}
+                        </span>
                     </div>
                 </div>
-                <Link to="/dashboard/listing">
-                    <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-bold">
-                        <Truck className="mr-2 h-4 w-4" /> LIST NEW ASSET
-                    </Button>
-                </Link>
+                {userType === 'host' && (
+                    <Link to="/dashboard/listing">
+                        <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-bold">
+                            <Truck className="mr-2 h-4 w-4" /> LIST NEW ASSET
+                        </Button>
+                    </Link>
+                )}
             </div>
 
             {/* Navigation */}
             <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
-                {sidebarItems.map((item) => (
+                {currentItems.map((item) => (
                     <Link
                         key={item.name}
                         to={item.href}

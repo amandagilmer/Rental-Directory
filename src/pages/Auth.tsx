@@ -54,7 +54,14 @@ export default function Auth() {
 
     if (type === 'renter') {
       setUserType('renter');
+      setActiveTab('register'); // Auto-switch to register for new renters
     }
+
+    const email = searchParams.get('email');
+    const name = searchParams.get('name');
+
+    if (email) setRegisterEmail(decodeURIComponent(email));
+    if (name) setBusinessName(decodeURIComponent(name));
 
     if (mode === 'register') {
       setActiveTab('register');
@@ -240,7 +247,7 @@ export default function Auth() {
         <div className="w-full max-w-md space-y-4">
           <div className="text-center space-y-2">
             <h1 className="font-display text-3xl font-bold text-white uppercase tracking-wide italic">
-              {userType === 'host' ? 'Command Center' : 'Renter Access'}
+              {userType === 'host' ? 'Operator Dashboard' : 'Renter Access'}
             </h1>
             <p className="text-gray-400">
               {userType === 'host' ? 'Manage your fleet and operations' : 'Find and rent equipment'}
@@ -356,7 +363,9 @@ export default function Auth() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="business-name" className="text-gray-200">Business Name</Label>
+                      <Label htmlFor="business-name" className="text-gray-200">
+                        {userType === 'host' ? 'Business Name' : 'Full Name'}
+                      </Label>
                       <Input
                         id="business-name"
                         type="text"
@@ -364,6 +373,7 @@ export default function Auth() {
                         onChange={(e) => setBusinessName(e.target.value)}
                         required
                         className="bg-[#0A0F1C] border-white/10 text-white placeholder:text-gray-500"
+                        placeholder={userType === 'host' ? "Your entity name" : "Your full name"}
                       />
                     </div>
                     <div className="space-y-2">

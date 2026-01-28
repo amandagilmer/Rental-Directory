@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [businessName, setBusinessName] = useState('');
   const [hasPendingClaim, setHasPendingClaim] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [userType, setUserType] = useState<'host' | 'renter' | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -27,7 +28,23 @@ export default function Dashboard() {
     if (!user) return;
 
     const fetchData = async () => {
-      // Fetch business name
+      // Fetch profile for role check
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('user_type, business_name')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profile) {
+        setUserType(profile.user_type as 'host' | 'renter');
+
+        // Redirect renters if they hit /dashboard directly
+        if (profile.user_type === 'renter' && location.pathname === '/dashboard') {
+          navigate('/dashboard/renter-profile');
+        }
+      }
+
+      // Fetch business name (primarily for hosts)
       const { data: listingData } = await supabase
         .from('business_listings')
         .select('business_name')
@@ -54,13 +71,13 @@ export default function Dashboard() {
       }
     };
     fetchData();
-  }, [user]);
+  }, [user, navigate, location.pathname]);
 
   if (loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0A0F1C]">
         <div className="animate-pulse text-white font-display text-xl">
-          Loading Command Center...
+          Loading Operator Dashboard...
         </div>
       </div>
     );
@@ -109,8 +126,10 @@ export default function Dashboard() {
             <NotificationBell />
             <div className="flex items-center gap-3 pl-4 border-l border-border/50">
               <div className="text-right hidden lg:block">
-                <p className="text-sm font-bold text-foreground">{businessName || 'Your Outpost'}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Operator</p>
+                <p className="text-sm font-bold text-foreground">{businessName || (userType === 'renter' ? 'Renter Profile' : 'Your Outpost')}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                  {userType === 'renter' ? 'Renter' : 'Operator'}
+                </p>
               </div>
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 text-primary font-bold">
                 {user.email?.charAt(0).toUpperCase()}
@@ -126,7 +145,7 @@ export default function Dashboard() {
                   Verification In Progress
                 </AlertTitle>
                 <AlertDescription className="text-yellow-700 font-medium">
-                  Your claim for <span className="font-bold">{businessName || 'your business'}</span> is currently being reviewed by our command team. You will be approved or denied within 24 hours. You have partial access to the Command Center.
+                  Your claim for <span className="font-bold">{businessName || 'your business'}</span> is currently being reviewed by our command team. You will be approved or denied within 24 hours. You have partial access to the Operator Dashboard.
                 </AlertDescription>
               </Alert>
             </div>

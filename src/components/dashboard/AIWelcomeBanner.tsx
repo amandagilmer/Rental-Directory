@@ -27,7 +27,7 @@ export default function AIWelcomeBanner({ operatorName, stats }: AIWelcomeBanner
       setMessage(data.message);
     } catch (err) {
       console.error('Error fetching welcome message:', err);
-      setMessage('Welcome back to the Command Center. Mission awaits.');
+      setMessage('Welcome back to the Operator Dashboard. Mission awaits.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -58,7 +58,7 @@ export default function AIWelcomeBanner({ operatorName, stats }: AIWelcomeBanner
           </div>
           <div>
             <p className="text-xs uppercase tracking-widest text-white/60 font-semibold mb-1">
-              Command Center
+              Operator Dashboard
             </p>
             <p className={cn(
               "text-lg md:text-xl font-display font-bold tracking-wide transition-opacity duration-300",

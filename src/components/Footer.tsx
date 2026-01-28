@@ -61,13 +61,8 @@ export const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/about" className="text-secondary-foreground/70 hover:text-primary-foreground transition-colors text-sm">
-                  Veteran Programs
-                </Link>
-              </li>
-              <li>
-                <Link to="/about" className="text-secondary-foreground/70 hover:text-primary-foreground transition-colors text-sm">
-                  Careers
+                <Link to="/the-pledge" className="text-secondary-foreground/70 hover:text-primary-foreground transition-colors text-sm">
+                  The Pledge
                 </Link>
               </li>
               <li>
@@ -90,8 +85,13 @@ export const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/about" className="text-secondary-foreground/70 hover:text-primary-foreground transition-colors text-sm">
-                  Safety Standards
+                <Link to="/faq" className="text-secondary-foreground/70 hover:text-primary-foreground transition-colors text-sm">
+                  FAQ
+                </Link>
+              </li>
+              <li>
+                <Link to="/insurance" className="text-secondary-foreground/70 hover:text-primary-foreground transition-colors text-sm">
+                  Insurance Info
                 </Link>
               </li>
               <li>
@@ -126,6 +126,11 @@ export const Footer = () => {
               <li>
                 <Link to="/contact" className="text-secondary-foreground/70 hover:text-primary-foreground transition-colors text-sm">
                   Contact Us
+                </Link>
+              </li>
+              <li>
+                <Link to="/join" className="text-secondary-foreground/70 hover:text-primary-foreground transition-colors text-sm">
+                  Join the Brotherhood
                 </Link>
               </li>
               <li>

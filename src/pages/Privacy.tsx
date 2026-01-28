@@ -1,157 +1,73 @@
-import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { supabase } from "@/integrations/supabase/client";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Shield, Lock, Eye } from "lucide-react";
 
 export default function Privacy() {
-  const [content, setContent] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchContent = async () => {
-      const { data } = await supabase
-        .from('pages')
-        .select('content, title, updated_at')
-        .eq('slug', 'privacy')
-        .maybeSingle();
-      
-      setContent(data?.content || null);
-      setLoading(false);
-    };
-
-    fetchContent();
-  }, []);
-
-  // Simple markdown to HTML conversion for basic formatting
-  const renderContent = (markdown: string) => {
-    return markdown
-      .split('\n\n')
-      .map((block, index) => {
-        if (block.startsWith('## ')) {
-          return (
-            <h2 key={index} className="text-2xl font-bold text-foreground mt-8 mb-4">
-              {block.replace('## ', '')}
-            </h2>
-          );
-        }
-        if (block.startsWith('### ')) {
-          const text = block.replace('### ', '');
-          const idMatch = text.match(/\{#(.+?)\}/);
-          const id = idMatch ? idMatch[1] : undefined;
-          const cleanText = text.replace(/\s*\{#.+?\}/, '');
-          return (
-            <h3 key={index} id={id} className="text-xl font-semibold text-foreground mt-6 mb-3">
-              {cleanText}
-            </h3>
-          );
-        }
-        if (block.startsWith('**') && block.endsWith('**')) {
-          return (
-            <p key={index} className="font-semibold text-foreground my-2">
-              {block.replace(/\*\*/g, '')}
-            </p>
-          );
-        }
-        if (block.startsWith('---')) {
-          return <hr key={index} className="my-8 border-border" />;
-        }
-        if (block.startsWith('- ')) {
-          const items = block.split('\n').filter(line => line.startsWith('- '));
-          return (
-            <ul key={index} className="list-disc list-inside text-muted-foreground my-4 space-y-2">
-              {items.map((item, i) => (
-                <li key={i}>{item.replace('- ', '')}</li>
-              ))}
-            </ul>
-          );
-        }
-        if (block.match(/^\d+\./)) {
-          const items = block.split('\n').filter(line => line.match(/^\d+\./));
-          return (
-            <ol key={index} className="list-decimal list-inside text-muted-foreground my-4 space-y-2">
-              {items.map((item, i) => {
-                const linkMatch = item.match(/\[(.+?)\]\((.+?)\)/);
-                if (linkMatch) {
-                  const [, linkText, href] = linkMatch;
-                  const prefix = item.replace(/^\d+\.\s*/, '').replace(/\[.+?\]\(.+?\)/, '').trim();
-                  return (
-                    <li key={i}>
-                      {prefix && <span>{prefix} </span>}
-                      <a href={href} className="text-primary hover:underline">{linkText}</a>
-                    </li>
-                  );
-                }
-                return <li key={i}>{item.replace(/^\d+\.\s*/, '')}</li>;
-              })}
-            </ol>
-          );
-        }
-        // Handle inline markdown links in paragraphs
-        if (block.includes('[') && block.includes('](')) {
-          const parts = block.split(/(\[.+?\]\(.+?\))/g);
-          return (
-            <p key={index} className="text-muted-foreground my-4 leading-relaxed">
-              {parts.map((part, i) => {
-                const linkMatch = part.match(/\[(.+?)\]\((.+?)\)/);
-                if (linkMatch) {
-                  const [, text, href] = linkMatch;
-                  return <a key={i} href={href} className="text-primary hover:underline">{text}</a>;
-                }
-                return part;
-              })}
-            </p>
-          );
-        }
-        return (
-          <p key={index} className="text-muted-foreground my-4 leading-relaxed">
-            {block}
-          </p>
-        );
-      });
-  };
-
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen bg-[#0A0F1C] flex flex-col">
       <Header />
-      
+
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="py-16 md:py-20 bg-gradient-to-br from-primary/5 to-accent/30">
-          <div className="container mx-auto px-4 text-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-              Privacy Policy
+        <section className="relative py-24 overflow-hidden border-b border-white/5 text-center">
+          <div className="absolute inset-0 bg-secondary/5" />
+          <div className="container mx-auto px-4 relative z-10">
+            <h1 className="text-5xl md:text-7xl font-black font-display italic uppercase tracking-tighter text-white mb-6">
+              Privacy <span className="text-red-600">Protocol</span>
             </h1>
-            <p className="text-muted-foreground">
-              Last Updated: December 2024
+            <p className="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto leading-relaxed font-medium">
+              We protect your intel like we protect our own gear. No selling data, no corporate games.
             </p>
           </div>
         </section>
 
-        {/* Content Section */}
-        <section className="py-12 md:py-16">
-          <div className="container mx-auto px-4">
-            <div className="max-w-3xl mx-auto bg-card rounded-xl border border-border p-8 md:p-12">
-              {loading ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-8 w-1/2" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-8 w-1/3 mt-8" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                </div>
-              ) : content ? (
-                <div className="prose prose-lg max-w-none">
-                  {renderContent(content)}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground">Content not available.</p>
-                </div>
-              )}
-            </div>
+        <section className="py-20">
+          <div className="container mx-auto px-4 max-w-4xl">
+            <ScrollArea className="h-[600px] rounded-2xl border border-white/10 bg-white/5 p-8 md:p-12">
+              <div className="space-y-12 text-gray-300">
+                <section className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Eye className="h-6 w-6 text-red-500" />
+                    <h2 className="text-2xl font-bold text-white uppercase italic font-display">Data Collection</h2>
+                  </div>
+                  <p className="leading-relaxed">
+                    We collect only what is necessary to operate the platform and maintain the Brotherhood's integrity. This includes your name, contact info, business credentials, and fleet details.
+                  </p>
+                </section>
+
+                <section className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Shield className="h-6 w-6 text-red-500" />
+                    <h2 className="text-2xl font-bold text-white uppercase italic font-display">Tactical Documentation</h2>
+                  </div>
+                  <p className="leading-relaxed">
+                    For our veteran operators, we may handle sensitive documents like the DD-214 for verification. These documents are processed through secure, encrypted channels and are never stored longer than necessary for verification purposes. Your service is respected here.
+                  </p>
+                </section>
+
+                <section className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Lock className="h-6 w-6 text-red-500" />
+                    <h2 className="text-2xl font-bold text-white uppercase italic font-display">Security Standards</h2>
+                  </div>
+                  <p className="leading-relaxed">
+                    We use industry-standard encryption for all transmissions. Your financial data is handled by secure, PCI-compliant processors (Stripe). We don't see your card numbers, and we never will.
+                  </p>
+                </section>
+
+                <section className="space-y-4">
+                  <h2 className="text-2xl font-bold text-white uppercase italic font-display">Intel Sharing</h2>
+                  <p className="leading-relaxed">
+                    We only share your information with the direct parties involved in a rental transaction (Operator and Renter). We will never sell your data to third-party marketing firms. That's not how we do business.
+                  </p>
+                </section>
+
+                <p className="italic text-sm text-gray-500 pt-8 border-t border-white/5">
+                  Last Updated: January 2026. This policy is subject to change as our mission evolves. Any significant changes will be communicated directly to the Brotherhood.
+                </p>
+              </div>
+            </ScrollArea>
           </div>
         </section>
       </main>

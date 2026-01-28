@@ -29,16 +29,17 @@ serve(async (req) => {
 
     // Validate interaction type
     const validTypes = [
-      'profile_view', 
-      'click_to_call', 
+      'profile_view',
+      'click_to_call',
       'click_to_email',
       'click_website',
       'click_booking',
       'click_social',
-      'button_click', 
-      'form_submit', 
-      'unit_view', 
-      'unit_inquiry'
+      'button_click',
+      'form_submit',
+      'unit_view',
+      'unit_inquiry',
+      'search_impression'
     ];
     if (!validTypes.includes(interaction_type)) {
       return new Response(
@@ -51,7 +52,7 @@ serve(async (req) => {
     const userAgent = req.headers.get('user-agent') || '';
     const forwardedFor = req.headers.get('x-forwarded-for') || '';
     const ip = forwardedFor.split(',')[0].trim() || 'unknown';
-    
+
     // Simple hash of IP for privacy
     const encoder = new TextEncoder();
     const data = encoder.encode(ip + Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'));
@@ -80,6 +81,30 @@ serve(async (req) => {
         JSON.stringify({ error: 'Failed to track interaction' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // SYNC TO LISTING_ANALYTICS
+    // Views = profile_view, unit_view
+    // Impressions = search_impression
+    // Inquiries = unit_inquiry, form_submit
+    const today = new Date().toISOString().split('T')[0];
+    const isView = interaction_type === 'profile_view' || interaction_type === 'unit_view';
+    const isImpression = interaction_type === 'search_impression';
+    const isInquiry = interaction_type === 'unit_inquiry' || interaction_type === 'form_submit';
+
+    if (isView || isImpression || isInquiry) {
+      const { error: syncError } = await supabase.rpc('increment_listing_analytics', {
+        p_listing_id: host_id,
+        p_date: today,
+        p_is_view: isView,
+        p_is_impression: isImpression,
+        p_is_inquiry: isInquiry
+      });
+
+      if (syncError) {
+        console.error('Error syncing to listing_analytics:', syncError);
+        // We don't return 500 here to avoid blocking the main interaction tracking
+      }
     }
 
     console.log('Tracked interaction:', interaction_type, 'for host:', host_id);

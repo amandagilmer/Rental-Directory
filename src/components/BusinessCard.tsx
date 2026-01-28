@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Star, Heart } from "lucide-react";
 import { BadgeDisplay } from "@/components/BadgeDisplay";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useEffect, useRef } from "react";
+import { useInteractionTracking } from "@/hooks/useInteractionTracking";
 
 interface BusinessCardProps {
   slug: string;
@@ -30,6 +32,15 @@ export const BusinessCard = ({
   listingId,
 }: BusinessCardProps) => {
   const { isFavorite, toggleFavorite } = useFavorites(listingId);
+  const { trackSearchImpression } = useInteractionTracking(listingId || null);
+  const hasTrackedImpression = useRef(false);
+
+  useEffect(() => {
+    if (listingId && !hasTrackedImpression.current) {
+      hasTrackedImpression.current = true;
+      trackSearchImpression(listingId);
+    }
+  }, [listingId, trackSearchImpression]);
 
   return (
     <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 bg-gradient-to-b from-card to-card/95 relative">

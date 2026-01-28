@@ -250,7 +250,7 @@ export default function MyListing() {
               <AlertCircle className="h-4 w-4" />
               <AlertTitle className="font-bold">Next Steps</AlertTitle>
               <AlertDescription>
-                You will receive a notification of approval or denial within 24 hours. Once approved, this listing will be assigned to your account and you'll gain full access to the Command Center features.
+                You will receive a notification of approval or denial within 24 hours. Once approved, this listing will be assigned to your account and you'll gain full access to the Operator Dashboard features.
               </AlertDescription>
             </Alert>
             <div className="pt-6">

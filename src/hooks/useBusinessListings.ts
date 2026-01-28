@@ -21,6 +21,9 @@ export interface BusinessListing {
   allCategoryIds: string[];
   description: string;
   address: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
   phone: string;
   rating: number;
   reviewCount: number;
@@ -43,6 +46,9 @@ interface RawListing {
   additional_categories: string[] | null;
   description: string | null;
   address: string | null;
+  city: string | null;
+  state: string | null;
+  zip_code: string | null;
   phone: string | null;
   image_url: string | null;
   email?: string | null;
@@ -71,11 +77,12 @@ export function useBusinessListings() {
   useEffect(() => {
     const fetchListings = async () => {
       try {
-        // Fetch published business listings
+        // Fetch published and approved business listings
         const { data: listings, error: listingsError } = await supabase
           .from('business_listings')
-          .select('id, business_name, slug, category, additional_categories, description, address, phone, image_url, email, website, latitude, longitude, show_exact_location')
+          .select('id, business_name, slug, category, additional_categories, description, address, city, state, zip_code, phone, image_url, email, website, latitude, longitude, show_exact_location')
           .eq('is_published', true)
+          .eq('status', 'active')
           .order('created_at', { ascending: false });
 
         if (listingsError) throw listingsError;
@@ -186,6 +193,9 @@ export function useBusinessListings() {
             allCategoryIds,
             description: listing.description || 'Quality rental services for your needs.',
             address: listing.address || 'Contact for location',
+            city: listing.city || undefined,
+            state: listing.state || undefined,
+            zipCode: listing.zip_code || undefined,
             phone: listing.phone || 'Contact for details',
             rating: parseFloat(avgRating.toFixed(1)),
             reviewCount: ratings.length,

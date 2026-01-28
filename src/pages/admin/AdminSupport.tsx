@@ -22,6 +22,8 @@ import {
 interface SupportTicket {
   id: string;
   user_id: string | null;
+  guest_name: string | null;
+  guest_email: string | null;
   subject: string;
   description: string;
   status: string;
@@ -391,6 +393,11 @@ export default function AdminSupport() {
                           <span className="font-medium text-sm">{ticket.profile.business_name || 'No Business Name'}</span>
                           <span className="text-xs text-muted-foreground">{ticket.profile.email}</span>
                         </div>
+                      ) : ticket.guest_name ? (
+                        <div className="flex flex-col">
+                          <span className="font-medium text-sm">{ticket.guest_name}</span>
+                          <span className="text-xs text-muted-foreground">{ticket.guest_email}</span>
+                        </div>
                       ) : (
                         <span className="text-sm text-muted-foreground italic">Anonymous / Guest</span>
                       )}
@@ -472,6 +479,17 @@ export default function AdminSupport() {
                         <div className="grid grid-cols-3 gap-1">
                           <span className="text-muted-foreground">Email:</span>
                           <span className="col-span-2">{selectedTicket.profile.email}</span>
+                        </div>
+                      </>
+                    ) : selectedTicket.guest_name ? (
+                      <>
+                        <div className="grid grid-cols-3 gap-1">
+                          <span className="text-muted-foreground">Name:</span>
+                          <span className="col-span-2 font-medium">{selectedTicket.guest_name}</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-1">
+                          <span className="text-muted-foreground">Email:</span>
+                          <span className="col-span-2">{selectedTicket.guest_email}</span>
                         </div>
                       </>
                     ) : (
@@ -582,7 +600,7 @@ export default function AdminSupport() {
                             >
                               <div className="flex items-center gap-2 mb-1 border-b border-black/10 pb-1">
                                 <span className="text-[10px] font-bold uppercase tracking-wider opacity-90">
-                                  {msg.sender_type === 'admin' ? 'You' : 'Vendor'}
+                                  {msg.sender_type === 'admin' ? 'You' : 'Requester'}
                                 </span>
                                 <span className="text-[10px] opacity-60 ml-auto">
                                   {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

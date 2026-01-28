@@ -10,6 +10,10 @@ import { useBusinessListings } from "@/hooks/useBusinessListings";
 import { calculateDistance } from "@/hooks/useGeolocation";
 import { Loader2, Map as MapIcon, List as ListIcon, ChevronRight, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getCenterForState } from "@/utils/stateCoordinates";
+import { STATE_NAME_TO_ABBR } from "@/utils/stateMapping";
+
+import { getStateSearchTerms } from "@/utils/stateMapping";
 
 const LocationSearch = () => {
     const { state } = useParams<{ state?: string }>();
@@ -52,15 +56,28 @@ const LocationSearch = () => {
 
     const filteredBusinesses = useMemo(() => {
         if (!businesses) return [];
+
+        const stateTerms = state ? getStateSearchTerms(state) : [];
+
         return businesses.filter((business) => {
             if (!business) return false;
 
             // State filter (from URL)
             if (state) {
-                const addressMatch = business.address?.toLowerCase().includes(state.toLowerCase());
-                // Handle abbreviations if needed, e.g., "Texas" vs "TX"
-                // For now, simple inclusion check
-                if (!addressMatch) return false;
+                const targetAbbr = STATE_NAME_TO_ABBR[state.toLowerCase()];
+                const businessState = business.state?.toUpperCase();
+
+                // If we have a structured state, use it for exact matching
+                if (businessState && targetAbbr) {
+                    if (businessState !== targetAbbr) return false;
+                } else if (stateTerms.length > 0) {
+                    // Fallback to string matching for legacy listings
+                    const businessAddress = business.address?.toLowerCase() || "";
+                    const matchesState = stateTerms.some(term => businessAddress.includes(term));
+                    if (!matchesState) return false;
+                } else {
+                    return false;
+                }
             }
 
             // Category filter
@@ -77,6 +94,9 @@ const LocationSearch = () => {
             // Business Name specific filter (from advanced filters)
             const matchesBusinessName = (filters.businessName || "") === "" ||
                 (business.name?.toLowerCase().includes(filters.businessName.toLowerCase()));
+
+            // Combine category and text searches
+            if (!(matchesCategory && matchesSearch && matchesBusinessName)) return false;
 
             // Price filter
             if (business.lowestDailyRate !== null && typeof business.lowestDailyRate === 'number') {
@@ -106,7 +126,7 @@ const LocationSearch = () => {
                 return false;
             }
 
-            return matchesCategory && matchesSearch && matchesBusinessName;
+            return true;
         });
     }, [state, activeCategory, searchQuery, businesses, filters]);
 
@@ -131,6 +151,8 @@ const LocationSearch = () => {
     // Title formatting
     const displayState = state ? state.charAt(0).toUpperCase() + state.slice(1) : "All";
     const pageTitle = state ? `${displayState} Equipment & Trailer Rentals` : "Search Local Rentals";
+
+    const stateCenter = useMemo(() => getCenterForState(state), [state]);
 
     return (
         <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
@@ -235,14 +257,10 @@ const LocationSearch = () => {
                             businesses={sortedBusinesses}
                             className="w-full h-full"
                             onBoundsChanged={setMapBounds}
+                            center={stateCenter}
+                            zoom={stateCenter?.zoom}
                         />
 
-                        {/* Floating Zoom Alert (Premium Touch) */}
-                        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-                            <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg border border-white/20 text-xs font-bold uppercase tracking-wider text-gray-800">
-                                Zoom to reveal more businesses
-                            </div>
-                        </div>
                     </div>
                 </div>
 

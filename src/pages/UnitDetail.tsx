@@ -99,19 +99,16 @@ const UnitDetail = () => {
     const fetchUnitData = async () => {
       if (!slug || !unitId) return;
 
-      // Find business by slug
-      const { data: listings } = await supabase
+      // Find business by slug directly - more robust than local string manipulation
+      const { data: listing, error: listingError } = await supabase
         .from("business_listings")
         .select("*")
-        .eq("is_published", true);
+        .eq("slug", slug)
+        .maybeSingle();
 
-      const listing = listings?.find(
-        (l) =>
-          l.business_name
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, "-")
-            .replace(/(^-|-$)/g, "") === slug
-      );
+      if (listingError) {
+        console.error("Error fetching listing:", listingError);
+      }
 
       if (!listing) {
         setLoading(false);
@@ -374,7 +371,7 @@ const UnitDetail = () => {
               <Card className="p-6 bg-card">
                 <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
                   <Settings className="h-5 w-5 text-primary" />
-                  Combat Specifications
+                  {unit.service_name} Specifications
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {combatSpecs.map((spec, index) => {
@@ -405,7 +402,7 @@ const UnitDetail = () => {
               <Card className="p-6 bg-card">
                 <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-primary" />
-                  Tactical Features
+                  {unit.service_name} Features
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {unit.features.map((feature, index) => (

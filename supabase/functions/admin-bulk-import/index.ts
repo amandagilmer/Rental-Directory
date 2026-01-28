@@ -28,77 +28,102 @@ async function fetchAndUploadLogo(
 ): Promise<string | null> {
   try {
     console.log(`Fetching logo for ${businessName}: ${logoUrl.substring(0, 50)}...`);
-    
+
     // Check if it's a base64 string
     if (logoUrl.startsWith('data:image')) {
       const matches = logoUrl.match(/^data:image\/(\w+);base64,(.+)$/);
       if (!matches) return null;
-      
+
       const extension = matches[1];
       const base64Data = matches[2];
       const buffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-      
+
       const fileName = `${Date.now()}-${businessName.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.${extension}`;
       const filePath = `logos/${fileName}`;
-      
+
       const { data, error } = await supabaseClient.storage
         .from('business-photos')
         .upload(filePath, buffer, {
           contentType: `image/${extension}`,
           upsert: true
         });
-      
+
       if (error) {
         console.error('Error uploading base64 logo:', error);
         return null;
       }
-      
+
       const { data: urlData } = supabaseClient.storage
         .from('business-photos')
         .getPublicUrl(filePath);
-      
+
       return urlData.publicUrl;
     }
-    
+
     // Fetch from URL
     const response = await fetch(logoUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; BusinessDirectoryBot/1.0)'
       }
     });
-    
+
     if (!response.ok) {
       console.error(`Failed to fetch logo: ${response.status}`);
       return null;
     }
-    
+
     const contentType = response.headers.get('content-type') || 'image/png';
     const extension = contentType.split('/')[1]?.split(';')[0] || 'png';
     const buffer = await response.arrayBuffer();
-    
+
     const fileName = `${Date.now()}-${businessName.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.${extension}`;
     const filePath = `logos/${fileName}`;
-    
+
     const { data, error } = await supabaseClient.storage
       .from('business-photos')
       .upload(filePath, buffer, {
         contentType,
         upsert: true
       });
-    
+
     if (error) {
       console.error('Error uploading logo:', error);
       return null;
     }
-    
+
     const { data: urlData } = supabaseClient.storage
       .from('business-photos')
       .getPublicUrl(filePath);
-    
+
     console.log(`Logo uploaded successfully: ${urlData.publicUrl}`);
     return urlData.publicUrl;
   } catch (error) {
     console.error('Error processing logo:', error);
+    return null;
+  }
+}
+
+async function geocodeAddress(address: string, apiKey: string): Promise<{ lat: number; lng: number; place_id?: string } | null> {
+  try {
+    const url = new URL('https://maps.googleapis.com/maps/api/geocode/json');
+    url.searchParams.set('address', address);
+    url.searchParams.set('key', apiKey);
+
+    const response = await fetch(url.toString());
+    const data = await response.json();
+
+    if (data.status === 'OK' && data.results?.[0]) {
+      const result = data.results[0];
+      return {
+        lat: result.geometry.location.lat,
+        lng: result.geometry.location.lng,
+        place_id: result.place_id
+      };
+    }
+    console.error(`Geocoding failed for ${address}: ${data.status}`);
+    return null;
+  } catch (error) {
+    console.error(`Geocoding error for ${address}:`, error);
     return null;
   }
 }
@@ -110,24 +135,24 @@ async function checkDuplicate(
 ): Promise<{ exists: boolean; id?: string }> {
   const fullAddress = address.toLowerCase().trim();
   const name = businessName.toLowerCase().trim();
-  
+
   const { data, error } = await supabaseClient
     .from('business_listings')
     .select('id, business_name, address')
     .ilike('business_name', name);
-  
+
   if (error || !data || data.length === 0) {
     return { exists: false };
   }
-  
+
   // Check for address match
   for (const listing of data) {
-    if (listing.address?.toLowerCase().includes(fullAddress) || 
-        fullAddress.includes(listing.address?.toLowerCase() || '')) {
+    if (listing.address?.toLowerCase().includes(fullAddress) ||
+      fullAddress.includes(listing.address?.toLowerCase() || '')) {
       return { exists: true, id: listing.id };
     }
   }
-  
+
   return { exists: false };
 }
 
@@ -155,7 +180,7 @@ Deno.serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
-    
+
     if (userError || !user) {
       throw new Error('Unauthorized');
     }
@@ -181,14 +206,30 @@ Deno.serve(async (req) => {
       errors: [] as Array<{ row: number; error: string }>,
     };
 
+    const googleApiKey = Deno.env.get('GOOGLE_MAPS_API_KEY') || Deno.env.get('GOOGLE_PLACES_API_KEY');
+    if (!googleApiKey) {
+      console.warn('Google Maps API key not found in environment, skipping geocoding');
+    }
+
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i] as ImportRow;
-      
+
       try {
-        // Check for duplicates
+        // Geocode the address
         const fullAddress = `${row.address}, ${row.city}, ${row.state} ${row.zip}`;
+        console.log(`Processing row ${i + 1}: ${row.business_name} (${fullAddress})`);
+
+        let coords = null;
+        if (googleApiKey) {
+          coords = await geocodeAddress(fullAddress, googleApiKey);
+          if (coords) {
+            console.log(`Geocoded successful: ${coords.lat}, ${coords.lng}`);
+          }
+        }
+
+        // Check for duplicates
         const duplicate = await checkDuplicate(supabaseClient, row.business_name, fullAddress);
-        
+
         if (duplicate.exists) {
           if (duplicateHandling === 'skip') {
             console.log(`Skipping duplicate: ${row.business_name}`);
@@ -199,7 +240,7 @@ Deno.serve(async (req) => {
             });
             continue;
           }
-          
+
           // Update existing
           let imageUrl = null;
           if (row.logo_url && !skipLogos) {
@@ -207,7 +248,7 @@ Deno.serve(async (req) => {
             // Add rate limiting delay
             await new Promise(resolve => setTimeout(resolve, 200));
           }
-          
+
           const { error: updateError } = await supabaseClient
             .from('business_listings')
             .update({
@@ -218,14 +259,17 @@ Deno.serve(async (req) => {
               website: row.website || null,
               address: fullAddress,
               image_url: imageUrl || undefined,
+              latitude: coords?.lat ?? undefined,
+              longitude: coords?.lng ?? undefined,
+              place_id: coords?.place_id ?? undefined,
               updated_at: new Date().toISOString(),
             })
             .eq('id', duplicate.id);
-          
+
           if (updateError) {
             throw updateError;
           }
-          
+
           console.log(`Updated existing: ${row.business_name}`);
           results.successful++;
           continue;
@@ -252,6 +296,9 @@ Deno.serve(async (req) => {
             website: row.website || null,
             address: fullAddress,
             image_url: imageUrl,
+            latitude: coords?.lat ?? null,
+            longitude: coords?.lng ?? null,
+            place_id: coords?.place_id ?? null,
             is_published: false, // Unpublished by default for review
           })
           .select('id')
@@ -271,7 +318,7 @@ Deno.serve(async (req) => {
               sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
               thursday: 4, friday: 5, saturday: 6
             };
-            
+
             const hoursInserts = Object.entries(hours).map(([day, times]: [string, any]) => ({
               listing_id: listingId,
               day_of_week: dayMap[day.toLowerCase()] ?? 0,
@@ -279,7 +326,7 @@ Deno.serve(async (req) => {
               close_time: times.close || null,
               is_closed: times.closed || false,
             }));
-            
+
             if (hoursInserts.length > 0) {
               await supabaseClient.from('business_hours').insert(hoursInserts);
             }
@@ -300,7 +347,7 @@ Deno.serve(async (req) => {
               price_unit: service.unit || service.price_unit || 'per day',
               display_order: index,
             }));
-            
+
             if (serviceInserts.length > 0) {
               await supabaseClient.from('business_services').insert(serviceInserts);
             }
