@@ -96,34 +96,41 @@ export function useBusinessListings() {
         const listingIds = listings.map(l => l.id);
         console.log('Fetching related data for listings:', listingIds);
 
-        // Fetch all related data in parallel
+        // Fetch all related data in parallel with error handling for each
         const [reviewsResult, photosResult, badgesResult, servicesResult] = await Promise.all([
           supabase
             .from('your_reviews')
             .select('business_id, rating')
-            .in('business_id', listingIds),
+            .in('business_id', listingIds)
+            .then(res => ({ data: res.data || [], error: res.error })),
           supabase
             .from('business_photos')
             .select('listing_id, storage_path')
             .in('listing_id', listingIds)
-            .eq('is_primary', true),
+            .eq('is_primary', true)
+            .then(res => ({ data: res.data || [], error: res.error })),
           supabase
             .from('operator_badges')
             .select('listing_id, badge_key')
             .in('listing_id', listingIds)
-            .eq('is_active', true),
+            .eq('is_active', true)
+            .then(res => ({ data: res.data || [], error: res.error })),
           supabase
             .from('business_services')
             .select('id, listing_id, service_name, sub_category, daily_rate, weekly_rate, monthly_rate, is_available')
             .in('listing_id', listingIds)
+            .then(res => ({ data: res.data || [], error: res.error }))
         ]);
 
-        console.log('Related data fetch complete');
+        if (reviewsResult.error) console.error('Error fetching reviews:', reviewsResult.error);
+        if (photosResult.error) console.error('Error fetching photos:', photosResult.error);
+        if (badgesResult.error) console.error('Error fetching badges:', badgesResult.error);
+        if (servicesResult.error) console.error('Error fetching services:', servicesResult.error);
 
-        const reviews = reviewsResult.data || [];
-        const photos = photosResult.data || [];
-        const badges = badgesResult.data || [];
-        const services = servicesResult.data || [];
+        const reviews = reviewsResult.data;
+        const photos = photosResult.data;
+        const badges = badgesResult.data;
+        const services = servicesResult.data;
 
         // Build maps for efficient lookups
         const ratingsMap = new Map<string, number[]>();
