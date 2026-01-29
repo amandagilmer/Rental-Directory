@@ -5,6 +5,13 @@ Complete Vibe-Coding Specification
 ---
 
 # 🗺️ Master Roadmap
+
+- [ ] **🔥 EMERGENCY: Production Recovery**
+    - [ ] [BUILDER] Audit Vercel environment variables vs `.env`
+    - [ ] [BUILDER] Verify Supabase project ID and connectivity in production
+    - [ ] [DESIGN] Restore missing "All Rentals" icons (dumpster, trailer, equipment)
+    - [ ] [NERD] Resolve login issues on live site
+    - [ ] [NERD] Fix missing business listings on live site
 - [x] **Project Foundation**: military-themed UI, core directory structure.
 - [x] **Business Management**: Claim flow, business profiles, fleet management.
 - [x] **Admin Ecosystem**: Badges, reviews, claims, support, and user management.
@@ -12,17 +19,16 @@ Complete Vibe-Coding Specification
 - [ ] **AI Integration**: Chatbot, AI response suggestions, embedding-based search.
 - [x] **Launch**: Production deployment active on Vercel.
 
-- Stable Production Deployment fixed.
-- Active CI/CD: Pushes to `main` branch auto-deploy to Vercel.
-- GMB Import and Sync fully implemented and integrated.
+# 📝 Current Trajectory
+**Phase 1: Emergency Audit.** Identifying why live production is out of sync with local development.
 
 # 🚥 Squad Status
 | Agent | Task | Status |
 | :--- | :--- | :--- |
-| 🐎 Design Lead | UI/Visual Excellence (Military/Patriot Theme) | ✅ Dashboard Revamp |
-| 🏗️ Builder | Stripe Integration & GMB Review Sync | ✅ Completed GMB Init |
-| 🤓 Nerd | QC & Testing | ✅ Deployed & Verified |
-| 📚 Researcher | Data & Strategy | ✅ Initial Spec |
+| 🏗️ Builder | Auditing Vercel Env & Supabase Sync | [/] |
+| 🐎 Design Lead | Investigating missing icons/UI | [/] |
+| 🤓 Nerd | Debugging Login & Listing Fetches | [/] |
+| 📚 Researcher | Researching recent deployment deltas | [ ] |
 
 ---
 
