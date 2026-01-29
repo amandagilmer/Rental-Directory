@@ -7,6 +7,13 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY |
 
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
   console.error('Supabase configuration is missing! Check environment variables VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY (or VITE_SUPABASE_ANON_KEY).');
+} else {
+  try {
+    const hostname = new URL(SUPABASE_URL).hostname;
+    console.log('Supabase initialized for:', hostname.split('.')[0]);
+  } catch (e) {
+    console.warn('Supabase URL format check skipped');
+  }
 }
 
 // Import the supabase client like this:

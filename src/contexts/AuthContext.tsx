@@ -128,12 +128,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
 
-    return { error };
+      if (error && error.message === 'Failed to fetch') {
+        const errorMsg = 'Connection error: Please check if VITE_SUPABASE_URL is correctly set in your environment variables.';
+        console.error(errorMsg);
+        return { error: { message: errorMsg } };
+      }
+
+      return { error };
+    } catch (err: any) {
+      if (err.message === 'Failed to fetch') {
+        return { error: { message: 'Connection error: Possible missing Supabase configuration.' } };
+      }
+      return { error: err };
+    }
   };
 
   const signOut = async () => {
