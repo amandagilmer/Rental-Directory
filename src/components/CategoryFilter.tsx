@@ -1,14 +1,25 @@
 import { Button } from "@/components/ui/button";
-import { Truck, Caravan, Hammer, Container, Folder, Loader2 } from "lucide-react";
+import { Truck, Caravan, Hammer, Container, Folder, Loader2, Tractor, Trash2 } from "lucide-react";
 import { useCategories, Category } from "@/hooks/useCategories";
 
 // Icon mapping from database icon names to Lucide components
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   truck: Truck,
+  Truck: Truck,
   hammer: Hammer,
+  Hammer: Hammer,
+  tractor: Tractor,
+  Tractor: Tractor,
   caravan: Caravan,
+  Caravan: Caravan,
   container: Container,
+  Container: Container,
+  trash: Trash2,
+  Trash: Trash2,
+  trash2: Trash2,
+  Trash2: Trash2,
   folder: Folder,
+  Folder: Folder,
 };
 
 interface CategoryFilterProps {
