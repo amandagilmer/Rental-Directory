@@ -1,6 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { BusinessListing } from "@/hooks/useBusinessListings";
+import { STATE_NAME_TO_ABBR } from "@/utils/stateMapping";
 
 // State background images
 import texasImg from "@/assets/states/texas.png";
@@ -24,41 +25,39 @@ interface StateBusinessesProps {
 }
 
 export const StateBusinesses = ({ businesses = [] }: StateBusinessesProps) => {
-    const stateData: StateCount[] = [
-        { name: "Texas", count: 24, image: texasImg },
-        { name: "California", count: 18, image: californiaImg },
-        { name: "Nevada", count: 8, image: nevadaImg },
-        { name: "Arizona", count: 12, image: arizonaImg },
-        { name: "Colorado", count: 6, image: coloradoImg },
-        { name: "Georgia", count: 10, image: georgiaImg },
-        { name: "Tennessee", count: 7, image: tennesseeImg },
-        { name: "Utah", count: 5, image: utahImg },
-        { name: "Minnesota", count: 4, image: minnesotaImg },
+    const baseStateData: StateCount[] = [
+        { name: "Texas", count: 0, image: texasImg },
+        { name: "California", count: 0, image: californiaImg },
+        { name: "Nevada", count: 0, image: nevadaImg },
+        { name: "Arizona", count: 0, image: arizonaImg },
+        { name: "Colorado", count: 0, image: coloradoImg },
+        { name: "Georgia", count: 0, image: georgiaImg },
+        { name: "Tennessee", count: 0, image: tennesseeImg },
+        { name: "Utah", count: 0, image: utahImg },
+        { name: "Minnesota", count: 0, image: minnesotaImg },
     ];
 
-    const updatedStateData = [...stateData];
-    if (businesses.length > 0) {
-        const actualCounts: Record<string, number> = {};
-        businesses.forEach(b => {
-            if (b.address) {
-                const address = b.address.toUpperCase();
-                stateData.forEach(s => {
-                    if (address.includes(s.name.toUpperCase()) ||
-                        address.includes(`, ${s.name.substring(0, 2).toUpperCase()} `)) {
-                        actualCounts[s.name] = (actualCounts[s.name] || 0) + 1;
-                    }
-                });
+    // Calculate actual counts from the businesses prop
+    const actualCounts: Record<string, number> = {};
+    businesses.forEach(b => {
+        const stateName = b.state ? (Object.keys(STATE_NAME_TO_ABBR).find(key => STATE_NAME_TO_ABBR[key] === b.state.toUpperCase()) || b.state) : null;
+        const address = b.address?.toUpperCase() || "";
+
+        baseStateData.forEach(s => {
+            const matchesAbbr = b.state?.toUpperCase() === STATE_NAME_TO_ABBR[s.name.toLowerCase()];
+            const matchesFull = stateName?.toLowerCase() === s.name.toLowerCase();
+            const matchesInAddress = address.includes(s.name.toUpperCase()) || address.includes(`, ${STATE_NAME_TO_ABBR[s.name.toLowerCase()]} `);
+
+            if (matchesAbbr || matchesFull || matchesInAddress) {
+                actualCounts[s.name] = (actualCounts[s.name] || 0) + 1;
             }
         });
+    });
 
-        if (Object.keys(actualCounts).length > 0) {
-            updatedStateData.forEach((s, i) => {
-                if (actualCounts[s.name]) {
-                    updatedStateData[i].count = actualCounts[s.name];
-                }
-            });
-        }
-    }
+    // Merge counts and filter out states with zero businesses
+    const updatedStateData = baseStateData
+        .map(s => ({ ...s, count: actualCounts[s.name] || 0 }))
+        .filter(s => s.count > 0);
 
     return (
         <section className="bg-background py-16 border-t">
