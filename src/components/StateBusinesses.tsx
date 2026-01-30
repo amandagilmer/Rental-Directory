@@ -54,10 +54,9 @@ export const StateBusinesses = ({ businesses = [] }: StateBusinessesProps) => {
         });
     });
 
-    // Merge counts and filter out states with zero businesses
+    // Merge counts and show all states (even those with zero businesses)
     const updatedStateData = baseStateData
-        .map(s => ({ ...s, count: actualCounts[s.name] || 0 }))
-        .filter(s => s.count > 0);
+        .map(s => ({ ...s, count: actualCounts[s.name] || 0 }));
 
     return (
         <section className="bg-background py-16 border-t">
